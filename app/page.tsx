@@ -51,94 +51,77 @@ const blockers = [
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#f7f5ef] text-[#151515]">
-      <section className="border-b border-[#d8d2c4] bg-[#fbfaf6]">
-        <div className="mx-auto grid w-full max-w-7xl gap-10 px-5 py-8 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:px-12 lg:py-12">
-          <div className="flex min-h-[calc(100vh-6rem)] flex-col justify-between gap-10 lg:min-h-[640px]">
-            <nav className="flex items-center justify-between text-sm font-semibold">
-              <a href="#top" className="flex items-center gap-3" aria-label="Managent home">
-                <span className="grid size-9 place-items-center border border-[#151515] bg-[#d84f2a] font-mono text-sm text-white shadow-[3px_3px_0_#151515]">
-                  M
-                </span>
-                <span className="font-mono uppercase tracking-[0.18em]">managent</span>
-              </a>
-              <a
-                href="#beta"
-                className="hidden border border-[#151515] bg-white px-4 py-2 shadow-[3px_3px_0_#151515] transition hover:-translate-y-0.5 hover:shadow-[5px_5px_0_#151515] sm:inline-flex"
-              >
-                Early access
-              </a>
-            </nav>
+    <main className="min-h-screen bg-[#f8f7f3] text-[#151617]">
+      <section className="overflow-hidden border-b border-[#e7e1d6] bg-[radial-gradient(circle_at_top,#ffffff_0%,#f8f7f3_48%,#f1eee7_100%)]">
+        <div className="mx-auto flex min-h-[100svh] w-full max-w-6xl flex-col px-4 py-6 sm:min-h-screen sm:px-8 sm:py-7 lg:px-10">
+          <nav className="flex items-center justify-center sm:justify-between">
+            <a href="#top" className="flex items-center gap-3" aria-label="Managent home">
+              <span className="grid size-9 place-items-center rounded-md bg-[#1f6f5b] font-mono text-sm font-semibold text-white">
+                M
+              </span>
+              <span className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-[#34383a]">managent</span>
+            </a>
+            <a
+              href="#beta"
+              className="hidden rounded-md border border-[#d8d2c7] bg-white/75 px-4 py-2 text-sm font-semibold text-[#34383a] shadow-sm transition hover:border-[#1f6f5b] hover:text-[#1f6f5b] sm:inline-flex"
+            >
+              Early access
+            </a>
+          </nav>
 
-            <div id="top" className="max-w-4xl">
-              <p className="mb-5 inline-flex border border-[#151515] bg-[#e1f0d0] px-3 py-1 font-mono text-xs font-bold uppercase tracking-[0.18em]">
+          <div id="top" className="flex flex-1 flex-col items-center justify-center gap-8 py-10 text-center sm:gap-10 sm:py-16">
+            <div className="mx-auto w-full">
+              <p className="mx-auto mb-5 inline-flex max-w-full rounded-full border border-[#d8d2c7] bg-white/80 px-3 py-2 text-center font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-[#1f6f5b] shadow-sm sm:mb-6 sm:px-4 sm:text-xs sm:tracking-[0.16em]">
                 MCP Tool Gateway for production agents
               </p>
-              <h1 className="max-w-4xl text-5xl font-black leading-[0.95] tracking-normal text-[#151515] sm:text-6xl lg:text-7xl">
+              <h1 className="mx-auto max-w-6xl text-[2.45rem] font-semibold leading-[1.06] tracking-normal text-[#111314] sm:text-6xl sm:leading-[1.02] lg:text-7xl">
                 Stop Prompt-Engineering Your Agent&apos;s Permissions.
               </h1>
-              <p className="mt-7 max-w-3xl text-lg leading-8 text-[#383631] sm:text-xl">
+              <p className="mx-auto mt-5 max-w-4xl text-base leading-7 text-[#555b5f] sm:mt-7 sm:text-xl sm:leading-8">
                 Managent is an open-source MCP Tool Gateway that acts as a secure network firewall for your AI workforce. Stop worrying about your agents hallucinating a database wipe or an unauthorized $10,000 refund. Secure their capabilities at the infrastructure layer, not inside a fragile system prompt.
               </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <div className="mx-auto mt-8 flex w-full max-w-sm flex-col items-stretch justify-center gap-3 sm:mt-9 sm:max-w-none sm:flex-row sm:items-center">
                 <a
                   href="#beta"
-                  className="inline-flex min-h-12 items-center justify-center border border-[#151515] bg-[#151515] px-6 py-3 text-center text-sm font-black uppercase tracking-[0.08em] text-white shadow-[4px_4px_0_#d84f2a] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#d84f2a]"
+                  className="inline-flex min-h-12 w-full items-center justify-center rounded-md bg-[#1f6f5b] px-5 py-3 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-[#185846] focus:outline-none focus:ring-4 focus:ring-[#cfe5dd] sm:w-auto sm:px-6"
                 >
-                  Join the Beta / Get Early Access to the Proxy
+                  Join the Beta
                 </a>
                 <a
                   href="#problem"
-                  className="inline-flex min-h-12 items-center justify-center border border-[#151515] bg-white px-6 py-3 text-center text-sm font-black uppercase tracking-[0.08em] shadow-[4px_4px_0_#151515] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#151515]"
+                  className="inline-flex min-h-12 w-full items-center justify-center rounded-md border border-[#d8d2c7] bg-white/80 px-5 py-3 text-center text-sm font-semibold text-[#34383a] shadow-sm transition hover:border-[#1f6f5b] hover:text-[#1f6f5b] focus:outline-none focus:ring-4 focus:ring-[#cfe5dd] sm:w-auto sm:px-6"
                 >
                   See the production risks
                 </a>
               </div>
             </div>
 
-            <div className="grid gap-3 border-l-4 border-[#d84f2a] bg-white p-5 text-sm shadow-[6px_6px_0_#151515] sm:grid-cols-3">
-              <div>
-                <p className="font-mono text-xs uppercase tracking-[0.16em] text-[#6c6559]">Block</p>
-                <p className="mt-1 font-bold">Unsafe tool calls before execution</p>
-              </div>
-              <div>
-                <p className="font-mono text-xs uppercase tracking-[0.16em] text-[#6c6559]">Freeze</p>
-                <p className="mt-1 font-bold">High-risk streams for human approval</p>
-              </div>
-              <div>
-                <p className="font-mono text-xs uppercase tracking-[0.16em] text-[#6c6559]">Vault</p>
-                <p className="mt-1 font-bold">Production secrets outside agent code</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center lg:min-h-[640px]">
-            <div className="w-full border border-[#151515] bg-[#151515] p-3 shadow-[10px_10px_0_#d84f2a]">
-              <div className="border border-[#494949] bg-[#202020] p-4 font-mono text-xs text-[#f4efe2]">
-                <div className="mb-4 flex items-center justify-between border-b border-[#494949] pb-3">
+            <div className="mx-auto w-full max-w-4xl rounded-lg border border-[#ded8cc] bg-white/90 p-2 text-left shadow-[0_18px_48px_rgba(31,46,39,0.10)] backdrop-blur sm:p-4 sm:shadow-[0_24px_70px_rgba(31,46,39,0.10)]">
+              <div className="rounded-md border border-[#ebe5da] bg-[#101314] p-3 font-mono text-[11px] text-[#edf3ef] sm:p-4 sm:text-xs">
+                <div className="mb-4 flex flex-col gap-2 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
                   <span>managent/proxy</span>
-                  <span className="bg-[#e1f0d0] px-2 py-1 text-[#151515]">LIVE POLICY</span>
+                  <span className="w-fit rounded-full bg-[#d9f2e8] px-3 py-1 text-[#174c3f]">LIVE POLICY</span>
                 </div>
-                <div className="space-y-3">
-                  <div className="border border-[#5f5f5f] bg-[#111] p-3">
-                    <p className="text-[#9ad18b]">ALLOW</p>
-                    <p className="mt-2 break-words text-base">github__create_issue</p>
-                    <p className="mt-2 text-[#b7b0a4]">repo in [customer-support, docs]</p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-md border border-white/10 bg-white/4 p-3">
+                    <p className="text-[#8fd6bd]">ALLOW</p>
+                    <p className="mt-2 break-all text-[13px] text-white sm:text-sm">github__create_issue</p>
+                    <p className="mt-2 text-[#aeb8b4]">repo in [support, docs]</p>
                   </div>
-                  <div className="border border-[#d84f2a] bg-[#2a1712] p-3">
+                  <div className="rounded-md border border-[#eaa28e]/50 bg-[#2b1714] p-3">
                     <p className="text-[#ffb199]">DROP</p>
-                    <p className="mt-2 break-words text-base">stripe__issue_refund</p>
-                    <p className="mt-2 text-[#f4efe2]">amount: 10000 &gt; policy.max: 100</p>
+                    <p className="mt-2 break-all text-[13px] text-white sm:text-sm">stripe__issue_refund</p>
+                    <p className="mt-2 text-[#ead7d0]">amount: 10000 &gt; max: 100</p>
                   </div>
-                  <div className="border border-[#e6c84f] bg-[#2d2712] p-3">
-                    <p className="text-[#ffe07a]">FREEZE</p>
-                    <p className="mt-2 break-words text-base">sql__execute_mutation</p>
-                    <p className="mt-2 text-[#f4efe2]">Slack approval required</p>
+                  <div className="rounded-md border border-[#e5d37d]/50 bg-[#292512] p-3">
+                    <p className="text-[#f0d96e]">FREEZE</p>
+                    <p className="mt-2 break-all text-[13px] text-white sm:text-sm">sql__execute_mutation</p>
+                    <p className="mt-2 text-[#e8dfb9]">Slack approval required</p>
                   </div>
                 </div>
-                <div className="mt-4 grid grid-cols-[1fr_auto] gap-3 border-t border-[#494949] pt-4">
-                  <p className="text-[#b7b0a4]">Framework receives native MCP error block.</p>
-                  <span className="bg-[#d84f2a] px-2 py-1 font-bold text-white">NO PROMPT TRUST</span>
+                <div className="mt-4 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-[#aeb8b4]">Framework receives a native MCP error block.</p>
+                  <span className="w-fit rounded-full bg-white px-3 py-1 font-semibold text-[#101314]">No prompt trust</span>
                 </div>
               </div>
             </div>
@@ -146,26 +129,24 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="problem" className="border-b border-[#d8d2c4] px-5 py-16 sm:px-8 lg:px-12">
-        <div className="mx-auto max-w-7xl">
-          <div className="max-w-3xl">
-            <p className="font-mono text-sm font-bold uppercase tracking-[0.18em] text-[#d84f2a]">Do you relate?</p>
-            <h2 className="mt-4 text-3xl font-black tracking-normal sm:text-5xl">
-              We love AI agents. But we are terrified to give them production keys.
-            </h2>
-            <p className="mt-5 text-lg leading-8 text-[#4c4840]">Does your current agent workflow look like this?</p>
-          </div>
+      <section id="problem" className="border-b border-[#e7e1d6] px-4 py-14 sm:px-8 sm:py-20 lg:px-10">
+        <div className="mx-auto max-w-6xl text-center">
+          <p className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-[#1f6f5b]">Do you relate?</p>
+          <h2 className="mx-auto mt-4 max-w-3xl text-[2rem] font-semibold leading-tight tracking-normal sm:text-5xl">
+            We love AI agents. But we are terrified to give them production keys.
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-[#555b5f] sm:mt-5 sm:text-lg sm:leading-8">Does your current agent workflow look like this?</p>
 
-          <div className="mt-10 grid gap-4 lg:grid-cols-2">
+          <div className="mx-auto mt-8 grid max-w-5xl gap-4 text-left sm:mt-10 md:grid-cols-2">
             {anxieties.map((item) => (
-              <article key={item.title} className="border border-[#151515] bg-white p-5 shadow-[5px_5px_0_#151515]">
-                <div className="flex gap-4">
-                  <span className="mt-1 grid size-7 shrink-0 place-items-center border border-[#151515] bg-[#d84f2a] text-sm font-black text-white">
+              <article key={item.title} className="rounded-lg border border-[#e1dbd0] bg-white p-5 shadow-sm sm:p-6">
+                <div className="flex gap-3 sm:gap-4">
+                  <span className="mt-1 grid size-7 shrink-0 place-items-center rounded-full bg-[#f3d8cf] text-sm font-semibold text-[#9b3e27]">
                     !
                   </span>
                   <div>
-                    <h3 className="text-xl font-black">{item.title}</h3>
-                    <p className="mt-2 leading-7 text-[#4c4840]">{item.body}</p>
+                    <h3 className="text-lg font-semibold text-[#151617] sm:text-xl">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-[#555b5f] sm:text-base sm:leading-7">{item.body}</p>
                   </div>
                 </div>
               </article>
@@ -174,66 +155,60 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="border-b border-[#d8d2c4] bg-[#fbfaf6] px-5 py-16 sm:px-8 lg:px-12">
-        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.85fr_1.15fr]">
-          <div>
-            <p className="font-mono text-sm font-bold uppercase tracking-[0.18em] text-[#d84f2a]">The infrastructure answer</p>
-            <h2 className="mt-4 text-3xl font-black tracking-normal sm:text-5xl">
-              Managent firewalls the AI&apos;s hands, not its brain.
-            </h2>
-            <p className="mt-5 text-lg leading-8 text-[#4c4840]">
-              Stop trying to bury production policy inside natural language. Put every tool call through a gateway that can inspect parameters, freeze risky streams, and inject secrets without exposing them to agent code.
-            </p>
-          </div>
+      <section className="border-b border-[#e7e1d6] bg-white px-4 py-14 sm:px-8 sm:py-20 lg:px-10">
+        <div className="mx-auto max-w-6xl text-center">
+          <p className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-[#1f6f5b]">The infrastructure answer</p>
+          <h2 className="mx-auto mt-4 max-w-3xl text-[2rem] font-semibold leading-tight tracking-normal sm:text-5xl">
+            Managent firewalls the AI&apos;s hands, not its brain.
+          </h2>
+          <p className="mx-auto mt-4 max-w-3xl text-base leading-7 text-[#555b5f] sm:mt-5 sm:text-lg sm:leading-8">
+            Stop trying to bury production policy inside natural language. Put every tool call through a gateway that can inspect parameters, freeze risky streams, and inject secrets without exposing them to agent code.
+          </p>
 
-          <div className="space-y-4">
+          <div className="mx-auto mt-8 grid max-w-5xl gap-4 text-left sm:mt-10 lg:grid-cols-3">
             {controls.map((item) => (
-              <article key={item.label} className="border border-[#151515] bg-white p-5 shadow-[5px_5px_0_#151515]">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <h3 className="text-xl font-black">{item.label}</h3>
-                  <code className="w-fit max-w-full border border-[#151515] bg-[#e1f0d0] px-2 py-1 font-mono text-xs font-bold text-[#151515]">
-                    {item.command}
-                  </code>
-                </div>
-                <p className="mt-3 leading-7 text-[#4c4840]">{item.body}</p>
+              <article key={item.label} className="rounded-lg border border-[#e1dbd0] bg-[#fbfaf7] p-5 shadow-sm sm:p-6">
+                <h3 className="text-lg font-semibold text-[#151617] sm:text-xl">{item.label}</h3>
+                <code className="mt-4 block w-fit max-w-full break-all rounded-md border border-[#d7ece4] bg-[#edf8f4] px-3 py-2 font-mono text-[11px] font-semibold text-[#174c3f] sm:text-xs">
+                  {item.command}
+                </code>
+                <p className="mt-4 leading-7 text-[#555b5f]">{item.body}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="beta" className="px-5 py-16 sm:px-8 lg:px-12">
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-          <div>
-            <p className="font-mono text-sm font-bold uppercase tracking-[0.18em] text-[#d84f2a]">Help us prioritize the roadmap</p>
-            <h2 className="mt-4 text-3xl font-black tracking-normal sm:text-5xl">
-              Tell us what is blocking your production agent rollout.
-            </h2>
-            <p className="mt-5 text-lg leading-8 text-[#4c4840]">
-              We are measuring the exact failure mode: prompt-only permissions, hallucinated tool execution, runaway loops, exposed credentials, and security review dead ends.
-            </p>
-          </div>
+      <section id="beta" className="px-4 py-14 sm:px-8 sm:py-20 lg:px-10">
+        <div className="mx-auto max-w-4xl text-center">
+          <p className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-[#1f6f5b]">Help us prioritize the roadmap</p>
+          <h2 className="mx-auto mt-4 max-w-3xl text-[2rem] font-semibold leading-tight tracking-normal sm:text-5xl">
+            Tell us what is blocking your production agent rollout.
+          </h2>
+          <p className="mx-auto mt-4 max-w-3xl text-base leading-7 text-[#555b5f] sm:mt-5 sm:text-lg sm:leading-8">
+            We are measuring the exact failure mode: prompt-only permissions, hallucinated tool execution, runaway loops, exposed credentials, and security review dead ends.
+          </p>
 
-          <form className="border border-[#151515] bg-white p-5 shadow-[8px_8px_0_#151515] sm:p-7">
-            <div className="grid gap-5">
+          <form className="mx-auto mt-8 max-w-2xl rounded-lg border border-[#e1dbd0] bg-white p-4 text-left shadow-[0_14px_44px_rgba(31,46,39,0.08)] sm:mt-10 sm:p-8 sm:shadow-[0_18px_60px_rgba(31,46,39,0.08)]">
+            <div className="grid gap-4 sm:gap-5">
               <label className="grid gap-2">
-                <span className="text-sm font-black uppercase tracking-[0.08em]">Work email</span>
+                <span className="text-sm font-semibold leading-5 text-[#34383a]">Work email</span>
                 <input
                   type="email"
                   name="email"
                   required
                   placeholder="you@company.com"
-                  className="min-h-12 border border-[#151515] bg-[#fbfaf6] px-3 text-base outline-none focus:ring-4 focus:ring-[#e1f0d0]"
+                  className="min-h-12 w-full rounded-md border border-[#d8d2c7] bg-[#fbfaf7] px-3 text-base outline-none transition focus:border-[#1f6f5b] focus:ring-4 focus:ring-[#cfe5dd]"
                 />
               </label>
 
               <label className="grid gap-2">
-                <span className="text-sm font-black uppercase tracking-[0.08em]">Which AI framework are you currently building with?</span>
+                <span className="text-sm font-semibold leading-5 text-[#34383a]">Which AI framework are you currently building with?</span>
                 <select
                   name="framework"
                   defaultValue=""
                   required
-                  className="min-h-12 border border-[#151515] bg-[#fbfaf6] px-3 text-base outline-none focus:ring-4 focus:ring-[#e1f0d0]"
+                  className="min-h-12 w-full rounded-md border border-[#d8d2c7] bg-[#fbfaf7] px-3 text-base outline-none transition focus:border-[#1f6f5b] focus:ring-4 focus:ring-[#cfe5dd]"
                 >
                   <option value="" disabled>
                     Select a framework
@@ -247,13 +222,13 @@ export default function Home() {
               </label>
 
               <fieldset className="grid gap-3">
-                <legend className="text-sm font-black uppercase tracking-[0.08em]">
+                <legend className="text-sm font-semibold leading-5 text-[#34383a]">
                   What is your biggest blocker to putting agents in production?
                 </legend>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {blockers.map((blocker) => (
-                    <label key={blocker} className="flex min-h-12 items-center gap-3 border border-[#151515] bg-[#fbfaf6] px-3 font-semibold">
-                      <input type="checkbox" name="blocker" value={blocker} className="size-4 accent-[#d84f2a]" />
+                    <label key={blocker} className="flex min-h-12 items-center gap-3 rounded-md border border-[#d8d2c7] bg-[#fbfaf7] px-3 py-2 text-sm font-medium leading-5 text-[#34383a]">
+                      <input type="checkbox" name="blocker" value={blocker} className="size-4 shrink-0 accent-[#1f6f5b]" />
                       <span>{blocker}</span>
                     </label>
                   ))}
@@ -262,9 +237,9 @@ export default function Home() {
 
               <button
                 type="submit"
-                className="min-h-12 border border-[#151515] bg-[#d84f2a] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white shadow-[4px_4px_0_#151515] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#151515]"
+                className="min-h-12 w-full rounded-md bg-[#1f6f5b] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#185846] focus:outline-none focus:ring-4 focus:ring-[#cfe5dd]"
               >
-                Join the Beta / Get Early Access to the Proxy
+                Join the Beta
               </button>
             </div>
           </form>
