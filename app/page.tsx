@@ -42,152 +42,131 @@ const blockers = [
   "Credential management",
 ];
 
+const heroBenefits = [
+  "Deterministic policies",
+  "Human approvals",
+  "Vaulted credentials",
+  "Audit trails",
+];
+
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#f8f7f3] text-[#151617]">
-      <section className="relative overflow-hidden border-b border-[#e7e1d6] bg-[#f8f7f3]">
-        <div className="relative mx-auto flex min-h-[100svh] w-full max-w-6xl flex-col px-4 py-6 sm:min-h-screen sm:px-8 sm:py-7 lg:px-10">
-          <nav className="flex items-center justify-center sm:justify-between">
-            <a
-              href="#top"
-              className="flex items-center gap-3"
-              aria-label="Managent home"
-            >
-              <span className="grid size-9 place-items-center rounded-full bg-[#1f6f5b] text-sm font-semibold text-white shadow-sm shadow-[#1f6f5b]/20">
-                M
-              </span>
-              <span className="text-sm font-semibold uppercase tracking-[0.18em] text-[#34383a]">
-                managent
-              </span>
-            </a>
-            <a
-              href="#beta"
-              className="hidden rounded-full border border-[#d8d2c7] bg-white/75 px-4 py-2 text-sm font-semibold text-[#34383a] shadow-sm transition hover:border-[#1f6f5b] hover:text-[#1f6f5b] sm:inline-flex"
-            >
-              Early access
-            </a>
-          </nav>
+    <main className="min-h-screen bg-[#f8f7f2] text-[#11140f]">
+      <header className="mx-auto flex w-full max-w-7xl items-center justify-between gap-5 px-6 py-6 text-center lg:px-8">
+        <a
+          href="#top"
+          className="text-xl font-semibold"
+          aria-label="Managent home"
+        >
+          Managent
+        </a>
+        <nav className="hidden items-center justify-center gap-8 text-sm font-medium text-[#565b50] md:flex">
+          <a className="transition hover:text-[#11140f]" href="#problem">
+            Problem
+          </a>
+          <a className="transition hover:text-[#11140f]" href="#solution">
+            Solution
+          </a>
+          <a className="transition hover:text-[#11140f]" href="#beta">
+            Beta
+          </a>
+        </nav>
+        <a
+          href="#beta"
+          className="rounded-full bg-[#11140f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2d3329]"
+        >
+          Early access
+        </a>
+      </header>
 
-          <div
-            id="top"
-            className="flex flex-1 flex-col items-center justify-center gap-10 py-10 text-center lg:gap-12 lg:py-16"
+      <section
+        id="top"
+        className="mx-auto flex w-full max-w-6xl flex-col items-center px-6 pb-20 pt-10 text-center lg:px-8 lg:pb-28 lg:pt-16"
+      >
+        <p className="mb-5 rounded-full border border-[#d9d6c8] bg-white px-4 py-2 text-sm font-semibold text-[#345436]">
+          Open-source MCP tool gateway
+        </p>
+        <h1 className="mt-6 max-w-4xl text-4xl font-medium leading-[1.02] text-[#11140f] sm:text-5xl lg:text-6xl">
+          The control plane for your autonomous workforce.
+        </h1>
+        <p className="mt-5 max-w-4xl text-xl leading-8 text-[#3d4238]">
+          Managent sits between AI agents and the tools they use, validating
+          every action before it reaches Stripe, databases, Slack, or internal
+          APIs. Enforce policy, pause risky calls for approval, and keep
+          production keys out of agent code.
+        </p>
+
+        <div className="mt-5 flex w-full flex-col items-center justify-center gap-3 sm:flex-row">
+          <a
+            href="#beta"
+            className="inline-flex w-max items-center justify-center rounded-full bg-[#11140f] px-6 py-3 text-base font-semibold text-white transition hover:bg-[#2d3329]"
           >
-            <div className="mx-auto max-w-4xl text-center">
-              <p className="mb-5 inline-flex max-w-full rounded-full border border-[#d8d2c7] bg-white/80 px-4 py-2 text-center text-xs font-semibold text-[#1f6f5b] shadow-sm sm:mb-6">
-                Open-source MCP tool gateway
-              </p>
-              <h1 className="mx-auto max-w-4xl text-[2.65rem] font-semibold leading-[0.98] tracking-[-0.055em] text-[#111314] sm:text-6xl lg:text-7xl">
-                The control plane for your autonomous workforce.
-              </h1>
-              <p className="mx-auto mt-6 max-w-3xl text-base leading-7 text-[#555b5f] sm:text-lg sm:leading-8">
-                Managent sits between AI agents and the tools they use,
-                validating every action before it reaches Stripe, databases,
-                Slack, or internal APIs. Enforce policy, pause risky calls for
-                approval, and keep production keys out of agent code.
-              </p>
-              <div className="mx-auto mt-8 flex w-full max-w-sm flex-col items-stretch justify-center gap-3 sm:max-w-none sm:flex-row sm:items-center lg:mt-9">
-                <a
-                  href="#beta"
-                  className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#1f6f5b] px-6 py-3 text-center text-sm font-semibold text-white shadow-sm shadow-[#1f6f5b]/20 transition hover:bg-[#185846] focus:outline-none focus:ring-4 focus:ring-[#cfe5dd] sm:w-auto"
-                >
-                  Join the Beta
-                </a>
-                <a
-                  href="#problem"
-                  className="inline-flex min-h-12 w-full items-center justify-center rounded-full border border-[#d8d2c7] bg-white/80 px-6 py-3 text-center text-sm font-semibold text-[#34383a] shadow-sm transition hover:border-[#1f6f5b] hover:text-[#1f6f5b] focus:outline-none focus:ring-4 focus:ring-[#cfe5dd] sm:w-auto"
-                >
-                  See how it protects production
-                </a>
+            Join the Beta
+          </a>
+          <a
+            href="#problem"
+            className="inline-flex w-max items-center justify-center rounded-full border border-[#cfcabb] bg-white px-6 py-3 text-base font-semibold text-[#11140f] transition hover:border-[#11140f]"
+          >
+            See how it protects production
+          </a>
+        </div>
+
+        <div className="mt-8 flex flex-wrap justify-center gap-2 text-sm font-medium text-[#565b50]">
+          {heroBenefits.map((item) => (
+            <span
+              key={item}
+              className="rounded-full border border-[#d9d6c8] bg-white px-3 py-1.5"
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+
+        <div className="mt-14 w-full max-w-4xl rounded-lg border border-[#d8d4c5] bg-white p-4 text-left shadow-[0_24px_80px_rgba(17,20,15,0.10)] sm:p-6">
+          <div className="rounded-lg border border-[#e7e3d5] bg-[#fbfaf6] p-5">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#e2dece] pb-4">
+              <div>
+                <p className="text-sm font-semibold text-[#345436]">
+                  MCP tool call review
+                </p>
+                <h2 className="mt-1 text-2xl font-semibold">
+                  High-risk action paused
+                </h2>
               </div>
-              <div className="mt-8 flex flex-wrap justify-center gap-2 text-sm font-medium text-[#555b5f]">
-                {[
-                  "Deterministic policies",
-                  "Human approvals",
-                  "Vaulted credentials",
-                  "Audit trails",
-                ].map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full border border-[#e1dbd0] bg-white/70 px-3 py-1.5 shadow-sm"
-                  >
-                    {item}
-                  </span>
-                ))}
+              <span className="rounded-full bg-[#e7efe3] px-3 py-1 text-sm font-semibold text-[#345436]">
+                Needs approval
+              </span>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="rounded-lg border border-[#e4dfd0] bg-white p-4">
+                <p className="text-sm font-semibold text-[#345436]">Request</p>
+                <p className="mt-2 text-sm leading-6 text-[#565b50]">
+                  Agent requests a Stripe refund for $10,000
+                </p>
+              </div>
+              <div className="rounded-lg border border-[#e4dfd0] bg-white p-4">
+                <p className="text-sm font-semibold text-[#345436]">Policy</p>
+                <p className="mt-2 text-sm leading-6 text-[#565b50]">
+                  Rule: pause refunds over $100 for human approval
+                </p>
+              </div>
+              <div className="rounded-lg border border-[#e4dfd0] bg-white p-4">
+                <p className="text-sm font-semibold text-[#345436]">Routing</p>
+                <p className="mt-2 text-sm leading-6 text-[#565b50]">
+                  Routed to approval through Slack
+                </p>
               </div>
             </div>
 
-            <div className="mx-auto w-full max-w-4xl">
-              <div className="rounded-[2rem] border border-[#ded8cc] bg-white/85 p-3 shadow-[0_24px_80px_rgba(31,46,39,0.14)] backdrop-blur sm:p-4">
-                <div className="rounded-[1.5rem] bg-[#fbfaf7] p-5 sm:p-6 lg:p-7">
-                  <div className="flex flex-col items-center justify-between gap-3 text-center sm:flex-row sm:text-left">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#1f6f5b]">
-                        MCP tool call review
-                      </p>
-                      <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[#151617]">
-                        High-risk action paused
-                      </h2>
-                    </div>
-                    <span className="rounded-full bg-[#fff0d5] px-3 py-1 text-xs font-semibold text-[#9a5a10]">
-                      Needs approval
-                    </span>
-                  </div>
-
-                  <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-[#e7e1d6] bg-white p-4 shadow-sm">
-                    <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
-                      <span className="grid size-10 place-items-center rounded-full bg-[#edf8f4] text-lg">
-                        ↳
-                      </span>
-                      <div>
-                        <p className="font-semibold text-[#151617]">
-                          Agent requests a Stripe refund for $10,000
-                        </p>
-                        <p className="mt-1 text-sm text-[#6a7073]">
-                          Rule: pause refunds over $100 for human approval
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mx-auto mt-4 grid max-w-2xl gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl border border-[#e7e1d6] bg-white p-4">
-                      <p className="text-sm font-semibold text-[#34383a]">
-                        Validated automatically
-                      </p>
-                      <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#1f6f5b]">
-                        &lt;10ms
-                      </p>
-                      <p className="mt-1 text-xs leading-5 text-[#6a7073]">
-                        Target latency overhead per tool call.
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-[#e7e1d6] bg-white p-4">
-                      <p className="text-sm font-semibold text-[#34383a]">
-                        Routed to approval
-                      </p>
-                      <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#c06b28]">
-                        Slack
-                      </p>
-                      <p className="mt-1 text-xs leading-5 text-[#6a7073]">
-                        Interactive approve or deny workflow.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mx-auto mt-5 flex max-w-2xl flex-col items-center gap-3 rounded-2xl bg-[#173f35] p-4 text-center text-white sm:flex-row sm:justify-between sm:text-left">
-                    <p className="text-sm leading-6 text-[#dcefe5]">
-                      Socket held. Audit event logged. Real API key stays
-                      vaulted.
-                    </p>
-                    <button
-                      type="button"
-                      className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#173f35]"
-                    >
-                      Review
-                    </button>
-                  </div>
-                </div>
-              </div>
+            <div className="mt-5 rounded-lg bg-[#11140f] p-5 text-white">
+              <p className="text-sm font-medium text-[#dfe7d9]">
+                Validated automatically
+              </p>
+              <p className="mt-2 text-3xl font-semibold">&lt;10ms</p>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-[#e8eee3]">
+                Socket held. Audit event logged. Real API key stays vaulted.
+              </p>
             </div>
           </div>
         </div>
@@ -195,104 +174,59 @@ export default function Home() {
 
       <section
         id="problem"
-        className="relative overflow-hidden border-b border-[#e7e1d6] bg-[#f8f7f3] px-4 py-16 sm:px-8 sm:py-24 lg:px-10"
+        className="border-y border-[#e3dfd0] bg-white py-20"
       >
-        <div className="relative mx-auto max-w-6xl text-center">
-          <p className="inline-flex rounded-full border border-[#d8d2c7] bg-white/75 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#1f6f5b] shadow-sm">
-            Do you relate?
-          </p>
-          <h2 className="mx-auto mt-5 max-w-3xl text-[2.4rem] font-semibold leading-[1.03] tracking-[-0.045em] text-[#111314] sm:text-5xl">
-            We love AI agents. But we are terrified to give them production
-            keys.
-          </h2>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-[#555b5f] sm:text-lg sm:leading-8">
-            Does your current agent workflow look like this?
-          </p>
-
-          <div className="mx-auto mt-10 grid max-w-5xl gap-4 text-left md:grid-cols-2">
+        <div className="mx-auto flex max-w-6xl flex-col items-center px-6 text-center lg:px-8">
+          <SectionIntro
+            eyebrow="Do you relate?"
+            title="We love AI agents. But we are terrified to give them production keys."
+            description="Does your current agent workflow look like this?"
+          />
+          <div className="mt-10 grid w-full gap-6 md:grid-cols-2">
             {anxieties.map((item) => (
-              <article
+              <ProblemCard
                 key={item.title}
-                className="group rounded-[1.75rem] border border-[#e1dbd0] bg-white/80 p-3 shadow-[0_16px_50px_rgba(31,46,39,0.07)] backdrop-blur transition hover:-translate-y-1 hover:shadow-[0_22px_70px_rgba(31,46,39,0.11)]"
-              >
-                <div className="h-full rounded-[1.35rem] bg-[#fbfaf7] p-5 sm:p-6">
-                  <div className="flex gap-4">
-                    <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#fff0d5] text-sm font-semibold text-[#9a5a10] shadow-sm">
-                      !
-                    </span>
-                    <div>
-                      <h3 className="text-lg font-semibold tracking-[-0.02em] text-[#151617] sm:text-xl">
-                        {item.title}
-                      </h3>
-                      <p className="mt-3 text-sm leading-6 text-[#555b5f] sm:text-base sm:leading-7">
-                        {item.body}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </article>
+                title={item.title}
+                body={item.body}
+              />
             ))}
           </div>
         </div>
       </section>
 
-      <section className="relative overflow-hidden border-b border-[#e7e1d6] bg-[#fbfaf7] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
-        <div className="relative mx-auto max-w-6xl text-center">
-          <p className="inline-flex rounded-full border border-[#d8d2c7] bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#1f6f5b] shadow-sm">
-            The infrastructure answer
-          </p>
-          <h2 className="mx-auto mt-5 max-w-3xl text-[2.4rem] font-semibold leading-[1.03] tracking-[-0.045em] text-[#111314] sm:text-5xl">
-            Managent firewalls the AI&apos;s hands, not its brain.
-          </h2>
-          <p className="mx-auto mt-5 max-w-3xl text-base leading-7 text-[#555b5f] sm:text-lg sm:leading-8">
-            Stop trying to bury production policy inside natural language. Put
-            every tool call through a gateway that can inspect parameters,
-            freeze risky streams, and inject secrets without exposing them to
-            agent code.
-          </p>
-
-          <div className="mx-auto mt-10 rounded-[2rem] border border-[#ded8cc] bg-white/80 p-3 text-left shadow-[0_24px_80px_rgba(31,46,39,0.10)] backdrop-blur sm:p-4">
-            <div className="grid gap-3 rounded-[1.5rem] bg-[#fbfaf7] p-3 sm:p-4 lg:grid-cols-3">
-              {controls.map((item) => (
-                <article
-                  key={item.label}
-                  className="rounded-[1.35rem] border border-[#e7e1d6] bg-white p-5 shadow-sm sm:p-6"
-                >
-                  <h3 className="text-lg font-semibold tracking-[-0.02em] text-[#151617] sm:text-xl">
-                    {item.label}
-                  </h3>
-                  <code className="mt-4 block w-fit max-w-full break-all rounded-full border border-[#d7ece4] bg-[#edf8f4] px-3 py-2 font-mono text-[11px] font-semibold text-[#174c3f] sm:text-xs">
-                    {item.command}
-                  </code>
-                  <p className="mt-4 leading-7 text-[#555b5f]">{item.body}</p>
-                </article>
-              ))}
-            </div>
-          </div>
+      <section
+        id="solution"
+        className="mx-auto flex max-w-6xl flex-col items-center px-6 py-20 text-center lg:px-8"
+      >
+        <SectionIntro
+          eyebrow="The infrastructure answer"
+          title="Managent firewalls the AI's hands, not its brain."
+          description="Stop trying to bury production policy inside natural language. Put every tool call through a gateway that can inspect parameters, freeze risky streams, and inject secrets without exposing them to agent code."
+        />
+        <div className="mt-10 grid w-full gap-5 lg:grid-cols-3">
+          {controls.map((item) => (
+            <ControlCard
+              key={item.label}
+              title={item.label}
+              command={item.command}
+              body={item.body}
+            />
+          ))}
         </div>
       </section>
 
-      <section
-        id="beta"
-        className="relative overflow-hidden bg-[#fffdf7] px-4 py-16 sm:px-8 sm:py-24 lg:px-10"
-      >
-        <div className="relative mx-auto max-w-8xl text-center">
-          <p className="inline-flex rounded-full border border-[#d8d2c7] bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#1f6f5b] shadow-sm">
-            Help us prioritize the roadmap
-          </p>
-          <h2 className="mx-auto mt-5 max-w-3xl text-[2.4rem] font-semibold leading-[1.03] tracking-[-0.045em] text-[#111314] sm:text-5xl">
-            Tell us what is blocking your production agent rollout.
-          </h2>
-          <p className="mx-auto mt-5 max-w-3xl text-base leading-7 text-[#555b5f] sm:text-lg sm:leading-8">
-            We are measuring the exact failure mode: prompt-only permissions,
-            hallucinated tool execution, runaway loops, exposed credentials, and
-            security review dead ends.
-          </p>
+      <section id="beta" className="border-t border-[#e3dfd0] bg-white py-20">
+        <div className="mx-auto flex max-w-4xl flex-col items-center px-6 text-center lg:px-8">
+          <SectionIntro
+            eyebrow="Help us prioritize the roadmap"
+            title="Tell us what is blocking your production agent rollout."
+            description="We are measuring the exact failure mode: prompt-only permissions, hallucinated tool execution, runaway loops, exposed credentials, and security review dead ends."
+          />
 
-          <form className="mx-auto mt-10 max-w-2xl rounded-[2rem] border border-[#ded8cc] bg-white/85 p-3 text-left shadow-[0_24px_80px_rgba(31,46,39,0.12)] backdrop-blur sm:p-4">
-            <div className="grid gap-5 rounded-[1.5rem] bg-[#fbfaf7] p-5 sm:p-7">
+          <form className="mt-10 w-full max-w-2xl rounded-lg border border-[#d8d4c5] bg-white p-6 text-left shadow-[0_18px_60px_rgba(17,20,15,0.06)] sm:p-8">
+            <div className="grid gap-5">
               <label className="grid gap-2">
-                <span className="text-sm font-semibold leading-5 text-[#34383a]">
+                <span className="text-sm font-semibold leading-5 text-[#11140f]">
                   Work email
                 </span>
                 <input
@@ -300,19 +234,19 @@ export default function Home() {
                   name="email"
                   required
                   placeholder="you@company.com"
-                  className="min-h-12 w-full rounded-2xl border border-[#d8d2c7] bg-white px-4 text-base outline-none transition focus:border-[#1f6f5b] focus:ring-4 focus:ring-[#cfe5dd]"
+                  className="min-h-12 w-full rounded-lg border border-[#d8d4c5] bg-[#fbfaf6] px-4 text-base outline-none transition focus:border-[#345436] focus:ring-4 focus:ring-[#e7efe3]"
                 />
               </label>
 
               <label className="grid gap-2">
-                <span className="text-sm font-semibold leading-5 text-[#34383a]">
+                <span className="text-sm font-semibold leading-5 text-[#11140f]">
                   Which AI framework are you currently building with?
                 </span>
                 <select
                   name="framework"
                   defaultValue=""
                   required
-                  className="min-h-12 w-full rounded-2xl border border-[#d8d2c7] bg-white px-4 text-base outline-none transition focus:border-[#1f6f5b] focus:ring-4 focus:ring-[#cfe5dd]"
+                  className="min-h-12 w-full rounded-lg border border-[#d8d4c5] bg-[#fbfaf6] px-4 text-base outline-none transition focus:border-[#345436] focus:ring-4 focus:ring-[#e7efe3]"
                 >
                   <option value="" disabled>
                     Select a framework
@@ -326,20 +260,20 @@ export default function Home() {
               </label>
 
               <fieldset className="grid gap-3">
-                <legend className="text-sm font-semibold leading-5 text-[#34383a]">
+                <legend className="text-sm font-semibold leading-5 text-[#11140f]">
                   What is your biggest blocker to putting agents in production?
                 </legend>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {blockers.map((blocker) => (
                     <label
                       key={blocker}
-                      className="flex min-h-12 items-center gap-3 rounded-2xl border border-[#d8d2c7] bg-white px-4 py-3 text-sm font-medium leading-5 text-[#34383a] shadow-sm transition hover:border-[#1f6f5b]/60"
+                      className="flex min-h-12 items-center gap-3 rounded-lg border border-[#d8d4c5] bg-[#fbfaf6] px-4 py-3 text-sm font-medium leading-5 text-[#565b50] transition hover:border-[#11140f]"
                     >
                       <input
                         type="checkbox"
                         name="blocker"
                         value={blocker}
-                        className="size-4 shrink-0 accent-[#1f6f5b]"
+                        className="size-4 shrink-0 accent-[#345436]"
                       />
                       <span>{blocker}</span>
                     </label>
@@ -349,7 +283,7 @@ export default function Home() {
 
               <button
                 type="submit"
-                className="min-h-12 w-full rounded-full bg-[#1f6f5b] px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-[#1f6f5b]/20 transition hover:bg-[#185846] focus:outline-none focus:ring-4 focus:ring-[#cfe5dd]"
+                className="min-h-12 w-full rounded-full bg-[#11140f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2d3329] focus:outline-none focus:ring-4 focus:ring-[#d8d4c5]"
               >
                 Join the Beta
               </button>
@@ -358,5 +292,56 @@ export default function Home() {
         </div>
       </section>
     </main>
+  );
+}
+
+function SectionIntro({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="mx-auto max-w-3xl text-center">
+      <p className="text-sm font-semibold uppercase text-[#345436]">
+        {eyebrow}
+      </p>
+      <h2 className="mt-4 text-4xl font-semibold leading-tight text-[#11140f]">
+        {title}
+      </h2>
+      <p className="mt-4 text-lg leading-8 text-[#565b50]">{description}</p>
+    </div>
+  );
+}
+
+function ProblemCard({ title, body }: { title: string; body: string }) {
+  return (
+    <article className="rounded-lg border border-[#e4dfd0] bg-[#fbfaf6] p-6 text-center">
+      <h3 className="text-xl font-semibold">{title}</h3>
+      <p className="mt-4 leading-7 text-[#565b50]">{body}</p>
+    </article>
+  );
+}
+
+function ControlCard({
+  title,
+  command,
+  body,
+}: {
+  title: string;
+  command: string;
+  body: string;
+}) {
+  return (
+    <article className="rounded-lg border border-[#d8d4c5] bg-white p-6 text-center shadow-[0_18px_60px_rgba(17,20,15,0.06)]">
+      <code className="mx-auto block w-fit max-w-full break-all rounded-lg border border-[#d8d4c5] bg-[#11140f] px-3 py-2 font-mono text-xs font-semibold text-[#dfe7d9]">
+        {command}
+      </code>
+      <h3 className="mt-5 text-2xl font-semibold leading-tight">{title}</h3>
+      <p className="mt-4 leading-7 text-[#565b50]">{body}</p>
+    </article>
   );
 }
