@@ -62,7 +62,13 @@ export default function Home() {
         >
           Managent
         </a>*/}
-        <Image src="/logo.png" alt="Managent logo" width={100} height={100} className=""/>
+        <Image
+          src="/logo.png"
+          alt="Managent logo"
+          width={100}
+          height={100}
+          style={{ height: "auto" }}
+        />
         <nav className="hidden items-center justify-center gap-8 text-sm font-medium text-[#565b50] md:flex">
           <a className="transition hover:text-[#11140f]" href="#problem">
             Problem
