@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 const anxieties = [
   {
     title: "The Prompt Lie",
@@ -53,13 +55,14 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#f8f7f2] text-[#11140f]">
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between gap-5 px-6 py-6 text-center lg:px-8">
-        <a
+        {/*<a
           href="#top"
           className="text-xl font-semibold"
           aria-label="Managent home"
         >
           Managent
-        </a>
+        </a>*/}
+        <Image src="/logo.png" alt="Managent logo" width={100} height={100} className=""/>
         <nav className="hidden items-center justify-center gap-8 text-sm font-medium text-[#565b50] md:flex">
           <a className="transition hover:text-[#11140f]" href="#problem">
             Problem
