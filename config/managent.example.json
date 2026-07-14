@@ -1,0 +1,65 @@
+{
+  "gateway": {
+    "host": "127.0.0.1",
+    "port": 8080,
+    "endpoint": "/mcp"
+  },
+  "log": {
+    "level": "debug",
+    "format": "text"
+  },
+  "database": {
+    "url": "postgres://postgres:postgres@127.0.0.1:5432/managent?sslmode=disable",
+    "schema_path": "database/schema.sql",
+    "workspace_name": "Default Workspace",
+    "auto_migrate": true,
+    "seed_from_config": true
+  },
+  "admin": {
+    "token": "managent-admin-demo"
+  },
+  "security": {
+    "connector_secret_key": "0123456789abcdef0123456789abcdef"
+  },
+  "auth": {
+    "api_keys": [
+      {
+        "id": "seed-dev-key",
+        "workspace_id": "1",
+        "key": "mng_live_demo"
+      }
+    ]
+  },
+  "connectors": [
+    {
+      "id": "hello",
+      "name": "hello",
+      "namespace": "hello",
+      "transport": "stdio",
+      "command": "go",
+      "args": ["run", "./cmd/hello-mcp"],
+      "enabled": true
+    }
+  ],
+  "policies": [
+    {
+      "name": "block-credential-check-blocked-message",
+      "tool": "hello.check_injected_credential",
+      "action": "deny",
+      "conditions": {
+        "message": {
+          "eq": "blocked"
+        }
+      }
+    }
+  ],
+  "credential_injection": [
+    {
+      "name": "inject-demo-token",
+      "tool_pattern": "hello.check_injected_credential",
+      "arguments": {
+        "api_token": "sk_demo_secret_123456"
+      }
+    }
+  ]
+}
