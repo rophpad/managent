@@ -7,12 +7,18 @@ import (
 )
 
 type Record struct {
-	Timestamp   time.Time      `json:"timestamp"`
-	WorkspaceID string         `json:"workspace_id,omitempty"`
-	Tool        string         `json:"tool"`
-	Request     map[string]any `json:"request,omitempty"`
-	Response    map[string]any `json:"response,omitempty"`
-	Decision    string         `json:"decision"`
+	Timestamp      time.Time      `json:"timestamp"`
+	WorkspaceID    string         `json:"workspace_id,omitempty"`
+	AgentID        string         `json:"agent_id,omitempty"`
+	ToolID         string         `json:"tool_id,omitempty"`
+	Tool           string         `json:"tool"`
+	Action         string         `json:"action,omitempty"`
+	PayloadSummary map[string]any `json:"payload_summary,omitempty"`
+	Request        map[string]any `json:"request,omitempty"`
+	Response       map[string]any `json:"response,omitempty"`
+	Decision       string         `json:"decision"`
+	DecidedBy      string         `json:"decided_by,omitempty"`
+	LatencyMS      int64          `json:"latency_ms,omitempty"`
 }
 
 type Writer interface {

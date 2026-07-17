@@ -1,69 +1,192 @@
-Product Requirement Document (PRD)
-Project Name: Managent (MVP)
-Document Version: 1.0
+Product Overview and Functional Spec
+Project Name: Managent
+Document Version: Current Implementation
 
-Author: Startup Founder
+1. Product Summary
 
-Target Release Date: Q3 2026
+Managent is an MCP gateway and control plane for teams running AI agents against real tools.
 
-Product Epigram: The Network Firewall and Control Plane for the Autonomous Workforce.
+It gives agents one northbound MCP endpoint, fans out to downstream MCP servers and adapters, and enforces runtime controls before a tool call is allowed to execute.
 
-1. Executive Summary & Product Vision
-Managent is an open-source and cloud-hosted Model Context Protocol (MCP) Tool Gateway. It serves as a secure reverse proxy and firewall sitting between autonomous AI frameworks (e.g., CrewAI, LangChain, Cursor) and internal or third-party enterprise tools (e.g., Stripe, HubSpot, SQL databases).
+Today the product is usable as a self-hosted control plane with:
 
-Instead of relying on unstable, probabilistic text prompts to secure agent behaviors (e.g., telling an LLM "never refund more than $100"), Managent enforces deterministic, byte-level security at the network layer, parsing and validating JSON-RPC tool payloads before they execute.
+- MCP tool federation
+- agent-scoped bearer keys
+- MCP registry and marketplace install flow
+- ordered policy enforcement
+- approval-required execution path
+- encrypted mcp secret storage
+- audit logging
+- dashboard login/signup and session-based access
 
-2. Target Audience & User Personas
-Persona A: The AI Application Engineer. Builds autonomous agents using Python/TypeScript frameworks. Frustrated by writing complex logic to manage environment credentials, limit checking, and custom tool validation blocks.
+2. Current User Workflows
 
-Persona B: The Engineering Team Lead / CTO. Wants to leverage the efficiency of autonomous agent fleets across their company but is completely blocked by security anxieties regarding data leaks, api rate-limiting, and runaway token billing loop costs.
+### Workflow A: Bring an agent online
 
-3. Core MVP Feature Requirements
-Module 1: Ingress Layer & Protocol Handling (Northbound)
-Requirement 1.1 — Remote MCP Protocol Compliance: The gateway backend must ingest incoming connections over HTTP with Server-Sent Events (SSE) transport layer, adhering strictly to the official open-source Model Context Protocol specifications.
+1. Sign up or log in to the dashboard.
+2. Create an agent.
+3. Issue that agent a bearer key.
+4. Configure the external agent or MCP client to call Managent's `/mcp` endpoint with that bearer key.
 
-Requirement 1.2 — Unified Tool Multiplexing (Federation): When an agent sends a tools/list request, Managent must fetch tool definitions from all registered target systems, aggregate them into a clean, namespace-protected directory, and serve a single unified tool schema file back to the agent application.
+### Workflow B: Install an MCP
 
-Module 2: The Firewall & Policy Core (Validation Engine)
-Requirement 2.1 — Structural Parameter Validation: The proxy engine must decode incoming tools/call JSON-RPC bodies and run explicit type and value checks on arguments within microseconds.
+1. Open the MCPs page.
+2. Choose a marketplace entry or add a custom MCP manually.
+3. Attach the MCP to an existing agent.
+4. Test the connection.
+5. Save it and let the gateway synchronize its tools.
 
-Requirement 2.2 — Rule Execution Manifests: The core firewall must support conditional routing logic stored inside a fast, in-memory data store (Redis).
+### Workflow C: Control access with policy
 
-Example Condition: if tool == "stripe__issue_refund" AND arguments.amount > 100.00 -> REJECT/PAUSE.
+1. Open the Policies page.
+2. Select an MCP.
+3. Select one of that MCP's tools.
+4. Create an ordered rule with:
+   - effect: `allow`, `deny`, or `require_approval`
+   - optional field/operator/value condition
+   - optional rate limit
+   - optional approval channel override
 
-Module 3: Human-in-the-Loop (HITL) Stream Controller
-Requirement 3.1 — Stateful Socket Holding: When a high-impact rule condition is met, the proxy must physically hold the HTTP long-poll request open without timing out, creating a "frozen network execution state."
+### Workflow D: Review activity
 
-Requirement 3.2 — Asynchronous Interactive Webhooks: The proxy must instantly dispatch an interactive layout payload block to a configured corporate Slack channel displaying [Approve] and [Deny] buttons.
+1. Open Logs.
+2. Filter by search text, decision, or agent.
+3. Export the current slice as CSV if needed.
 
-Requirement 3.3 — Stream Resumption: * If a human clicks Approve, the proxy unfreezes the socket pipeline and passes the payload downstream.
+3. Functional Modules
 
-If a human clicks Deny, the proxy terminates the request and falsifies a structured JSON-RPC error response block back to the agent application.
+## Module 1: Northbound MCP Gateway
 
-Module 4: Security & Credential Isolation
-Requirement 4.1 — Virtual Token Swapping: The client application must only hold a short-lived bearer token issued by Managent (mng_live_xyz).
+Current implementation:
 
-Requirement 4.2 — Server-Side Header Injection: Real enterprise production API keys must live completely encrypted within a secure server environment vault. Managent will strip the proxy token and stitch the real key into the HTTP headers only at the split second the validated request passes onto the live internet toward the target API endpoint.
+- HTTP MCP endpoint at `/mcp`
+- SSE-compatible endpoint at `/mcp/sse`
+- bearer-token auth for MCP clients
+- unified `tools/list` from all connected downstream MCPs
+- namespaced tool calls routed back to the correct downstream system
 
-Module 5: Observability & Admin UI
-Requirement 5.1 — High-Throughput Activity Ledger: Every tool attempt, parameter block, timestamp, and rule evaluation must log instantly to an immutable audit ledger database (e.g., ClickHouse).
+Current constraint:
 
-Requirement 5.2 — Single Pane Management Interface: A web dashboard providing a clean workspace to manage registered tool connections, toggle security policies, and review running agent audit histories.
+- protocol coverage is practical but not marketed as exhaustive conformance hardening
 
-4. Non-Functional & Technical Specifications
-Language & Stack: High-performance, low-overhead compiled language (Go or Rust) for the core gateway routing engine to minimize latency overhead to sub-5 milliseconds.
+## Module 2: Downstream MCP and Adapter Layer
 
-State Management & Caching: Redis for active session context mapping and ultra-fast policy rule lookups.
+Current implementation:
 
-Protocol standard: Strict adherence to JSON-RPC 2.0 specifications wrapped in the Model Context Protocol framework schema.
+- downstream transports: `stdio`, `http`, `sse`
+- REST adapter mode for non-MCP HTTP targets
+- persistent MCP records stored in Postgres
+- marketplace catalog for prefilled installs
+- tool snapshots persisted and reloaded
 
-Deployment: Containerized via Docker / Kubernetes to allow enterprise clients the choice to deploy as a managed cloud option or self-hosted on-premise infrastructure behind their private networks.
+Current constraint:
 
-5. Success Metrics & Validation Strategy
-To validate Product-Market Fit with your early landing page users, the MVP metrics will focus on:
+- the Docker gateway image does not bundle third-party stdio MCP binaries
 
-Proxy Latency Overhead: Total execution delay added by Managent processing the rule logic must remain under 10ms per tool call request.
+## Module 3: Policy and Approval Control
 
-Jailbreak Resilience: 100% block success rate on invalid parameter inputs, completely ignoring any linguistic manipulation attempts happening inside unproxied LLM frameworks.
+Current implementation:
 
-The User Activation Metric: A beta tester registering at least 2 distinct tools (e.g., Database + Slack) and executing over 100 successful proxied tool calls within their first week of integration.
+- ordered policy rules
+- subject targeting by agent or tag
+- tool pattern matching
+- action matching
+- simple condition matching by field/operator/value
+- rate-limit syntax such as `10/m`
+- `allow`, `deny`, and `require_approval`
+- pending approval persistence
+- webhook-based approval resolution with signature verification
+
+Current constraint:
+
+- there is no dedicated pending-approvals dashboard view yet
+- runtime state is not Redis-backed
+
+## Module 4: Authentication and Identity
+
+Current implementation:
+
+- agent bearer keys for MCP traffic
+- dashboard signup/login with user sessions
+- optional admin bearer token for control-plane API access
+- control-plane routes accept either the admin token or a logged-in session
+
+Current constraint:
+
+- client-facing gateway credentials are still long-lived bearer keys rather than short-lived proxy tokens
+
+## Module 5: Secret Handling
+
+Current implementation:
+
+- encrypted storage for mcp secrets when a mcp secret key is configured
+- secret env/header fields for mcp configuration
+- request-time credential injection middleware
+
+Current constraint:
+
+- the system does not yet model the full short-lived token swap design from the original aspirational PRD
+
+## Module 6: Observability and Admin UX
+
+Current implementation:
+
+- audit logs stored in Postgres
+- overview dashboard
+- agent management
+- MCP registry and marketplace page
+- policy creation and test mode
+- approval integration settings
+- audit log filtering and CSV export
+
+Current constraint:
+
+- audit storage is operational OLTP storage, not a dedicated analytical event store
+
+4. Supported Deployment Model
+
+The product currently supports self-hosted container deployment with Docker Compose.
+
+The recommended first-time setup is:
+
+1. Copy `.env.example` to `.env`
+2. Set `MANAGENT_MCP_SECRET_KEY`
+3. Run `docker compose up -d --build`
+4. Open the dashboard on port `3000`
+5. Use login/signup to access the control plane
+
+5. External Integrations in the Current Build
+
+Marketplace entries currently include:
+
+- GitHub MCP
+- Linear
+- Stripe
+
+Approval integration records currently support:
+
+- Slack
+- Discord
+
+These are implemented as control-plane records plus signed webhook callbacks. The dashboard does not yet provide a full approval queue.
+
+6. Known Product Boundaries
+
+The current product intentionally stops short of a few ambitions that earlier docs implied:
+
+- no Redis-backed runtime state
+- no ClickHouse audit backend
+- no short-lived proxy-token issuance system
+- no bundled third-party stdio binaries in the Docker gateway image
+- no dashboard approval inbox/resolution surface
+
+7. Success Criteria for the Current Product
+
+The current implementation is successful when a team can:
+
+1. deploy the stack with Docker
+2. create an agent and issue a key
+3. install or add an MCP
+4. see tools federated through `/mcp`
+5. apply an allow/deny/approval policy to those tools
+6. review resulting audit activity in the dashboard

@@ -1,7 +1,7 @@
 {
   "gateway": {
     "host": "127.0.0.1",
-    "port": 8080,
+    "port": 8081,
     "endpoint": "/mcp"
   },
   "log": {
@@ -9,7 +9,7 @@
     "format": "text"
   },
   "database": {
-    "url": "postgres://postgres:postgres@127.0.0.1:5432/managent?sslmode=disable",
+    "url": "postgresql://neondb_owner:npg_AlLnCWK5rjI2@ep-late-firefly-atuf5bzi-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
     "schema_path": "database/schema.sql",
     "workspace_name": "Default Workspace",
     "auto_migrate": true,
@@ -19,7 +19,7 @@
     "token": "managent-admin-demo"
   },
   "security": {
-    "connector_secret_key": "0123456789abcdef0123456789abcdef"
+    "mcp_secret_key": "0123456789abcdef0123456789abcdef"
   },
   "auth": {
     "api_keys": [
@@ -30,7 +30,7 @@
       }
     ]
   },
-  "connectors": [
+  "mcps": [
     {
       "id": "hello",
       "name": "hello",

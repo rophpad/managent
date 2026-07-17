@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sync"
+	"strings"
 	"time"
 
 	"github.com/rophpad/managent/internal/middleware"
-	"github.com/rophpad/managent/internal/mcp/protocol"
 )
 
 type Status string
@@ -16,135 +15,165 @@ type Status string
 const (
 	StatusPending  Status = "pending"
 	StatusApproved Status = "approved"
-	StatusRejected Status = "rejected"
+	StatusDenied   Status = "denied"
 )
 
-// PendingRequest holds an execution that is waiting for human approval.
+type Requirement struct {
+	RuleID          string
+	RuleName        string
+	Reason          string
+	ChannelOverride string
+}
+
 type PendingRequest struct {
-	ID          string
-	WorkspaceID string
-	Tool        string
-	Arguments   map[string]any
-	Status      Status
-	CreatedAt   time.Time
-	resolvedAt  time.Time
-	ch          chan Status
+	ID             string
+	WorkspaceID    string
+	AgentID        string
+	AgentName      string
+	ToolID         string
+	Tool           string
+	Action         string
+	PayloadSummary map[string]any
+	RuleID         string
+	RuleName       string
+	Channel        string
+	Status         Status
+	RequestedAt    time.Time
+	DecidedBy      string
+	DecisionReason string
+	Provider       string
+	MessageID      string
+	DecidedAt      *time.Time
 }
 
-// Store holds pending approval requests in memory (Redis-backed in later phases).
-type Store struct {
-	mu       sync.RWMutex
-	requests map[string]*PendingRequest
+type Resolution struct {
+	Status     Status
+	DecidedBy  string
+	Reason     string
+	MessageID  string
+	Provider   string
+	OccurredAt time.Time
 }
 
-func NewStore() *Store {
-	return &Store{requests: make(map[string]*PendingRequest)}
+type Store interface {
+	Create(ctx context.Context, pending PendingRequest) (PendingRequest, error)
+	Wait(ctx context.Context, id string) (Resolution, error)
+	Resolve(ctx context.Context, id string, resolution Resolution) (PendingRequest, bool, error)
 }
 
-func (s *Store) Create(workspaceID, tool string, args map[string]any) *PendingRequest {
-	id := fmt.Sprintf("apr_%d", time.Now().UnixNano())
-	req := &PendingRequest{
-		ID:          id,
-		WorkspaceID: workspaceID,
-		Tool:        tool,
-		Arguments:   args,
-		Status:      StatusPending,
-		CreatedAt:   time.Now(),
-		ch:          make(chan Status, 1),
-	}
-	s.mu.Lock()
-	s.requests[id] = req
-	s.mu.Unlock()
-	return req
+type Notifier interface {
+	Notify(ctx context.Context, pending PendingRequest) (PendingRequest, error)
+	Update(ctx context.Context, pending PendingRequest, resolution Resolution) error
 }
 
-func (s *Store) Resolve(id string, status Status) error {
-	s.mu.Lock()
-	req, ok := s.requests[id]
-	if !ok {
-		s.mu.Unlock()
-		return fmt.Errorf("approval request %q not found", id)
-	}
-	req.Status = status
-	req.resolvedAt = time.Now()
-	s.mu.Unlock()
-	req.ch <- status
-	return nil
-}
-
-func (s *Store) List(workspaceID string) []*PendingRequest {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	var out []*PendingRequest
-	for _, r := range s.requests {
-		if r.WorkspaceID == workspaceID && r.Status == StatusPending {
-			out = append(out, r)
-		}
-	}
-	return out
-}
-
-// Middleware pauses execution until a human approves or rejects the request.
 type Middleware struct {
-	store   *Store
-	timeout time.Duration
-	logger  *slog.Logger
+	store    Store
+	notifier Notifier
+	timeout  time.Duration
+	logger   *slog.Logger
 }
 
-func NewMiddleware(store *Store, timeout time.Duration, logger *slog.Logger) *Middleware {
+func NewMiddleware(store Store, notifier Notifier, timeout time.Duration, logger *slog.Logger) *Middleware {
 	if timeout == 0 {
 		timeout = 15 * time.Minute
 	}
-	return &Middleware{store: store, timeout: timeout, logger: logger}
+	return &Middleware{store: store, notifier: notifier, timeout: timeout, logger: logger}
 }
 
-// NeedsApproval is set on the context by the policy middleware to signal this call requires approval.
 type approvalKey struct{}
 
-func WithApprovalRequired(ctx context.Context) context.Context {
-	return context.WithValue(ctx, approvalKey{}, true)
+func WithApprovalRequired(ctx context.Context, requirement Requirement) context.Context {
+	return context.WithValue(ctx, approvalKey{}, requirement)
 }
 
-func ApprovalRequired(ctx context.Context) bool {
-	v, _ := ctx.Value(approvalKey{}).(bool)
-	return v
+func ApprovalRequired(ctx context.Context) (Requirement, bool) {
+	requirement, ok := ctx.Value(approvalKey{}).(Requirement)
+	return requirement, ok
 }
 
 func (m *Middleware) Handle(ctx context.Context, req middleware.Request, next middleware.Handler) middleware.Response {
-	if !ApprovalRequired(ctx) {
+	requirement, ok := ApprovalRequired(ctx)
+	if !ok {
 		return next(ctx, req)
 	}
 
-	pending := m.store.Create(req.WorkspaceID, req.Tool, req.Arguments)
-	m.logger.Info("approval required — execution paused",
-		"approval_id", pending.ID,
-		"tool", req.Tool,
-		"workspace", req.WorkspaceID,
-	)
-
-	timer := time.NewTimer(m.timeout)
-	defer timer.Stop()
-
-	select {
-	case <-ctx.Done():
-		return middleware.Response{Error: fmt.Errorf("request cancelled while awaiting approval")}
-	case <-timer.C:
-		return middleware.Response{Error: fmt.Errorf("approval timed out for %s (id: %s)", req.Tool, pending.ID)}
-	case status := <-pending.ch:
-		if status != StatusApproved {
-			return middleware.Response{Error: fmt.Errorf("execution rejected for %s (id: %s)", req.Tool, pending.ID)}
-		}
-		m.logger.Info("approval granted", "approval_id", pending.ID, "tool", req.Tool)
-
-		// Attach approved result — re-run the downstream handler
-		result := next(ctx, req)
-		if result.Error != nil {
-			// Wrap with approved content marker for audit
-			result.Result = &protocol.ToolCallResult{
-				Content: []protocol.ContentItem{{Type: "text", Text: fmt.Sprintf("approved execution failed: %s", result.Error)}},
-				IsError: true,
-			}
-		}
-		return result
+	pending, err := m.store.Create(ctx, PendingRequest{
+		WorkspaceID:    req.WorkspaceID,
+		AgentID:        req.AgentID,
+		AgentName:      req.AgentName,
+		ToolID:         req.ToolID,
+		Tool:           req.Tool,
+		Action:         req.Action,
+		PayloadSummary: redactPayload(req.Arguments),
+		RuleID:         requirement.RuleID,
+		RuleName:       requirement.RuleName,
+		Channel:        requirement.ChannelOverride,
+		Status:         StatusPending,
+	})
+	if err != nil {
+		return middleware.Response{Error: fmt.Errorf("create approval: %w", err), Decision: "denied", DecisionReason: "approval create failed"}
 	}
+
+	if m.notifier != nil {
+		pending, err = m.notifier.Notify(ctx, pending)
+		if err != nil {
+			return middleware.Response{Error: fmt.Errorf("send approval request: %w", err), Decision: "denied", DecisionReason: "approval dispatch failed"}
+		}
+	}
+
+	waitCtx, cancel := context.WithTimeout(ctx, m.timeout)
+	defer cancel()
+
+	resolution, err := m.store.Wait(waitCtx, pending.ID)
+	if err != nil {
+		if waitCtx.Err() == context.DeadlineExceeded {
+			resolution = Resolution{
+				Status:     StatusDenied,
+				DecidedBy:  "timeout",
+				Reason:     "timed out",
+				OccurredAt: time.Now().UTC(),
+				MessageID:  pending.MessageID,
+				Provider:   pending.Provider,
+			}
+			if _, _, resolveErr := m.store.Resolve(context.Background(), pending.ID, resolution); resolveErr != nil {
+				m.logger.Warn("failed to auto-deny timed out approval", "approval_id", pending.ID, "error", resolveErr)
+			}
+			if m.notifier != nil {
+				_ = m.notifier.Update(context.Background(), pending, resolution)
+			}
+			return middleware.Response{Error: fmt.Errorf("approval timed out"), Decision: "denied", DecisionReason: "timed out"}
+		}
+		return middleware.Response{Error: fmt.Errorf("approval wait failed: %w", err), Decision: "denied", DecisionReason: "approval wait failed"}
+	}
+
+	if m.notifier != nil {
+		_ = m.notifier.Update(ctx, pending, resolution)
+	}
+	if resolution.Status != StatusApproved {
+		return middleware.Response{Error: fmt.Errorf("request denied by %s", resolution.DecidedBy), Decision: "denied", DecisionReason: resolution.Reason, DecidedBy: resolution.DecidedBy}
+	}
+
+	resp := next(ctx, req)
+	resp.Decision = "approved"
+	resp.DecidedBy = resolution.DecidedBy
+	if resolution.Reason != "" && resp.DecisionReason == "" {
+		resp.DecisionReason = resolution.Reason
+	}
+	return resp
+}
+
+func redactPayload(arguments map[string]any) map[string]any {
+	if len(arguments) == 0 {
+		return map[string]any{}
+	}
+	out := make(map[string]any, len(arguments))
+	for key, value := range arguments {
+		lower := strings.ToLower(key)
+		if strings.Contains(lower, "token") || strings.Contains(lower, "secret") || strings.Contains(lower, "password") {
+			out[key] = "[redacted]"
+			continue
+		}
+		out[key] = value
+	}
+	return out
 }

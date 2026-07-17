@@ -15,7 +15,7 @@ type Config struct {
 	Admin               AdminConfig            `json:"admin"`
 	Security            SecurityConfig         `json:"security"`
 	Auth                AuthConfig             `json:"auth"`
-	Connectors          []ConnectorConfig      `json:"connectors"`
+	MCPs                []MCPConfig            `json:"mcps"`
 	Policies            []PolicyConfig         `json:"policies"`
 	CredentialInjection []CredentialRuleConfig `json:"credential_injection"`
 }
@@ -44,7 +44,7 @@ type AdminConfig struct {
 }
 
 type SecurityConfig struct {
-	ConnectorSecretKey string `json:"connector_secret_key"`
+	MCPSecretKey string `json:"mcp_secret_key"`
 }
 
 type AuthConfig struct {
@@ -57,7 +57,7 @@ type APIKeyConfig struct {
 	Key         string `json:"key"`
 }
 
-type ConnectorConfig struct {
+type MCPConfig struct {
 	ID            string            `json:"id"`
 	Name          string            `json:"name"`
 	Namespace     string            `json:"namespace"`
@@ -142,8 +142,8 @@ func Load() (*Config, error) {
 	if v := os.Getenv("MANAGENT_ADMIN_TOKEN"); v != "" {
 		cfg.Admin.Token = v
 	}
-	if v := os.Getenv("MANAGENT_CONNECTOR_SECRET_KEY"); v != "" {
-		cfg.Security.ConnectorSecretKey = v
+	if v := os.Getenv("MANAGENT_MCP_SECRET_KEY"); v != "" {
+		cfg.Security.MCPSecretKey = v
 	}
 	if cfg.Gateway.Endpoint == "" {
 		cfg.Gateway.Endpoint = "/mcp"

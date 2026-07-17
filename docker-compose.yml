@@ -25,9 +25,11 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      MANAGENT_CONFIG: /app/config/managent.docker.json
-      MANAGENT_DATABASE_URL: postgres://postgres:postgres@postgres:5432/managent?sslmode=disable
-      MANAGENT_PORT: "8080"
+      MANAGENT_CONFIG: ${MANAGENT_CONFIG:-/app/config/managent.docker.json}
+      MANAGENT_DATABASE_URL: ${MANAGENT_DATABASE_URL:-postgres://postgres:postgres@postgres:5432/managent?sslmode=disable}
+      MANAGENT_PORT: ${MANAGENT_PORT:-8080}
+      MANAGENT_ADMIN_TOKEN: ${MANAGENT_ADMIN_TOKEN:-}
+      MANAGENT_MCP_SECRET_KEY: ${MANAGENT_MCP_SECRET_KEY:-}
     ports:
       - "8081:8080"
 
@@ -40,8 +42,8 @@ services:
       gateway:
         condition: service_started
     environment:
-      MANAGENT_API_BASE_URL: http://gateway:8080
-      MANAGENT_ADMIN_TOKEN: managent-admin-demo
+      MANAGENT_API_BASE_URL: http://gateway:8081
+      MANAGENT_ADMIN_TOKEN: ${MANAGENT_ADMIN_TOKEN:-}
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
     ports:

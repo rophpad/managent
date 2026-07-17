@@ -1,7 +1,7 @@
 import type { MarketplaceListing, Overview } from "@/components/dashboard/types";
+import { cookies } from "next/headers";
+import { fetchFromApi, getApiUnavailableMessage } from "../server-api";
 
-const API_BASE_URL =
-  process.env.MANAGENT_API_BASE_URL || "http://127.0.0.1:8080";
 const ADMIN_TOKEN = process.env.MANAGENT_ADMIN_TOKEN || "";
 const OVERVIEW_TIMEOUT_MS = 1500;
 const FALLBACK_MARKETPLACE: MarketplaceListing[] = [
@@ -11,7 +11,7 @@ const FALLBACK_MARKETPLACE: MarketplaceListing[] = [
     provider: "Official GitHub MCP Server",
     description:
       "Choose between GitHub's recommended remote server and the official local stdio server.",
-    defaultConnectorName: "github",
+    defaultMCPName: "github",
     defaultNamespace: "github",
     transportOptions: [
       {
@@ -64,7 +64,7 @@ const FALLBACK_MARKETPLACE: MarketplaceListing[] = [
     name: "Linear",
     provider: "Official Linear MCP Server",
     description: "Linear's official server is a remote MCP endpoint over Streamable HTTP.",
-    defaultConnectorName: "linear",
+    defaultMCPName: "linear",
     defaultNamespace: "linear",
     transportOptions: [
       {
@@ -95,7 +95,7 @@ const FALLBACK_MARKETPLACE: MarketplaceListing[] = [
     provider: "Official Stripe MCP Server",
     description:
       "Stripe's official MCP server is a remote endpoint. OAuth is preferred, and bearer-token auth is also documented for agent software.",
-    defaultConnectorName: "stripe",
+    defaultMCPName: "stripe",
     defaultNamespace: "stripe",
     transportOptions: [
       {
@@ -128,10 +128,11 @@ const FALLBACK_MARKETPLACE: MarketplaceListing[] = [
 function createEmptyOverview(): Overview {
   return {
     workspace: { id: 0, name: "Default Workspace" },
-    apiKeys: [],
-    connectors: [],
+    agents: [],
+    mcps: [],
     policies: [],
     auditLogs: [],
+    approvalIntegrations: [],
   };
 }
 
@@ -141,13 +142,29 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (ADMIN_TOKEN) {
     headers.set("Authorization", `Bearer ${ADMIN_TOKEN}`);
+  } else {
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get("managent_session")?.value;
+    if (sessionToken) {
+      headers.set("Authorization", `Bearer ${sessionToken}`);
+    }
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers,
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetchFromApi(path, {
+      ...init,
+      headers,
+    });
+  } catch (error) {
+    const requestError = new Error(getApiUnavailableMessage()) as Error & {
+      cause?: unknown;
+      path?: string;
+    };
+    requestError.cause = error;
+    requestError.path = path;
+    throw requestError;
+  }
 
   if (!response.ok) {
     const payload = await response.text();
@@ -171,10 +188,11 @@ export async function getOverview(): Promise<Overview> {
 
     return {
       workspace: overview.workspace || { id: 0, name: "Default Workspace" },
-      apiKeys: overview.apiKeys || [],
-      connectors: overview.connectors || [],
+      agents: overview.agents || [],
+      mcps: overview.mcps || [],
       policies: overview.policies || [],
       auditLogs: overview.auditLogs || [],
+      approvalIntegrations: overview.approvalIntegrations || [],
     };
   } catch (error) {
     console.error("Failed to load dashboard overview.", error);
@@ -189,12 +207,12 @@ export function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-export function getConnectorHealth(connectors: Overview["connectors"]) {
-  const connected = connectors.filter(
-    (connector) => connector.status === "connected",
+export function getMCPHealth(mcps: Overview["mcps"]) {
+  const connected = mcps.filter(
+    (mcp) => mcp.status === "connected",
   ).length;
 
-  return `${connected}/${connectors.length || 0} connected`;
+  return `${connected}/${mcps.length || 0} connected`;
 }
 
 export function getLatestAudit(overview: Overview) {
@@ -203,7 +221,8 @@ export function getLatestAudit(overview: Overview) {
 
 export function getDashboardStats(overview: Overview) {
   return {
-    connectors: overview.connectors.length,
+    agents: overview.agents.length,
+    mcps: overview.mcps.length,
     policies: overview.policies.length,
     auditLogs: overview.auditLogs.length,
   };
@@ -212,8 +231,9 @@ export function getDashboardStats(overview: Overview) {
 export function getSettingsSummary(overview: Overview) {
   return {
     workspaceId: overview.workspace.id,
-    keyCount: overview.apiKeys.length,
-    connectorCount: overview.connectors.length,
+    agentCount: overview.agents.length,
+    mcpCount: overview.mcps.length,
+    approvalIntegrationCount: overview.approvalIntegrations.length,
   };
 }
 

@@ -60,5 +60,9 @@ func (m *Middleware) Handle(ctx context.Context, req middleware.Request, next mi
 	ctx = WithAPIKey(ctx, key)
 	req.WorkspaceID = key.WorkspaceID
 	req.APIKeyID = key.ID
+	req.AgentID = key.AgentID
+	req.AgentName = key.AgentName
+	req.AgentTags = append([]string{}, key.AgentTags...)
+	req.Action = "call"
 	return next(ctx, req)
 }

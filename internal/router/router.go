@@ -5,19 +5,19 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/rophpad/managent/internal/connector"
+	"github.com/rophpad/managent/internal/mcp"
 	"github.com/rophpad/managent/internal/mcp/protocol"
 	"github.com/rophpad/managent/internal/registry"
 )
 
 type Router struct {
 	registry *registry.Registry
-	connMgr  *connector.Manager
+	mcpMgr   *mcp.Manager
 	logger   *slog.Logger
 }
 
-func New(reg *registry.Registry, connMgr *connector.Manager, logger *slog.Logger) *Router {
-	return &Router{registry: reg, connMgr: connMgr, logger: logger}
+func New(reg *registry.Registry, mcpMgr *mcp.Manager, logger *slog.Logger) *Router {
+	return &Router{registry: reg, mcpMgr: mcpMgr, logger: logger}
 }
 
 func (r *Router) ListTools(_ context.Context) ([]protocol.Tool, error) {
@@ -30,7 +30,7 @@ func (r *Router) CallTool(ctx context.Context, params protocol.ToolCallParams) (
 		return nil, fmt.Errorf("unknown tool: %s", params.Name)
 	}
 
-	if entry.ConnectorID == "" {
+	if entry.MCPID == "" {
 		handler, err := r.registry.BuiltinHandlerFor(params.Name)
 		if err != nil {
 			return nil, err
@@ -38,11 +38,11 @@ func (r *Router) CallTool(ctx context.Context, params protocol.ToolCallParams) (
 		return handler(ctx, params.Arguments)
 	}
 
-	connector, ok := r.connMgr.Get(entry.ConnectorID)
+	mcp, ok := r.mcpMgr.Get(entry.MCPID)
 	if !ok {
-		return nil, fmt.Errorf("connector %q not found for tool %s", entry.ConnectorID, params.Name)
+		return nil, fmt.Errorf("mcp %q not found for tool %s", entry.MCPID, params.Name)
 	}
 
-	r.logger.Info("routing tool call", "tool", params.Name, "connector", connector.Name(), "upstream_tool", entry.UpstreamName)
-	return connector.CallTool(ctx, protocol.ToolCallParams{Name: entry.UpstreamName, Arguments: params.Arguments})
+	r.logger.Info("routing tool call", "tool", params.Name, "mcp", mcp.Name(), "upstream_tool", entry.UpstreamName)
+	return mcp.CallTool(ctx, protocol.ToolCallParams{Name: entry.UpstreamName, Arguments: params.Arguments})
 }

@@ -1,6 +1,6 @@
 import { PoliciesSection } from "@/components/dashboard/policies-section";
 
-import { createPolicy } from "../actions";
+import { createPolicy, reorderPolicies } from "../actions";
 import { getOverview } from "../lib";
 
 export default async function DashboardPoliciesPage() {
@@ -9,8 +9,10 @@ export default async function DashboardPoliciesPage() {
   return (
     <PoliciesSection
       policies={overview.policies}
-      connectors={overview.connectors}
+      agents={overview.agents}
+      mcps={overview.mcps}
       createPolicy={createPolicy}
+      reorderPolicies={reorderPolicies}
     />
   );
 }

@@ -40,16 +40,16 @@ func parseKey(raw string) ([]byte, error) {
 	}
 	if decoded, err := base64.StdEncoding.DecodeString(raw); err == nil {
 		if len(decoded) != 32 {
-			return nil, fmt.Errorf("connector secret key must decode to 32 bytes")
+			return nil, fmt.Errorf("mcp secret key must decode to 32 bytes")
 		}
 		return decoded, nil
 	}
-	return nil, fmt.Errorf("connector secret key must be 32 raw bytes or base64 for 32 bytes")
+	return nil, fmt.Errorf("mcp secret key must be 32 raw bytes or base64 for 32 bytes")
 }
 
 func (c *Cipher) EncryptString(value string) (string, error) {
 	if c == nil {
-		return "", fmt.Errorf("connector secret key is not configured")
+		return "", fmt.Errorf("mcp secret key is not configured")
 	}
 	nonce := make([]byte, c.aead.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
@@ -62,7 +62,7 @@ func (c *Cipher) EncryptString(value string) (string, error) {
 
 func (c *Cipher) DecryptString(value string) (string, error) {
 	if c == nil {
-		return "", fmt.Errorf("connector secret key is not configured")
+		return "", fmt.Errorf("mcp secret key is not configured")
 	}
 	payload, err := base64.StdEncoding.DecodeString(value)
 	if err != nil {

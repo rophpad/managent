@@ -36,7 +36,7 @@ func NewSSE(endpoint string, headers map[string]string, logger *slog.Logger) *HT
 
 func (c *HTTPClient) Initialize(ctx context.Context) error {
 	if strings.TrimSpace(c.endpoint) == "" {
-		return fmt.Errorf("connector endpoint is required")
+		return fmt.Errorf("mcp endpoint is required")
 	}
 	if c.mode == "sse" {
 		postURL, err := c.discoverEndpoint(ctx)

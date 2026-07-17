@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -15,7 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rophpad/managent/internal/authz"
 	"github.com/rophpad/managent/internal/config"
-	"github.com/rophpad/managent/internal/connector"
+	"github.com/rophpad/managent/internal/mcp"
 	"github.com/rophpad/managent/internal/mcp/protocol"
 	policyengine "github.com/rophpad/managent/internal/policy"
 	"github.com/rophpad/managent/internal/secrets"
@@ -47,17 +48,52 @@ type APIKeyCreateResult struct {
 	RawToken string       `json:"rawToken"`
 }
 
-type ConnectorRecord struct {
+type AgentRecord struct {
+	ID          string     `json:"id"`
+	WorkspaceID string     `json:"workspaceId"`
+	Name        string     `json:"name"`
+	Owner       string     `json:"owner"`
+	Tags        []string   `json:"tags"`
+	Status      string     `json:"status"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	LastSeenAt  *time.Time `json:"lastSeenAt,omitempty"`
+}
+
+type AgentKeyRecord struct {
+	ID        string     `json:"id"`
+	AgentID   string     `json:"agentId"`
+	Last4     string     `json:"last4"`
+	Status    string     `json:"status"`
+	CreatedAt time.Time  `json:"createdAt"`
+	RevokedAt *time.Time `json:"revokedAt,omitempty"`
+}
+
+type AgentCreateResult struct {
+	Agent    AgentRecord    `json:"agent"`
+	Key      AgentKeyRecord `json:"key"`
+	RawToken string         `json:"rawToken"`
+}
+
+type MCPRecord struct {
 	ID               string            `json:"id"`
 	WorkspaceID      string            `json:"workspaceId"`
+	AgentID          string            `json:"agentId,omitempty"`
 	Name             string            `json:"name"`
 	Namespace        string            `json:"namespace"`
 	Transport        string            `json:"transport"`
+	Endpoint         string            `json:"endpoint,omitempty"`
+	CredentialRef    string            `json:"credentialRef,omitempty"`
 	Command          string            `json:"command,omitempty"`
 	Args             []string          `json:"args,omitempty"`
 	URL              string            `json:"url,omitempty"`
 	Headers          map[string]string `json:"headers,omitempty"`
 	Env              map[string]string `json:"env,omitempty"`
+	Method           string            `json:"method,omitempty"`
+	URLTemplate      string            `json:"urlTemplate,omitempty"`
+	CredentialTarget string            `json:"credentialTarget,omitempty"`
+	CredentialName   string            `json:"credentialName,omitempty"`
+	InputSchema      map[string]any    `json:"inputSchema,omitempty"`
+	OutputSchema     map[string]any    `json:"outputSchema,omitempty"`
 	SecretEnvKeys    []string          `json:"secretEnvKeys,omitempty"`
 	SecretHeaderKeys []string          `json:"secretHeaderKeys,omitempty"`
 	Enabled          bool              `json:"enabled"`
@@ -75,23 +111,67 @@ type ToolRecord struct {
 }
 
 type PolicyRecord struct {
-	ID          string                            `json:"id"`
-	WorkspaceID string                            `json:"workspaceId"`
-	Name        string                            `json:"name"`
-	Tool        string                            `json:"tool"`
-	Action      string                            `json:"action"`
-	Conditions  map[string]config.ConditionConfig `json:"conditions,omitempty"`
-	CreatedAt   time.Time                         `json:"createdAt"`
+	ID              string                 `json:"id"`
+	WorkspaceID     string                 `json:"workspaceId"`
+	Name            string                 `json:"name"`
+	SubjectType     string                 `json:"subjectType"`
+	SubjectValue    string                 `json:"subjectValue"`
+	Tool            string                 `json:"tool"`
+	ActionName      string                 `json:"actionName"`
+	Effect          string                 `json:"effect"`
+	Condition       policyengine.Condition `json:"condition"`
+	RateLimit       string                 `json:"rateLimit,omitempty"`
+	ChannelOverride string                 `json:"channelOverride,omitempty"`
+	Precedence      int                    `json:"precedence"`
+	CreatedAt       time.Time              `json:"createdAt"`
 }
 
 type AuditLogRecord struct {
-	ID          string         `json:"id"`
-	WorkspaceID string         `json:"workspaceId"`
-	Tool        string         `json:"tool"`
-	Request     map[string]any `json:"request"`
-	Response    map[string]any `json:"response,omitempty"`
-	Decision    string         `json:"decision"`
-	CreatedAt   time.Time      `json:"createdAt"`
+	ID             string         `json:"id"`
+	WorkspaceID    string         `json:"workspaceId"`
+	AgentID        string         `json:"agentId,omitempty"`
+	ToolID         string         `json:"toolId,omitempty"`
+	Tool           string         `json:"tool"`
+	Action         string         `json:"action,omitempty"`
+	PayloadSummary map[string]any `json:"payloadSummary,omitempty"`
+	Request        map[string]any `json:"request"`
+	Response       map[string]any `json:"response,omitempty"`
+	Decision       string         `json:"decision"`
+	DecidedBy      string         `json:"decidedBy,omitempty"`
+	LatencyMS      int64          `json:"latencyMs,omitempty"`
+	CreatedAt      time.Time      `json:"createdAt"`
+}
+
+type ApprovalIntegrationRecord struct {
+	ID             string         `json:"id"`
+	WorkspaceID    string         `json:"workspaceId"`
+	Provider       string         `json:"provider"`
+	Status         string         `json:"status"`
+	DefaultChannel string         `json:"defaultChannel,omitempty"`
+	CredentialRef  string         `json:"credentialRef,omitempty"`
+	Config         map[string]any `json:"config,omitempty"`
+	CreatedAt      time.Time      `json:"createdAt"`
+	UpdatedAt      time.Time      `json:"updatedAt"`
+}
+
+type PendingApprovalRecord struct {
+	ID             string         `json:"id"`
+	WorkspaceID    string         `json:"workspaceId"`
+	AgentID        string         `json:"agentId"`
+	ToolID         string         `json:"toolId"`
+	ToolName       string         `json:"toolName"`
+	Action         string         `json:"action"`
+	PayloadSummary map[string]any `json:"payloadSummary"`
+	PolicyID       string         `json:"policyId,omitempty"`
+	PolicyName     string         `json:"policyName,omitempty"`
+	Channel        string         `json:"channel,omitempty"`
+	Provider       string         `json:"provider,omitempty"`
+	Status         string         `json:"status"`
+	DecidedBy      string         `json:"decidedBy,omitempty"`
+	DecisionReason string         `json:"decisionReason,omitempty"`
+	MessageID      string         `json:"messageId,omitempty"`
+	RequestedAt    time.Time      `json:"requestedAt"`
+	DecidedAt      *time.Time     `json:"decidedAt,omitempty"`
 }
 
 func Open(ctx context.Context, cfg config.DatabaseConfig, cipher *secrets.Cipher) (*Store, error) {
@@ -134,31 +214,47 @@ func (s *Store) EnsureWorkspace(ctx context.Context, name string) (Workspace, er
 }
 
 func (s *Store) SeedFromConfig(ctx context.Context, workspace Workspace, cfg *config.Config) error {
-	if err := s.seedAPIKeys(ctx, workspace, cfg.Auth.APIKeys); err != nil {
+	if err := s.seedAgents(ctx, workspace, cfg.Auth.APIKeys); err != nil {
 		return err
 	}
 	if err := s.seedPolicies(ctx, workspace, cfg.Policies); err != nil {
 		return err
 	}
-	if err := s.seedConnectors(ctx, workspace, cfg.Connectors); err != nil {
+	if err := s.seedMCPs(ctx, workspace, cfg.MCPs); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *Store) seedAPIKeys(ctx context.Context, workspace Workspace, keys []config.APIKeyConfig) error {
+func (s *Store) seedAgents(ctx context.Context, workspace Workspace, keys []config.APIKeyConfig) error {
 	var count int
-	if err := s.pool.QueryRow(ctx, `select count(*) from api_keys where workspace_id = $1`, workspace.ID).Scan(&count); err != nil {
+	if err := s.pool.QueryRow(ctx, `select count(*) from agents where workspace_id = $1`, workspace.ID).Scan(&count); err != nil {
 		return err
 	}
-	if count > 0 {
+	if count > 0 || len(keys) == 0 {
 		return nil
+	}
+	var agentID int64
+	if err := s.pool.QueryRow(ctx, `
+		insert into agents (workspace_id, name, owner, tags, status)
+		values ($1, $2, $3, '["seeded"]'::jsonb, 'active')
+		returning id
+	`, workspace.ID, "Seeded agent", "config").Scan(&agentID); err != nil {
+		return err
 	}
 	for _, key := range keys {
 		if strings.TrimSpace(key.Key) == "" {
 			continue
 		}
-		if _, err := s.pool.Exec(ctx, `insert into api_keys (workspace_id, hash) values ($1, $2)`, workspace.ID, authz.HashKey(key.Key)); err != nil {
+		last4 := key.Key
+		if len(last4) > 4 {
+			last4 = last4[len(last4)-4:]
+		}
+		if _, err := s.pool.Exec(ctx, `
+			insert into agent_keys (agent_id, hash, last4, status)
+			values ($1, $2, $3, 'active')
+			on conflict (hash) do nothing
+		`, agentID, authz.HashKey(key.Key), last4); err != nil {
 			return err
 		}
 	}
@@ -173,45 +269,85 @@ func (s *Store) seedPolicies(ctx context.Context, workspace Workspace, rules []c
 	if count > 0 {
 		return nil
 	}
-	for _, rule := range rules {
-		ruleJSON, err := json.Marshal(map[string]any{"name": rule.Name, "tool": rule.Tool, "conditions": rule.Conditions})
+	for index, rule := range rules {
+		condition := policyengine.Condition{}
+		for field, cfg := range rule.Conditions {
+			condition.Field = field
+			switch {
+			case cfg.GT != nil:
+				condition.Operator = "gt"
+				condition.Value = *cfg.GT
+			case cfg.GTE != nil:
+				condition.Operator = "gte"
+				condition.Value = *cfg.GTE
+			case cfg.LT != nil:
+				condition.Operator = "lt"
+				condition.Value = *cfg.LT
+			case cfg.LTE != nil:
+				condition.Operator = "lte"
+				condition.Value = *cfg.LTE
+			case cfg.EQ != nil:
+				condition.Operator = "eq"
+				condition.Value = cfg.EQ
+			}
+			break
+		}
+		ruleJSON, err := json.Marshal(map[string]any{"name": rule.Name, "tool": rule.Tool})
 		if err != nil {
 			return err
 		}
-		if _, err := s.pool.Exec(ctx, `insert into policies (workspace_id, rule, action) values ($1, $2, $3)`, workspace.ID, ruleJSON, rule.Action); err != nil {
+		conditionJSON, err := json.Marshal(condition)
+		if err != nil {
+			return err
+		}
+		if _, err := s.pool.Exec(ctx, `
+			insert into policies (
+				workspace_id, rule, action, name, subject_type, subject_value, action_name, effect, condition, precedence
+			) values ($1, $2, $3, $4, 'tag', '*', 'call', $3, $5, $6)
+		`, workspace.ID, ruleJSON, rule.Action, rule.Name, conditionJSON, index+1); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *Store) seedConnectors(ctx context.Context, workspace Workspace, connectors []config.ConnectorConfig) error {
+func (s *Store) seedMCPs(ctx context.Context, workspace Workspace, mcps []config.MCPConfig) error {
 	var count int
-	if err := s.pool.QueryRow(ctx, `select count(*) from connectors where workspace_id = $1`, workspace.ID).Scan(&count); err != nil {
+	if err := s.pool.QueryRow(ctx, `select count(*) from mcps where workspace_id = $1`, workspace.ID).Scan(&count); err != nil {
 		return err
 	}
 	if count > 0 {
 		return nil
 	}
-	for _, cfgConnector := range connectors {
+	for _, cfgMCP := range mcps {
 		cfgJSON, err := json.Marshal(map[string]any{
-			"id":        cfgConnector.ID,
-			"namespace": cfgConnector.Namespace,
-			"command":   cfgConnector.Command,
-			"args":      cfgConnector.Args,
-			"url":       cfgConnector.URL,
-			"headers":   cfgConnector.Headers,
-			"env":       cfgConnector.Env,
-			"enabled":   connectorEnabled(cfgConnector.Enabled),
+			"id":               cfgMCP.ID,
+			"namespace":        cfgMCP.Namespace,
+			"command":          cfgMCP.Command,
+			"args":             cfgMCP.Args,
+			"url":              cfgMCP.URL,
+			"headers":          cfgMCP.Headers,
+			"env":              cfgMCP.Env,
+			"enabled":          mcpEnabled(cfgMCP.Enabled),
+			"method":           "POST",
+			"urlTemplate":      cfgMCP.URL,
+			"credentialTarget": "header",
+			"credentialName":   "Authorization",
+			"inputSchema":      map[string]any{"type": "object", "properties": map[string]any{}},
+			"outputSchema":     map[string]any{"type": "object"},
 		})
 		if err != nil {
 			return err
 		}
-		var connectorID int64
-		if err := s.pool.QueryRow(ctx, `insert into connectors (workspace_id, name, transport, configuration, status) values ($1, $2, $3, $4, $5) returning id`, workspace.ID, cfgConnector.Name, cfgConnector.Transport, cfgJSON, "disconnected").Scan(&connectorID); err != nil {
+		var mcpID int64
+		endpoint := cfgMCP.Command
+		if cfgMCP.URL != "" {
+			endpoint = cfgMCP.URL
+		}
+		if err := s.pool.QueryRow(ctx, `insert into mcps (workspace_id, name, transport, endpoint, configuration, status) values ($1, $2, $3, $4, $5, $6) returning id`, workspace.ID, cfgMCP.Name, cfgMCP.Transport, endpoint, cfgJSON, "disconnected").Scan(&mcpID); err != nil {
 			return err
 		}
-		if err := s.replaceConnectorSecrets(ctx, connectorID, cfgConnector.SecretEnv, cfgConnector.SecretHeaders); err != nil {
+		if err := s.replaceMCPSecrets(ctx, mcpID, cfgMCP.SecretEnv, cfgMCP.SecretHeaders); err != nil {
 			return err
 		}
 	}
@@ -219,17 +355,53 @@ func (s *Store) seedConnectors(ctx context.Context, workspace Workspace, connect
 }
 
 func (s *Store) ValidateAPIKey(ctx context.Context, rawKey string) (authz.APIKey, bool, error) {
-	row := s.pool.QueryRow(ctx, `select id, workspace_id, hash from api_keys where hash = $1`, authz.HashKey(rawKey))
-	var id int64
-	var workspaceID int64
-	var hash string
-	if err := row.Scan(&id, &workspaceID, &hash); err != nil {
+	row := s.pool.QueryRow(ctx, `
+		select
+			ak.id,
+			a.workspace_id,
+			a.id,
+			a.name,
+			a.status,
+			a.tags,
+			ak.hash
+		from agent_keys ak
+		join agents a on a.id = ak.agent_id
+		where ak.hash = $1 and ak.status = 'active'
+	`, authz.HashKey(rawKey))
+	var (
+		id          int64
+		workspaceID int64
+		agentID     int64
+		agentName   string
+		agentStatus string
+		tagsRaw     []byte
+		hash        string
+	)
+	if err := row.Scan(&id, &workspaceID, &agentID, &agentName, &agentStatus, &tagsRaw, &hash); err != nil {
 		if err == pgx.ErrNoRows {
 			return authz.APIKey{}, false, nil
 		}
 		return authz.APIKey{}, false, err
 	}
-	return authz.APIKey{ID: strconv.FormatInt(id, 10), WorkspaceID: strconv.FormatInt(workspaceID, 10), HashedKey: hash}, true, nil
+	if agentStatus != "active" {
+		return authz.APIKey{}, false, nil
+	}
+	var tags []string
+	if len(tagsRaw) > 0 {
+		if err := json.Unmarshal(tagsRaw, &tags); err != nil {
+			return authz.APIKey{}, false, err
+		}
+	}
+	_, _ = s.pool.Exec(ctx, `update agents set last_seen_at = now() where id = $1`, agentID)
+	return authz.APIKey{
+		ID:          strconv.FormatInt(id, 10),
+		WorkspaceID: strconv.FormatInt(workspaceID, 10),
+		AgentID:     strconv.FormatInt(agentID, 10),
+		AgentName:   agentName,
+		AgentStatus: agentStatus,
+		AgentTags:   tags,
+		HashedKey:   hash,
+	}, true, nil
 }
 
 func (s *Store) ListAPIKeys(ctx context.Context, workspaceID int64) ([]APIKeyRecord, error) {
@@ -260,70 +432,76 @@ func (s *Store) CreateAPIKey(ctx context.Context, workspaceID int64, rawToken st
 	return APIKeyRecord{ID: strconv.FormatInt(id, 10), WorkspaceID: strconv.FormatInt(workspaceID, 10), CreatedAt: createdAt}, nil
 }
 
-func (s *Store) ListConnectorConfigs(ctx context.Context, workspaceID int64) ([]connector.Config, error) {
-	rows, err := s.pool.Query(ctx, `select id, name, transport, configuration from connectors where workspace_id = $1 order by created_at asc`, workspaceID)
+func (s *Store) ListMCPConfigs(ctx context.Context, workspaceID int64) ([]mcp.Config, error) {
+	rows, err := s.pool.Query(ctx, `select id, coalesce(agent_id::text, ''), name, transport, coalesce(endpoint, ''), coalesce(credential_ref, ''), configuration from mcps where workspace_id = $1 order by created_at asc`, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []connector.Config
+	var out []mcp.Config
 	for rows.Next() {
 		var id int64
-		var name, transport string
+		var agentID, name, transport, endpoint, credentialRef string
 		var raw []byte
-		if err := rows.Scan(&id, &name, &transport, &raw); err != nil {
+		if err := rows.Scan(&id, &agentID, &name, &transport, &endpoint, &credentialRef, &raw); err != nil {
 			return nil, err
 		}
 		var cfg struct {
-			ID        string            `json:"id"`
-			Namespace string            `json:"namespace"`
-			Command   string            `json:"command"`
-			Args      []string          `json:"args"`
-			URL       string            `json:"url"`
-			Headers   map[string]string `json:"headers"`
-			Env       map[string]string `json:"env"`
-			Enabled   bool              `json:"enabled"`
+			ID               string            `json:"id"`
+			Namespace        string            `json:"namespace"`
+			Command          string            `json:"command"`
+			Args             []string          `json:"args"`
+			URL              string            `json:"url"`
+			Headers          map[string]string `json:"headers"`
+			Env              map[string]string `json:"env"`
+			Enabled          bool              `json:"enabled"`
+			Method           string            `json:"method"`
+			URLTemplate      string            `json:"urlTemplate"`
+			CredentialTarget string            `json:"credentialTarget"`
+			CredentialName   string            `json:"credentialName"`
+			InputSchema      map[string]any    `json:"inputSchema"`
+			OutputSchema     map[string]any    `json:"outputSchema"`
 		}
 		if len(raw) > 0 {
 			if err := json.Unmarshal(raw, &cfg); err != nil {
 				return nil, err
 			}
 		}
-		secretEnv, secretHeaders, err := s.listConnectorSecrets(ctx, id)
+		secretEnv, secretHeaders, err := s.listMCPSecrets(ctx, id)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, connector.Config{ID: strconv.FormatInt(id, 10), Name: name, Namespace: cfg.Namespace, Transport: connector.Transport(transport), Command: cfg.Command, Args: cfg.Args, URL: cfg.URL, Headers: cfg.Headers, Env: cfg.Env, SecretEnv: secretEnv, SecretHeaders: secretHeaders, Enabled: cfg.Enabled})
+		out = append(out, mcp.Config{ID: strconv.FormatInt(id, 10), AgentID: agentID, Name: name, Namespace: cfg.Namespace, Transport: mcp.Transport(transport), Endpoint: endpoint, CredentialRef: credentialRef, Command: cfg.Command, Args: cfg.Args, URL: cfg.URL, Headers: cfg.Headers, Env: cfg.Env, Method: cfg.Method, URLTemplate: cfg.URLTemplate, CredentialTarget: cfg.CredentialTarget, CredentialName: cfg.CredentialName, InputSchema: cfg.InputSchema, OutputSchema: cfg.OutputSchema, SecretEnv: secretEnv, SecretHeaders: secretHeaders, Enabled: cfg.Enabled})
 	}
 	return out, rows.Err()
 }
 
-func (s *Store) ListConnectors(ctx context.Context, workspaceID int64) ([]ConnectorRecord, error) {
-	rows, err := s.pool.Query(ctx, `select id, workspace_id, name, transport, configuration, status, coalesce(last_error, ''), created_at, updated_at from connectors where workspace_id = $1 order by created_at asc`, workspaceID)
+func (s *Store) ListMCPs(ctx context.Context, workspaceID int64) ([]MCPRecord, error) {
+	rows, err := s.pool.Query(ctx, `select id, workspace_id, coalesce(agent_id::text, ''), name, transport, coalesce(endpoint, ''), coalesce(credential_ref, ''), configuration, status, coalesce(last_error, ''), created_at, updated_at from mcps where workspace_id = $1 order by created_at asc`, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []ConnectorRecord
+	var out []MCPRecord
 	for rows.Next() {
 		var id, wsID int64
-		var name, transport, status, lastError string
+		var agentID, name, transport, endpoint, credentialRef, status, lastError string
 		var raw []byte
 		var createdAt, updatedAt time.Time
-		if err := rows.Scan(&id, &wsID, &name, &transport, &raw, &status, &lastError, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&id, &wsID, &agentID, &name, &transport, &endpoint, &credentialRef, &raw, &status, &lastError, &createdAt, &updatedAt); err != nil {
 			return nil, err
 		}
-		record, err := decodeConnectorRecord(id, wsID, name, transport, status, lastError, createdAt, updatedAt, raw)
+		record, err := decodeMCPRecord(id, wsID, agentID, name, transport, endpoint, credentialRef, status, lastError, createdAt, updatedAt, raw)
 		if err != nil {
 			return nil, err
 		}
-		envKeys, headerKeys, err := s.listConnectorSecretKeys(ctx, id)
+		envKeys, headerKeys, err := s.listMCPSecretKeys(ctx, id)
 		if err != nil {
 			return nil, err
 		}
 		record.SecretEnvKeys = envKeys
 		record.SecretHeaderKeys = headerKeys
-		tools, err := s.listToolsByConnector(ctx, id)
+		tools, err := s.listToolsByMCP(ctx, id)
 		if err != nil {
 			return nil, err
 		}
@@ -333,11 +511,11 @@ func (s *Store) ListConnectors(ctx context.Context, workspaceID int64) ([]Connec
 	return out, rows.Err()
 }
 
-func decodeConnectorRecord(id, wsID int64, name, transport, status, lastError string, createdAt, updatedAt time.Time, raw []byte) (ConnectorRecord, error) {
+func decodeMCPRecord(id, wsID int64, agentID, name, transport, endpoint, credentialRef, status, lastError string, createdAt, updatedAt time.Time, raw []byte) (MCPRecord, error) {
 	var configMap map[string]any
 	if len(raw) > 0 {
 		if err := json.Unmarshal(raw, &configMap); err != nil {
-			return ConnectorRecord{}, err
+			return MCPRecord{}, err
 		}
 	}
 	args, _ := toStringSlice(configMap["args"])
@@ -346,98 +524,110 @@ func decodeConnectorRecord(id, wsID int64, name, transport, status, lastError st
 	namespace, _ := configMap["namespace"].(string)
 	command, _ := configMap["command"].(string)
 	url, _ := configMap["url"].(string)
+	method, _ := configMap["method"].(string)
+	urlTemplate, _ := configMap["urlTemplate"].(string)
+	credentialTarget, _ := configMap["credentialTarget"].(string)
+	credentialName, _ := configMap["credentialName"].(string)
+	inputSchema, _ := configMap["inputSchema"].(map[string]any)
+	outputSchema, _ := configMap["outputSchema"].(map[string]any)
 	enabled, _ := configMap["enabled"].(bool)
-	return ConnectorRecord{ID: strconv.FormatInt(id, 10), WorkspaceID: strconv.FormatInt(wsID, 10), Name: name, Namespace: namespace, Transport: transport, Command: command, Args: args, URL: url, Headers: headers, Env: env, Enabled: enabled, Status: status, LastError: lastError, CreatedAt: createdAt, UpdatedAt: updatedAt, RawConfig: configMap}, nil
+	return MCPRecord{ID: strconv.FormatInt(id, 10), WorkspaceID: strconv.FormatInt(wsID, 10), AgentID: agentID, Name: name, Namespace: namespace, Transport: transport, Endpoint: endpoint, CredentialRef: credentialRef, Command: command, Args: args, URL: url, Headers: headers, Env: env, Method: method, URLTemplate: urlTemplate, CredentialTarget: credentialTarget, CredentialName: credentialName, InputSchema: inputSchema, OutputSchema: outputSchema, Enabled: enabled, Status: status, LastError: lastError, CreatedAt: createdAt, UpdatedAt: updatedAt, RawConfig: configMap}, nil
 }
 
-func (s *Store) CreateConnector(ctx context.Context, workspaceID int64, cfg connector.Config) (ConnectorRecord, error) {
-	configJSON, err := json.Marshal(map[string]any{"namespace": cfg.Namespace, "command": cfg.Command, "args": cfg.Args, "url": cfg.URL, "headers": cfg.Headers, "env": cfg.Env, "enabled": cfg.Enabled})
+func (s *Store) CreateMCP(ctx context.Context, workspaceID int64, cfg mcp.Config) (MCPRecord, error) {
+	configJSON, err := json.Marshal(map[string]any{"namespace": cfg.Namespace, "command": cfg.Command, "args": cfg.Args, "url": cfg.URL, "headers": cfg.Headers, "env": cfg.Env, "enabled": cfg.Enabled, "method": cfg.Method, "urlTemplate": cfg.URLTemplate, "credentialTarget": cfg.CredentialTarget, "credentialName": cfg.CredentialName, "inputSchema": cfg.InputSchema, "outputSchema": cfg.OutputSchema})
 	if err != nil {
-		return ConnectorRecord{}, err
+		return MCPRecord{}, err
 	}
-	var record ConnectorRecord
+	var record MCPRecord
 	err = withTx(ctx, s.pool, func(tx pgx.Tx) error {
 		var id int64
 		var createdAt, updatedAt time.Time
-		if err := tx.QueryRow(ctx, `insert into connectors (workspace_id, name, transport, configuration, status, updated_at) values ($1, $2, $3, $4, $5, now()) returning id, created_at, updated_at`, workspaceID, cfg.Name, string(cfg.Transport), configJSON, "disconnected").Scan(&id, &createdAt, &updatedAt); err != nil {
+		if err := tx.QueryRow(ctx, `insert into mcps (workspace_id, agent_id, name, transport, endpoint, credential_ref, configuration, status, updated_at) values ($1, nullif($2, '')::bigint, $3, $4, $5, $6, $7, $8, now()) returning id, created_at, updated_at`, workspaceID, cfg.AgentID, cfg.Name, string(cfg.Transport), mcpEndpoint(cfg), cfg.CredentialRef, configJSON, "disconnected").Scan(&id, &createdAt, &updatedAt); err != nil {
 			return err
 		}
-		if err := s.replaceConnectorSecretsTx(ctx, tx, id, cfg.SecretEnv, cfg.SecretHeaders); err != nil {
+		if err := s.replaceMCPSecretsTx(ctx, tx, id, cfg.SecretEnv, cfg.SecretHeaders); err != nil {
 			return err
 		}
-		record = ConnectorRecord{ID: strconv.FormatInt(id, 10), WorkspaceID: strconv.FormatInt(workspaceID, 10), Name: cfg.Name, Namespace: cfg.Namespace, Transport: string(cfg.Transport), Command: cfg.Command, Args: cfg.Args, URL: cfg.URL, Headers: cfg.Headers, Env: cfg.Env, SecretEnvKeys: sortedKeys(cfg.SecretEnv), SecretHeaderKeys: sortedKeys(cfg.SecretHeaders), Enabled: cfg.Enabled, Status: "disconnected", CreatedAt: createdAt, UpdatedAt: updatedAt}
+		record = MCPRecord{ID: strconv.FormatInt(id, 10), WorkspaceID: strconv.FormatInt(workspaceID, 10), AgentID: cfg.AgentID, Name: cfg.Name, Namespace: cfg.Namespace, Transport: string(cfg.Transport), Endpoint: mcpEndpoint(cfg), CredentialRef: cfg.CredentialRef, Command: cfg.Command, Args: cfg.Args, URL: cfg.URL, Headers: cfg.Headers, Env: cfg.Env, Method: cfg.Method, URLTemplate: cfg.URLTemplate, CredentialTarget: cfg.CredentialTarget, CredentialName: cfg.CredentialName, InputSchema: cfg.InputSchema, OutputSchema: cfg.OutputSchema, SecretEnvKeys: sortedKeys(cfg.SecretEnv), SecretHeaderKeys: sortedKeys(cfg.SecretHeaders), Enabled: cfg.Enabled, Status: "disconnected", CreatedAt: createdAt, UpdatedAt: updatedAt}
 		return nil
 	})
 	return record, err
 }
 
-func (s *Store) GetConnectorConfig(ctx context.Context, workspaceID int64, id string) (connector.Config, error) {
-	connID, err := strconv.ParseInt(id, 10, 64)
+func (s *Store) GetMCPConfig(ctx context.Context, workspaceID int64, id string) (mcp.Config, error) {
+	mcpID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		return connector.Config{}, err
+		return mcp.Config{}, err
 	}
-	var name, transport string
+	var agentID, name, transport, endpoint, credentialRef string
 	var raw []byte
-	if err := s.pool.QueryRow(ctx, `select name, transport, configuration from connectors where workspace_id = $1 and id = $2`, workspaceID, connID).Scan(&name, &transport, &raw); err != nil {
-		return connector.Config{}, err
+	if err := s.pool.QueryRow(ctx, `select coalesce(agent_id::text, ''), name, transport, coalesce(endpoint, ''), coalesce(credential_ref, ''), configuration from mcps where workspace_id = $1 and id = $2`, workspaceID, mcpID).Scan(&agentID, &name, &transport, &endpoint, &credentialRef, &raw); err != nil {
+		return mcp.Config{}, err
 	}
 	var cfg struct {
-		Namespace string            `json:"namespace"`
-		Command   string            `json:"command"`
-		Args      []string          `json:"args"`
-		URL       string            `json:"url"`
-		Headers   map[string]string `json:"headers"`
-		Env       map[string]string `json:"env"`
-		Enabled   bool              `json:"enabled"`
+		Namespace        string            `json:"namespace"`
+		Command          string            `json:"command"`
+		Args             []string          `json:"args"`
+		URL              string            `json:"url"`
+		Headers          map[string]string `json:"headers"`
+		Env              map[string]string `json:"env"`
+		Enabled          bool              `json:"enabled"`
+		Method           string            `json:"method"`
+		URLTemplate      string            `json:"urlTemplate"`
+		CredentialTarget string            `json:"credentialTarget"`
+		CredentialName   string            `json:"credentialName"`
+		InputSchema      map[string]any    `json:"inputSchema"`
+		OutputSchema     map[string]any    `json:"outputSchema"`
 	}
 	if len(raw) > 0 {
 		if err := json.Unmarshal(raw, &cfg); err != nil {
-			return connector.Config{}, err
+			return mcp.Config{}, err
 		}
 	}
-	secretEnv, secretHeaders, err := s.listConnectorSecrets(ctx, connID)
+	secretEnv, secretHeaders, err := s.listMCPSecrets(ctx, mcpID)
 	if err != nil {
-		return connector.Config{}, err
+		return mcp.Config{}, err
 	}
-	return connector.Config{ID: id, Name: name, Namespace: cfg.Namespace, Transport: connector.Transport(transport), Command: cfg.Command, Args: cfg.Args, URL: cfg.URL, Headers: cfg.Headers, Env: cfg.Env, SecretEnv: secretEnv, SecretHeaders: secretHeaders, Enabled: cfg.Enabled}, nil
+	return mcp.Config{ID: id, AgentID: agentID, Name: name, Namespace: cfg.Namespace, Transport: mcp.Transport(transport), Endpoint: endpoint, CredentialRef: credentialRef, Command: cfg.Command, Args: cfg.Args, URL: cfg.URL, Headers: cfg.Headers, Env: cfg.Env, Method: cfg.Method, URLTemplate: cfg.URLTemplate, CredentialTarget: cfg.CredentialTarget, CredentialName: cfg.CredentialName, InputSchema: cfg.InputSchema, OutputSchema: cfg.OutputSchema, SecretEnv: secretEnv, SecretHeaders: secretHeaders, Enabled: cfg.Enabled}, nil
 }
 
-func (s *Store) UpdateConnector(ctx context.Context, workspaceID int64, cfg connector.Config) (ConnectorRecord, error) {
-	connID, err := strconv.ParseInt(cfg.ID, 10, 64)
+func (s *Store) UpdateMCP(ctx context.Context, workspaceID int64, cfg mcp.Config) (MCPRecord, error) {
+	mcpID, err := strconv.ParseInt(cfg.ID, 10, 64)
 	if err != nil {
-		return ConnectorRecord{}, err
+		return MCPRecord{}, err
 	}
-	configJSON, err := json.Marshal(map[string]any{"namespace": cfg.Namespace, "command": cfg.Command, "args": cfg.Args, "url": cfg.URL, "headers": cfg.Headers, "env": cfg.Env, "enabled": cfg.Enabled})
+	configJSON, err := json.Marshal(map[string]any{"namespace": cfg.Namespace, "command": cfg.Command, "args": cfg.Args, "url": cfg.URL, "headers": cfg.Headers, "env": cfg.Env, "enabled": cfg.Enabled, "method": cfg.Method, "urlTemplate": cfg.URLTemplate, "credentialTarget": cfg.CredentialTarget, "credentialName": cfg.CredentialName, "inputSchema": cfg.InputSchema, "outputSchema": cfg.OutputSchema})
 	if err != nil {
-		return ConnectorRecord{}, err
+		return MCPRecord{}, err
 	}
-	var record ConnectorRecord
+	var record MCPRecord
 	err = withTx(ctx, s.pool, func(tx pgx.Tx) error {
 		var createdAt, updatedAt time.Time
-		if err := tx.QueryRow(ctx, `update connectors set name = $3, transport = $4, configuration = $5, status = $6, last_error = null, updated_at = now() where id = $1 and workspace_id = $2 returning created_at, updated_at`, connID, workspaceID, cfg.Name, string(cfg.Transport), configJSON, "disconnected").Scan(&createdAt, &updatedAt); err != nil {
+		if err := tx.QueryRow(ctx, `update mcps set agent_id = nullif($3, '')::bigint, name = $4, transport = $5, endpoint = $6, credential_ref = $7, configuration = $8, status = $9, last_error = null, updated_at = now() where id = $1 and workspace_id = $2 returning created_at, updated_at`, mcpID, workspaceID, cfg.AgentID, cfg.Name, string(cfg.Transport), mcpEndpoint(cfg), cfg.CredentialRef, configJSON, "disconnected").Scan(&createdAt, &updatedAt); err != nil {
 			return err
 		}
-		if err := s.replaceConnectorSecretsTx(ctx, tx, connID, cfg.SecretEnv, cfg.SecretHeaders); err != nil {
+		if err := s.replaceMCPSecretsTx(ctx, tx, mcpID, cfg.SecretEnv, cfg.SecretHeaders); err != nil {
 			return err
 		}
-		record = ConnectorRecord{ID: cfg.ID, WorkspaceID: strconv.FormatInt(workspaceID, 10), Name: cfg.Name, Namespace: cfg.Namespace, Transport: string(cfg.Transport), Command: cfg.Command, Args: cfg.Args, URL: cfg.URL, Headers: cfg.Headers, Env: cfg.Env, SecretEnvKeys: sortedKeys(cfg.SecretEnv), SecretHeaderKeys: sortedKeys(cfg.SecretHeaders), Enabled: cfg.Enabled, Status: "disconnected", CreatedAt: createdAt, UpdatedAt: updatedAt}
+		record = MCPRecord{ID: cfg.ID, WorkspaceID: strconv.FormatInt(workspaceID, 10), AgentID: cfg.AgentID, Name: cfg.Name, Namespace: cfg.Namespace, Transport: string(cfg.Transport), Endpoint: mcpEndpoint(cfg), CredentialRef: cfg.CredentialRef, Command: cfg.Command, Args: cfg.Args, URL: cfg.URL, Headers: cfg.Headers, Env: cfg.Env, Method: cfg.Method, URLTemplate: cfg.URLTemplate, CredentialTarget: cfg.CredentialTarget, CredentialName: cfg.CredentialName, InputSchema: cfg.InputSchema, OutputSchema: cfg.OutputSchema, SecretEnvKeys: sortedKeys(cfg.SecretEnv), SecretHeaderKeys: sortedKeys(cfg.SecretHeaders), Enabled: cfg.Enabled, Status: "disconnected", CreatedAt: createdAt, UpdatedAt: updatedAt}
 		return nil
 	})
 	return record, err
 }
 
-func (s *Store) UpdateConnectorState(ctx context.Context, id string, status connector.Status, lastError string) error {
-	_, err := s.pool.Exec(ctx, `update connectors set status = $2, last_error = nullif($3, ''), updated_at = now() where id = $1`, id, string(status), lastError)
+func (s *Store) UpdateMCPState(ctx context.Context, id string, status mcp.Status, lastError string) error {
+	_, err := s.pool.Exec(ctx, `update mcps set status = $2, last_error = nullif($3, ''), updated_at = now() where id = $1`, id, string(status), lastError)
 	return err
 }
 
-func (s *Store) ReplaceConnectorTools(ctx context.Context, id string, tools []protocol.Tool) error {
-	connID, err := strconv.ParseInt(id, 10, 64)
+func (s *Store) ReplaceMCPTools(ctx context.Context, id string, tools []protocol.Tool) error {
+	mcpID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		return err
 	}
 	return withTx(ctx, s.pool, func(tx pgx.Tx) error {
-		if _, err := tx.Exec(ctx, `delete from tools where connector_id = $1`, connID); err != nil {
+		if _, err := tx.Exec(ctx, `delete from tools where mcp_id = $1`, mcpID); err != nil {
 			return err
 		}
 		for _, tool := range tools {
@@ -445,7 +635,7 @@ func (s *Store) ReplaceConnectorTools(ctx context.Context, id string, tools []pr
 			if err != nil {
 				return err
 			}
-			if _, err := tx.Exec(ctx, `insert into tools (connector_id, name, schema) values ($1, $2, $3)`, connID, tool.Name, schemaJSON); err != nil {
+			if _, err := tx.Exec(ctx, `insert into tools (mcp_id, name, schema) values ($1, $2, $3)`, mcpID, tool.Name, schemaJSON); err != nil {
 				return err
 			}
 		}
@@ -453,8 +643,8 @@ func (s *Store) ReplaceConnectorTools(ctx context.Context, id string, tools []pr
 	})
 }
 
-func (s *Store) listToolsByConnector(ctx context.Context, connectorID int64) ([]ToolRecord, error) {
-	rows, err := s.pool.Query(ctx, `select name, schema from tools where connector_id = $1 order by name asc`, connectorID)
+func (s *Store) listToolsByMCP(ctx context.Context, mcpID int64) ([]ToolRecord, error) {
+	rows, err := s.pool.Query(ctx, `select name, schema from tools where mcp_id = $1 order by name asc`, mcpID)
 	if err != nil {
 		return nil, err
 	}
@@ -478,7 +668,15 @@ func (s *Store) listToolsByConnector(ctx context.Context, connectorID int64) ([]
 }
 
 func (s *Store) ListPolicies(ctx context.Context, workspaceID int64) ([]PolicyRecord, error) {
-	rows, err := s.pool.Query(ctx, `select id, workspace_id, rule, action, created_at from policies where workspace_id = $1 order by created_at desc`, workspaceID)
+	rows, err := s.pool.Query(ctx, `
+		select id, workspace_id, name, subject_type, subject_value, rule, action_name, effect, condition, rate_limit, channel_override, precedence, created_at
+		from policies
+		where workspace_id = $1
+		order by
+			case when subject_type = 'agent' then 0 else 1 end asc,
+			precedence asc,
+			created_at asc
+	`, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -486,33 +684,67 @@ func (s *Store) ListPolicies(ctx context.Context, workspaceID int64) ([]PolicyRe
 	var out []PolicyRecord
 	for rows.Next() {
 		var id, wsID int64
-		var raw []byte
-		var action string
+		var name, subjectType, subjectValue, actionName, effect string
+		var rateLimit, channelOverride sql.NullString
+		var raw, conditionRaw []byte
+		var precedence int
 		var createdAt time.Time
-		if err := rows.Scan(&id, &wsID, &raw, &action, &createdAt); err != nil {
+		if err := rows.Scan(&id, &wsID, &name, &subjectType, &subjectValue, &raw, &actionName, &effect, &conditionRaw, &rateLimit, &channelOverride, &precedence, &createdAt); err != nil {
 			return nil, err
 		}
 		var rule struct {
-			Name       string                            `json:"name"`
-			Tool       string                            `json:"tool"`
-			Conditions map[string]config.ConditionConfig `json:"conditions"`
+			Tool string `json:"tool"`
 		}
 		if err := json.Unmarshal(raw, &rule); err != nil {
 			return nil, err
 		}
-		out = append(out, PolicyRecord{ID: strconv.FormatInt(id, 10), WorkspaceID: strconv.FormatInt(wsID, 10), Name: rule.Name, Tool: rule.Tool, Action: action, Conditions: rule.Conditions, CreatedAt: createdAt})
+		var condition policyengine.Condition
+		if len(conditionRaw) > 0 {
+			if err := json.Unmarshal(conditionRaw, &condition); err != nil {
+				return nil, err
+			}
+		}
+		out = append(out, PolicyRecord{
+			ID:              strconv.FormatInt(id, 10),
+			WorkspaceID:     strconv.FormatInt(wsID, 10),
+			Name:            name,
+			SubjectType:     subjectType,
+			SubjectValue:    subjectValue,
+			Tool:            rule.Tool,
+			ActionName:      actionName,
+			Effect:          effect,
+			Condition:       condition,
+			RateLimit:       rateLimit.String,
+			ChannelOverride: channelOverride.String,
+			Precedence:      precedence,
+			CreatedAt:       createdAt,
+		})
 	}
 	return out, rows.Err()
 }
 
 func (s *Store) CreatePolicy(ctx context.Context, workspaceID int64, record PolicyRecord) (PolicyRecord, error) {
-	ruleJSON, err := json.Marshal(map[string]any{"name": record.Name, "tool": record.Tool, "conditions": record.Conditions})
+	ruleJSON, err := json.Marshal(map[string]any{"tool": record.Tool})
+	if err != nil {
+		return PolicyRecord{}, err
+	}
+	conditionJSON, err := json.Marshal(record.Condition)
 	if err != nil {
 		return PolicyRecord{}, err
 	}
 	var id int64
 	var createdAt time.Time
-	if err := s.pool.QueryRow(ctx, `insert into policies (workspace_id, rule, action) values ($1, $2, $3) returning id, created_at`, workspaceID, ruleJSON, record.Action).Scan(&id, &createdAt); err != nil {
+	if record.Precedence == 0 {
+		if err := s.pool.QueryRow(ctx, `select coalesce(max(precedence), 0) + 1 from policies where workspace_id = $1`, workspaceID).Scan(&record.Precedence); err != nil {
+			return PolicyRecord{}, err
+		}
+	}
+	if err := s.pool.QueryRow(ctx, `
+		insert into policies (
+			workspace_id, rule, action, name, subject_type, subject_value, action_name, effect, condition, rate_limit, channel_override, precedence
+		) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, nullif($10, ''), nullif($11, ''), $12)
+		returning id, created_at
+	`, workspaceID, ruleJSON, record.Effect, record.Name, record.SubjectType, record.SubjectValue, record.ActionName, record.Effect, conditionJSON, record.RateLimit, record.ChannelOverride, record.Precedence).Scan(&id, &createdAt); err != nil {
 		return PolicyRecord{}, err
 	}
 	record.ID = strconv.FormatInt(id, 10)
@@ -528,15 +760,23 @@ func (s *Store) LoadPolicyRules(ctx context.Context, workspaceID int64) ([]polic
 	}
 	out := make([]policyengine.Rule, 0, len(policies))
 	for _, policy := range policies {
-		action, err := policyengine.ParseAction(policy.Action)
+		action, err := policyengine.ParseAction(policy.Effect)
 		if err != nil {
 			return nil, err
 		}
-		conditions := make(map[string]policyengine.Condition, len(policy.Conditions))
-		for field, condition := range policy.Conditions {
-			conditions[field] = policyengine.Condition{GT: condition.GT, GTE: condition.GTE, LT: condition.LT, LTE: condition.LTE, EQ: condition.EQ, Exists: condition.Exists}
-		}
-		out = append(out, policyengine.Rule{Name: policy.Name, ToolPattern: policy.Tool, Action: action, Conditions: conditions})
+		out = append(out, policyengine.Rule{
+			ID:              policy.ID,
+			Name:            policy.Name,
+			SubjectType:     policyengine.SubjectType(policy.SubjectType),
+			SubjectValue:    policy.SubjectValue,
+			ToolPattern:     policy.Tool,
+			ActionName:      policy.ActionName,
+			Action:          action,
+			Condition:       policy.Condition,
+			RateLimit:       policy.RateLimit,
+			ChannelOverride: policy.ChannelOverride,
+			Precedence:      policy.Precedence,
+		})
 	}
 	return out, nil
 }
@@ -554,7 +794,29 @@ func (s *Store) CreateAuditLog(ctx context.Context, record AuditLogRecord) error
 	if err != nil {
 		return err
 	}
-	_, err = s.pool.Exec(ctx, `insert into audit_logs (workspace_id, tool, request, response, decision, created_at) values ($1, $2, $3, $4, $5, $6)`, workspaceID, record.Tool, requestJSON, responseJSON, record.Decision, record.CreatedAt)
+	var (
+		agentID sql.NullInt64
+		latency sql.NullInt64
+	)
+	if strings.TrimSpace(record.AgentID) != "" {
+		value, err := strconv.ParseInt(record.AgentID, 10, 64)
+		if err != nil {
+			return err
+		}
+		agentID = sql.NullInt64{Int64: value, Valid: true}
+	}
+	if record.LatencyMS > 0 {
+		latency = sql.NullInt64{Int64: record.LatencyMS, Valid: true}
+	}
+	payloadJSON, err := json.Marshal(record.PayloadSummary)
+	if err != nil {
+		return err
+	}
+	_, err = s.pool.Exec(ctx, `
+		insert into audit_logs (
+			workspace_id, agent_id, tool_id, tool, action, payload_summary, request, response, decision, decided_by, latency_ms, created_at
+		) values ($1, $2, nullif($3, ''), $4, nullif($5, ''), $6, $7, $8, $9, nullif($10, ''), $11, $12)
+	`, workspaceID, agentID, record.ToolID, record.Tool, record.Action, payloadJSON, requestJSON, responseJSON, record.Decision, record.DecidedBy, latency, record.CreatedAt)
 	return err
 }
 
@@ -562,7 +824,13 @@ func (s *Store) ListAuditLogs(ctx context.Context, workspaceID int64, limit int)
 	if limit <= 0 {
 		limit = 50
 	}
-	rows, err := s.pool.Query(ctx, `select id, workspace_id, tool, request, response, decision, created_at from audit_logs where workspace_id = $1 order by created_at desc limit $2`, workspaceID, limit)
+	rows, err := s.pool.Query(ctx, `
+		select id, workspace_id, agent_id, coalesce(tool_id, ''), tool, coalesce(action, ''), payload_summary, request, response, decision, coalesce(decided_by, ''), coalesce(latency_ms, 0), created_at
+		from audit_logs
+		where workspace_id = $1
+		order by created_at desc
+		limit $2
+	`, workspaceID, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -570,19 +838,42 @@ func (s *Store) ListAuditLogs(ctx context.Context, workspaceID int64, limit int)
 	var out []AuditLogRecord
 	for rows.Next() {
 		var id, wsID int64
-		var tool, decision string
-		var requestRaw, responseRaw []byte
+		var agentID sql.NullInt64
+		var toolID, tool, action, decision, decidedBy string
+		var latencyMS int64
+		var payloadRaw, requestRaw, responseRaw []byte
 		var createdAt time.Time
-		if err := rows.Scan(&id, &wsID, &tool, &requestRaw, &responseRaw, &decision, &createdAt); err != nil {
+		if err := rows.Scan(&id, &wsID, &agentID, &toolID, &tool, &action, &payloadRaw, &requestRaw, &responseRaw, &decision, &decidedBy, &latencyMS, &createdAt); err != nil {
 			return nil, err
 		}
 		requestBody := map[string]any{}
 		responseBody := map[string]any{}
+		payloadSummary := map[string]any{}
 		_ = json.Unmarshal(requestRaw, &requestBody)
 		if len(responseRaw) > 0 {
 			_ = json.Unmarshal(responseRaw, &responseBody)
 		}
-		out = append(out, AuditLogRecord{ID: strconv.FormatInt(id, 10), WorkspaceID: strconv.FormatInt(wsID, 10), Tool: tool, Request: requestBody, Response: responseBody, Decision: decision, CreatedAt: createdAt})
+		if len(payloadRaw) > 0 {
+			_ = json.Unmarshal(payloadRaw, &payloadSummary)
+		}
+		record := AuditLogRecord{
+			ID:             strconv.FormatInt(id, 10),
+			WorkspaceID:    strconv.FormatInt(wsID, 10),
+			ToolID:         toolID,
+			Tool:           tool,
+			Action:         action,
+			PayloadSummary: payloadSummary,
+			Request:        requestBody,
+			Response:       responseBody,
+			Decision:       decision,
+			DecidedBy:      decidedBy,
+			LatencyMS:      latencyMS,
+			CreatedAt:      createdAt,
+		}
+		if agentID.Valid {
+			record.AgentID = strconv.FormatInt(agentID.Int64, 10)
+		}
+		out = append(out, record)
 	}
 	return out, rows.Err()
 }
@@ -599,15 +890,29 @@ func withTx(ctx context.Context, pool *pgxpool.Pool, fn func(pgx.Tx) error) erro
 	return tx.Commit(ctx)
 }
 
-func connectorEnabled(enabled *bool) bool {
+func mcpEnabled(enabled *bool) bool {
 	if enabled == nil {
 		return true
 	}
 	return *enabled
 }
 
-func (s *Store) listConnectorSecrets(ctx context.Context, connectorID int64) (map[string]string, map[string]string, error) {
-	rows, err := s.pool.Query(ctx, `select scope, name, value from connector_secrets where connector_id = $1 order by scope asc, name asc`, connectorID)
+func mcpEndpoint(cfg mcp.Config) string {
+	switch cfg.Transport {
+	case mcp.TransportStdio:
+		return cfg.Command
+	case mcp.TransportREST:
+		return cfg.URLTemplate
+	default:
+		if cfg.Endpoint != "" {
+			return cfg.Endpoint
+		}
+		return cfg.URL
+	}
+}
+
+func (s *Store) listMCPSecrets(ctx context.Context, mcpID int64) (map[string]string, map[string]string, error) {
+	rows, err := s.pool.Query(ctx, `select scope, name, value from mcp_secrets where mcp_id = $1 order by scope asc, name asc`, mcpID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -620,7 +925,7 @@ func (s *Store) listConnectorSecrets(ctx context.Context, connectorID int64) (ma
 			return nil, nil, err
 		}
 		if s.cipher == nil {
-			return nil, nil, fmt.Errorf("connector secret key is required to load encrypted connector secrets")
+			return nil, nil, fmt.Errorf("mcp secret key is required to load encrypted mcp secrets")
 		}
 		value, err := s.cipher.DecryptString(encrypted)
 		if err != nil {
@@ -636,8 +941,8 @@ func (s *Store) listConnectorSecrets(ctx context.Context, connectorID int64) (ma
 	return secretEnv, secretHeaders, rows.Err()
 }
 
-func (s *Store) listConnectorSecretKeys(ctx context.Context, connectorID int64) ([]string, []string, error) {
-	rows, err := s.pool.Query(ctx, `select scope, name from connector_secrets where connector_id = $1 order by scope asc, name asc`, connectorID)
+func (s *Store) listMCPSecretKeys(ctx context.Context, mcpID int64) ([]string, []string, error) {
+	rows, err := s.pool.Query(ctx, `select scope, name from mcp_secrets where mcp_id = $1 order by scope asc, name asc`, mcpID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -661,42 +966,53 @@ func (s *Store) listConnectorSecretKeys(ctx context.Context, connectorID int64) 
 	return envKeys, headerKeys, rows.Err()
 }
 
-func (s *Store) replaceConnectorSecrets(ctx context.Context, connectorID int64, secretEnv, secretHeaders map[string]string) error {
+func (s *Store) replaceMCPSecrets(ctx context.Context, mcpID int64, secretEnv, secretHeaders map[string]string) error {
 	return withTx(ctx, s.pool, func(tx pgx.Tx) error {
-		return s.replaceConnectorSecretsTx(ctx, tx, connectorID, secretEnv, secretHeaders)
+		return s.replaceMCPSecretsTx(ctx, tx, mcpID, secretEnv, secretHeaders)
 	})
 }
 
-func (s *Store) replaceConnectorSecretsTx(ctx context.Context, tx pgx.Tx, connectorID int64, secretEnv, secretHeaders map[string]string) error {
-	if _, err := tx.Exec(ctx, `delete from connector_secrets where connector_id = $1`, connectorID); err != nil {
+func (s *Store) replaceMCPSecretsTx(ctx context.Context, tx pgx.Tx, mcpID int64, secretEnv, secretHeaders map[string]string) error {
+	if _, err := tx.Exec(ctx, `delete from mcp_secrets where mcp_id = $1`, mcpID); err != nil {
 		return err
 	}
 	for name, value := range secretEnv {
-		if err := s.insertConnectorSecret(ctx, tx, connectorID, secretScopeEnv, name, value); err != nil {
+		if err := s.insertMCPSecret(ctx, tx, mcpID, secretScopeEnv, name, value); err != nil {
 			return err
 		}
 	}
 	for name, value := range secretHeaders {
-		if err := s.insertConnectorSecret(ctx, tx, connectorID, secretScopeHeader, name, value); err != nil {
+		if err := s.insertMCPSecret(ctx, tx, mcpID, secretScopeHeader, name, value); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *Store) insertConnectorSecret(ctx context.Context, tx pgx.Tx, connectorID int64, scope, name, value string) error {
+func (s *Store) insertMCPSecret(ctx context.Context, tx pgx.Tx, mcpID int64, scope, name, value string) error {
 	if strings.TrimSpace(name) == "" || value == "" {
 		return nil
 	}
-	if s.cipher == nil {
-		return fmt.Errorf("connector secret key is required to store encrypted connector secrets")
-	}
-	encrypted, err := s.cipher.EncryptString(value)
+	encrypted, err := s.encrypt(value)
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(ctx, `insert into connector_secrets (connector_id, scope, name, value, updated_at) values ($1, $2, $3, $4, now())`, connectorID, scope, name, encrypted)
+	_, err = tx.Exec(ctx, `insert into mcp_secrets (mcp_id, scope, name, value, updated_at) values ($1, $2, $3, $4, now())`, mcpID, scope, name, encrypted)
 	return err
+}
+
+func (s *Store) encrypt(value string) (string, error) {
+	if s.cipher == nil {
+		return "", fmt.Errorf("mcp secret key is required to store encrypted secrets")
+	}
+	return s.cipher.EncryptString(value)
+}
+
+func (s *Store) decrypt(value string) (string, error) {
+	if s.cipher == nil {
+		return "", fmt.Errorf("mcp secret key is required to load encrypted secrets")
+	}
+	return s.cipher.DecryptString(value)
 }
 
 func sortedKeys(source map[string]string) []string {

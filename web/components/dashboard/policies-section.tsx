@@ -1,130 +1,273 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   DashboardCard,
   DashboardField,
+  DashboardModal,
   DataTable,
   EmptyState,
   SectionEyebrow,
   StatusBadge,
   inputClass,
   primaryButtonClass,
+  secondaryButtonClass,
+  textareaClass,
 } from "./primitives";
 import type { Overview } from "./types";
 
+type PanelMode = "closed" | "test";
+
 export function PoliciesSection({
   policies,
-  connectors,
+  agents,
+  mcps,
   createPolicy,
+  reorderPolicies,
 }: {
   policies: Overview["policies"];
-  connectors: Overview["connectors"];
+  agents: Overview["agents"];
+  mcps: Overview["mcps"];
   createPolicy: (formData: FormData) => Promise<void>;
+  reorderPolicies: (formData: FormData) => Promise<void>;
 }) {
-  const connectorsWithTools = useMemo(
-    () => connectors.filter((connector) => (connector.tools?.length || 0) > 0),
-    [connectors],
-  );
-  const [selectedConnectorId, setSelectedConnectorId] = useState(
-    connectorsWithTools[0]?.id || "",
-  );
+  const [panelMode, setPanelMode] = useState<PanelMode>("closed");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedMcpId, setSelectedMcpId] = useState(mcps[0]?.id || "");
+  const [selectedToolName, setSelectedToolName] = useState(mcps[0]?.tools?.[0]?.name || "");
+  const [testPayload, setTestPayload] = useState('{\n  "amount": 12000\n}');
+  const [testResult, setTestResult] = useState<{ action?: string; ruleName?: string; reason?: string } | null>(null);
 
-  useEffect(() => {
-    if (!connectorsWithTools.some((connector) => connector.id === selectedConnectorId)) {
-      setSelectedConnectorId(connectorsWithTools[0]?.id || "");
-    }
-  }, [connectorsWithTools, selectedConnectorId]);
+  const mcpOptions = useMemo(
+    () =>
+      mcps.map((mcp) => ({
+        id: mcp.id,
+        name: mcp.name,
+        namespace: mcp.namespace,
+        agentId: mcp.agentId || "",
+        agentName: agents.find((agent) => agent.id === mcp.agentId)?.name || "Unassigned",
+        tools: mcp.tools || [],
+      })),
+    [agents, mcps],
+  );
+  const activeSelectedMcpId =
+    mcpOptions.some((mcp) => mcp.id === selectedMcpId) ? selectedMcpId : mcpOptions[0]?.id || "";
+  const selectedMcp = useMemo(
+    () => mcpOptions.find((mcp) => mcp.id === activeSelectedMcpId) || mcpOptions[0] || null,
+    [activeSelectedMcpId, mcpOptions],
+  );
+  const toolOptions = useMemo(() => selectedMcp?.tools || [], [selectedMcp]);
+  const activeSelectedToolName =
+    toolOptions.some((tool) => tool.name === selectedToolName) ? selectedToolName : toolOptions[0]?.name || "";
+  const selectedToolValue =
+    selectedMcp && activeSelectedToolName ? `${selectedMcp.namespace}.${activeSelectedToolName}` : "";
 
-  const selectedConnector =
-    connectorsWithTools.find((connector) => connector.id === selectedConnectorId) || null;
-  const availableTools = selectedConnector?.tools || [];
+  async function runTest(formData: FormData) {
+    const mcpId = String(formData.get("testMcpId") || "");
+    const toolName = String(formData.get("testToolName") || "");
+    const selectedMCP = mcpOptions.find((mcp) => mcp.id === mcpId);
+    const payload = {
+      agentId: selectedMCP?.agentId || "",
+      tags: [],
+      tool: selectedMCP && toolName ? `${selectedMCP.namespace}.${toolName}` : "",
+      action: "call",
+      request: JSON.parse(String(formData.get("testPayload") || "{}")),
+    };
+    const response = await fetch("/api/v1/policies/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    setTestResult((await response.json()) as { action?: string; ruleName?: string; reason?: string });
+  }
 
   return (
-    <DashboardCard
-      title="Policies"
-      description="Define the rules the gateway applies before a request reaches a downstream tool."
-      action={<div className="text-sm text-[#6b6b67]">{policies.length} rules</div>}
-    >
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr),300px]">
+    <div className="space-y-6">
+      <DashboardCard
+        title="Policies"
+        description="Policies are attached to MCP tools, so you choose the MCP first, then the tool surface you want to govern."
+        action={
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className={secondaryButtonClass}
+              onClick={() => setPanelMode((value) => (value === "test" ? "closed" : "test"))}
+            >
+              Test mode
+            </button>
+            <button type="button" className={primaryButtonClass} onClick={() => setShowCreateModal(true)}>
+              Add policy
+            </button>
+          </div>
+        }
+      >
         <div className="space-y-4">
           <div>
-            <SectionEyebrow>Rules</SectionEyebrow>
+            <SectionEyebrow>Rule order</SectionEyebrow>
             <p className="mt-2 text-sm leading-6 text-[#6b6b67]">
-              Policies can allow, deny, or require approval based on explicit conditions in the request.
+              No matching rule means deny. Open the policy modal only when you want to define or refine a rule.
             </p>
           </div>
-
           {policies.length === 0 ? (
-            <EmptyState
-              label="No policies configured yet."
-              detail="Use the create button to add a rule for sensitive calls."
-            />
+            <EmptyState label="No policies configured yet." detail="Add a rule for one of your MCP tools." />
           ) : (
             <DataTable>
               <div className="hidden items-center gap-4 border-b border-[#efefee] px-4 py-3 text-xs font-medium uppercase tracking-wide text-[#8a8a86] lg:flex">
                 <span className="min-w-0 flex-1">Rule</span>
+                <span className="w-44 shrink-0">MCP</span>
                 <span className="min-w-0 flex-1">Tool</span>
-                <span className="w-32 shrink-0">Action</span>
+                <span className="w-28 shrink-0">Rate</span>
+                <span className="w-32 shrink-0">Effect</span>
               </div>
               <div className="divide-y divide-[#efefee] bg-white">
-                {policies.map((policy) => (
-                  <div
-                    key={policy.id}
-                    className="flex flex-col gap-4 px-4 py-4 lg:flex-row lg:items-start"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-[#191917]">{policy.name}</p>
-                      <p className="mt-1 text-xs leading-5 text-[#6b6b67]">
-                        {Object.entries(policy.conditions || {})
-                          .map(
-                            ([field, rule]) =>
-                              `${field}: ${Object.entries(rule)
-                                .map(([op, val]) => `${op} ${String(val)}`)
-                                .join(", ")}`,
-                          )
-                          .join(" | ") || "Always"}
-                      </p>
+                {policies.map((policy) => {
+                  const parsed = splitToolIdentifier(policy.tool);
+                  return (
+                    <div key={policy.id} className="flex flex-col gap-4 px-4 py-4 lg:flex-row lg:items-start">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-[#191917]">{policy.name}</p>
+                        <p className="mt-1 text-xs text-[#6b6b67]">
+                          {policy.condition?.field
+                            ? `${policy.condition.field} ${policy.condition.operator} ${String(policy.condition.value)}`
+                            : "Always"}
+                        </p>
+                      </div>
+                      <div className="text-sm text-[#191917] lg:w-44 lg:shrink-0">{parsed.namespace || "Global"}</div>
+                      <div className="min-w-0 flex-1 text-sm text-[#191917]">{parsed.tool || policy.tool}</div>
+                      <div className="text-sm text-[#6b6b67] lg:w-28 lg:shrink-0">
+                        {policy.rateLimit || "None"}
+                      </div>
+                      <div className="lg:w-32 lg:shrink-0">
+                        <StatusBadge status={policy.effect} />
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1 text-sm text-[#191917]">{policy.tool}</div>
-                    <div className="lg:w-32 lg:shrink-0">
-                      <StatusBadge status={policy.action} />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </DataTable>
           )}
+          {policies.length > 1 ? (
+            <form action={reorderPolicies}>
+              <input type="hidden" name="ids" value={policies.map((policy) => policy.id).join(",")} />
+              <button className={secondaryButtonClass}>Persist current order</button>
+            </form>
+          ) : null}
         </div>
+      </DashboardCard>
 
-        <details className="rounded-lg border border-[#e7e7e5] bg-white open:shadow-sm">
-          <summary className="list-none cursor-pointer px-4 py-4">
-            <span className={primaryButtonClass}>Create policy</span>
-          </summary>
-          <form action={createPolicy} className="grid gap-3 border-t border-[#efefee] p-4">
-            <div>
-              <SectionEyebrow>Add policy</SectionEyebrow>
-              <p className="mt-2 text-sm leading-6 text-[#6b6b67]">
-                Create a simple rule against one tool and one optional condition field.
-              </p>
+      {panelMode === "test" ? (
+        <DashboardCard title="Policy test mode" description="Paste a request and see which MCP policy would match.">
+          <form
+            className="grid gap-3 xl:max-w-3xl"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void runTest(new FormData(event.currentTarget));
+            }}
+          >
+            <div className="grid gap-3 md:grid-cols-2">
+              <DashboardField label="MCP">
+                <select
+                  name="testMcpId"
+                  className={inputClass}
+                  defaultValue={selectedMcp?.id || ""}
+                  onChange={(event) => {
+                    const nextId = event.target.value;
+                    const nextMcp = mcpOptions.find((mcp) => mcp.id === nextId);
+                    setSelectedMcpId(nextId);
+                    setSelectedToolName(nextMcp?.tools[0]?.name || "");
+                  }}
+                >
+                  {mcpOptions.length === 0 ? (
+                    <option value="">No MCPs yet</option>
+                  ) : (
+                    mcpOptions.map((mcp) => (
+                      <option key={mcp.id} value={mcp.id}>
+                        {mcp.name} - {mcp.agentName}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </DashboardField>
+              <DashboardField label="Tool">
+                <select
+                  name="testToolName"
+                  className={inputClass}
+                  value={activeSelectedToolName}
+                  onChange={(event) => setSelectedToolName(event.target.value)}
+                >
+                  {toolOptions.length === 0 ? (
+                    <option value="">No tools yet</option>
+                  ) : (
+                    toolOptions.map((tool) => (
+                      <option key={tool.name} value={tool.name}>
+                        {tool.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </DashboardField>
             </div>
-            <DashboardField label="Name">
-              <input name="name" required className={inputClass} placeholder="refund_limit" />
+            <DashboardField label="Request JSON">
+              <textarea
+                name="testPayload"
+                value={testPayload}
+                onChange={(event) => setTestPayload(event.target.value)}
+                className={textareaClass}
+                rows={8}
+              />
             </DashboardField>
-            <DashboardField label="Connector">
+            <div className="flex gap-2">
+              <button className={secondaryButtonClass}>Run test</button>
+              <button type="button" className={secondaryButtonClass} onClick={() => setPanelMode("closed")}>
+                Close
+              </button>
+            </div>
+            {testResult ? (
+              <div className="rounded-lg border border-[#e7e7e5] bg-[#fbfbfa] p-4 text-sm text-[#6b6b67]">
+                <p className="font-medium text-[#191917]">{testResult.action || "deny"}</p>
+                <p className="mt-1">{testResult.ruleName || "No matching rule"}</p>
+                <p className="mt-1">{testResult.reason || "Fail closed"}</p>
+              </div>
+            ) : null}
+          </form>
+        </DashboardCard>
+      ) : null}
+
+      <DashboardModal
+        open={showCreateModal}
+        title="Add policy"
+        description="Choose the MCP first, then the tool inside it, and define the rule you want enforced."
+        onClose={() => setShowCreateModal(false)}
+      >
+        <form
+          action={createPolicy}
+          className="grid gap-3 xl:max-w-3xl"
+          onSubmit={() => setShowCreateModal(false)}
+        >
+          <DashboardField label="Name">
+            <input name="name" required className={inputClass} placeholder="high_value_refund" />
+          </DashboardField>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <DashboardField label="MCP">
               <select
-                value={selectedConnectorId}
-                onChange={(event) => setSelectedConnectorId(event.target.value)}
+                name="mcpId"
                 className={inputClass}
-                disabled={connectorsWithTools.length === 0}
+                value={activeSelectedMcpId}
+                onChange={(event) => {
+                  const nextId = event.target.value;
+                  const nextMcp = mcpOptions.find((mcp) => mcp.id === nextId);
+                  setSelectedMcpId(nextId);
+                  setSelectedToolName(nextMcp?.tools[0]?.name || "");
+                }}
               >
-                {connectorsWithTools.length === 0 ? (
-                  <option value="">No connectors with tools</option>
+                {mcpOptions.length === 0 ? (
+                  <option value="">No MCPs yet</option>
                 ) : (
-                  connectorsWithTools.map((connector) => (
-                    <option key={connector.id} value={connector.id}>
-                      {connector.namespace}.{connector.name}
+                  mcpOptions.map((mcp) => (
+                    <option key={mcp.id} value={mcp.id}>
+                      {mcp.name} - {mcp.agentName}
                     </option>
                   ))
                 )}
@@ -132,35 +275,31 @@ export function PoliciesSection({
             </DashboardField>
             <DashboardField label="Tool">
               <select
-                name="tool"
-                required
+                name="toolName"
                 className={inputClass}
-                disabled={availableTools.length === 0}
-                key={selectedConnectorId || "no-connector"}
-                defaultValue={availableTools[0]?.name ? `${selectedConnector?.namespace}.${availableTools[0].name}` : ""}
+                value={activeSelectedToolName}
+                onChange={(event) => setSelectedToolName(event.target.value)}
               >
-                {availableTools.length === 0 ? (
-                  <option value="">No tools available</option>
+                {toolOptions.length === 0 ? (
+                  <option value="">No tools yet</option>
                 ) : (
-                  availableTools.map((tool) => {
-                    const fullToolName = `${selectedConnector?.namespace}.${tool.name}`;
-                    return (
-                      <option key={fullToolName} value={fullToolName}>
-                        {fullToolName}
-                      </option>
-                    );
-                  })
+                  toolOptions.map((tool) => (
+                    <option key={tool.name} value={tool.name}>
+                      {tool.name}
+                    </option>
+                  ))
                 )}
               </select>
             </DashboardField>
-            <DashboardField label="Action">
-              <select name="action" className={inputClass} defaultValue="deny">
-                <option value="allow">allow</option>
-                <option value="deny">deny</option>
-                <option value="require_approval">require_approval</option>
-              </select>
-            </DashboardField>
-            <DashboardField label="Condition field" hint="Optional">
+          </div>
+
+          <input type="hidden" name="tool" value={selectedToolValue} />
+
+          <DashboardField label="Action">
+            <input name="actionName" defaultValue="call" className={inputClass} />
+          </DashboardField>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <DashboardField label="Field" hint="Optional">
               <input name="field" className={inputClass} placeholder="amount" />
             </DashboardField>
             <DashboardField label="Operator">
@@ -173,14 +312,40 @@ export function PoliciesSection({
               </select>
             </DashboardField>
             <DashboardField label="Value">
-              <input name="value" className={inputClass} placeholder="100" />
+              <input name="value" className={inputClass} placeholder="10000" />
             </DashboardField>
-            <button className={primaryButtonClass} disabled={availableTools.length === 0}>
+          </div>
+          <DashboardField label="Effect">
+            <select name="effect" className={inputClass} defaultValue="deny">
+              <option value="allow">allow</option>
+              <option value="deny">deny</option>
+              <option value="require_approval">require approval</option>
+            </select>
+          </DashboardField>
+          <DashboardField label="Rate limit" hint="Optional e.g. 10/m">
+            <input name="rateLimit" className={inputClass} placeholder="10/m" />
+          </DashboardField>
+          <DashboardField label="Approval channel override" hint="Optional">
+            <input name="channelOverride" className={inputClass} placeholder="#finance-approvals" />
+          </DashboardField>
+          <div className="flex justify-end gap-2">
+            <button type="button" className={secondaryButtonClass} onClick={() => setShowCreateModal(false)}>
+              Cancel
+            </button>
+            <button className={primaryButtonClass} disabled={!selectedToolValue}>
               Create policy
             </button>
-          </form>
-        </details>
-      </div>
-    </DashboardCard>
+          </div>
+        </form>
+      </DashboardModal>
+    </div>
   );
+}
+
+function splitToolIdentifier(value: string) {
+  const [namespace, ...rest] = value.split(".");
+  if (rest.length === 0) {
+    return { namespace: "", tool: value };
+  }
+  return { namespace, tool: rest.join(".") };
 }

@@ -11,8 +11,9 @@ import (
 
 type ToolEntry struct {
 	Tool         protocol.Tool
-	ConnectorID  string
+	MCPID        string
 	UpstreamName string
+	ToolID       string
 }
 
 type BuiltinHandler func(ctx context.Context, args map[string]any) (*protocol.ToolCallResult, error)
@@ -30,25 +31,30 @@ func New() *Registry {
 func (r *Registry) RegisterBuiltin(tool protocol.Tool, handler BuiltinHandler) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.tools[tool.Name] = ToolEntry{Tool: tool, UpstreamName: tool.Name}
+	r.tools[tool.Name] = ToolEntry{Tool: tool, UpstreamName: tool.Name, ToolID: tool.Name}
 	r.builtins[tool.Name] = handler
 }
 
-func (r *Registry) RegisterConnectorTools(connectorID, namespace string, tools []protocol.Tool) {
+func (r *Registry) RegisterMCPTools(mcpID, namespace string, tools []protocol.Tool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for _, tool := range tools {
 		federated := tool
 		federated.Name = fmt.Sprintf("%s.%s", namespace, tool.Name)
-		r.tools[federated.Name] = ToolEntry{Tool: federated, ConnectorID: connectorID, UpstreamName: tool.Name}
+		r.tools[federated.Name] = ToolEntry{
+			Tool:         federated,
+			MCPID:        mcpID,
+			UpstreamName: tool.Name,
+			ToolID:       fmt.Sprintf("%s:%s", mcpID, tool.Name),
+		}
 	}
 }
 
-func (r *Registry) ResetConnectorTools(connectorID string) {
+func (r *Registry) ResetMCPTools(mcpID string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for name, entry := range r.tools {
-		if entry.ConnectorID == connectorID {
+		if entry.MCPID == mcpID {
 			delete(r.tools, name)
 		}
 	}

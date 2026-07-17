@@ -11,6 +11,11 @@ type Request struct {
 	Arguments   map[string]any
 	WorkspaceID string
 	APIKeyID    string
+	AgentID     string
+	AgentName   string
+	AgentTags   []string
+	ToolID      string
+	Action      string
 }
 
 func (r Request) ToolCall() protocol.ToolCallParams {
@@ -22,6 +27,7 @@ type Response struct {
 	Error          error
 	Decision       string
 	DecisionReason string
+	DecidedBy      string
 }
 
 type Handler func(ctx context.Context, req Request) Response

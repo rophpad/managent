@@ -112,6 +112,49 @@ export function DataTable({ children }: { children: ReactNode }) {
   );
 }
 
+export function DashboardModal({
+  open,
+  title,
+  description,
+  children,
+  onClose,
+}: {
+  open: boolean;
+  title: string;
+  description?: string;
+  children: ReactNode;
+  onClose: () => void;
+}) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-[rgba(17,17,15,0.56)] px-4 py-8 sm:items-center">
+      <button
+        type="button"
+        aria-label="Close modal"
+        className="absolute inset-0 cursor-default"
+        onClick={onClose}
+      />
+      <div className="relative z-10 max-h-[calc(100vh-2rem)] w-full max-w-3xl overflow-y-auto rounded-lg border border-[#d9d9d5] bg-white shadow-[0_24px_80px_rgba(17,17,15,0.24)]">
+        <div className="flex items-start justify-between gap-4 border-b border-[#efefee] px-5 py-4">
+          <div>
+            <h2 className="text-base font-semibold text-[#191917]">{title}</h2>
+            {description ? (
+              <p className="mt-1 text-sm leading-6 text-[#6b6b67]">{description}</p>
+            ) : null}
+          </div>
+          <button type="button" className={secondaryButtonClass} onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <div className="p-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 export const inputClass =
   "h-10 rounded-md border border-[#ddddda] bg-white px-3 text-sm text-[#191917] outline-none transition focus:border-[#b9b9b5] focus:ring-2 focus:ring-[#ececeb]";
 export const textareaClass =

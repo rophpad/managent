@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rophpad/managent/internal/connector"
+	"github.com/rophpad/managent/internal/mcp"
 )
 
 type FieldTarget string
@@ -43,30 +43,30 @@ type TransportOption struct {
 }
 
 type Listing struct {
-	Slug                 string            `json:"slug"`
-	Name                 string            `json:"name"`
-	Provider             string            `json:"provider"`
-	Description          string            `json:"description"`
-	DefaultConnectorName string            `json:"defaultConnectorName"`
-	DefaultNamespace     string            `json:"defaultNamespace"`
-	TransportOptions     []TransportOption `json:"transportOptions"`
+	Slug             string            `json:"slug"`
+	Name             string            `json:"name"`
+	Provider         string            `json:"provider"`
+	Description      string            `json:"description"`
+	DefaultMCPName   string            `json:"defaultMCPName"`
+	DefaultNamespace string            `json:"defaultNamespace"`
+	TransportOptions []TransportOption `json:"transportOptions"`
 }
 
 func Catalog() []Listing {
 	listings := []Listing{
 		{
-			Slug:                 "github-mcp",
-			Name:                 "GitHub MCP",
-			Provider:             "Official GitHub MCP Server",
-			Description:          "Choose between GitHub's recommended remote server and the official local stdio server.",
-			DefaultConnectorName: "github",
-			DefaultNamespace:     "github",
+			Slug:             "github-mcp",
+			Name:             "GitHub MCP",
+			Provider:         "Official GitHub MCP Server",
+			Description:      "Choose between GitHub's recommended remote server and the official local stdio server.",
+			DefaultMCPName:   "github",
+			DefaultNamespace: "github",
 			TransportOptions: []TransportOption{
 				{
 					ID:          "remote-http",
 					Label:       "Remote HTTP",
 					Description: "GitHub-hosted remote MCP server. Recommended by GitHub for most users.",
-					Transport:   string(connector.TransportHTTP),
+					Transport:   string(mcp.TransportHTTP),
 					Recommended: true,
 					URL:         "https://api.githubcopilot.com/mcp/",
 					Headers: map[string]string{
@@ -80,7 +80,7 @@ func Catalog() []Listing {
 					ID:          "local-stdio",
 					Label:       "Local stdio",
 					Description: "Official local GitHub MCP server process for customized or local-only setups.",
-					Transport:   string(connector.TransportStdio),
+					Transport:   string(mcp.TransportStdio),
 					Recommended: false,
 					Command:     "/app/bin/github-mcp-server",
 					Args:        []string{"stdio"},
@@ -91,18 +91,18 @@ func Catalog() []Listing {
 			},
 		},
 		{
-			Slug:                 "linear-mcp",
-			Name:                 "Linear",
-			Provider:             "Official Linear MCP Server",
-			Description:          "Linear's official server is a remote MCP endpoint over Streamable HTTP.",
-			DefaultConnectorName: "linear",
-			DefaultNamespace:     "linear",
+			Slug:             "linear-mcp",
+			Name:             "Linear",
+			Provider:         "Official Linear MCP Server",
+			Description:      "Linear's official server is a remote MCP endpoint over Streamable HTTP.",
+			DefaultMCPName:   "linear",
+			DefaultNamespace: "linear",
 			TransportOptions: []TransportOption{
 				{
 					ID:          "remote-http",
 					Label:       "Remote HTTP",
 					Description: "Official Linear endpoint. OAuth is supported, and direct bearer-token auth is available for MCP clients that need to connect non-interactively.",
-					Transport:   string(connector.TransportHTTP),
+					Transport:   string(mcp.TransportHTTP),
 					Recommended: true,
 					URL:         "https://mcp.linear.app/mcp",
 					Fields: []Field{
@@ -112,18 +112,18 @@ func Catalog() []Listing {
 			},
 		},
 		{
-			Slug:                 "stripe-mcp",
-			Name:                 "Stripe",
-			Provider:             "Official Stripe MCP Server",
-			Description:          "Stripe's official MCP server is a remote endpoint. OAuth is preferred, and bearer-token auth is also documented for agent software.",
-			DefaultConnectorName: "stripe",
-			DefaultNamespace:     "stripe",
+			Slug:             "stripe-mcp",
+			Name:             "Stripe",
+			Provider:         "Official Stripe MCP Server",
+			Description:      "Stripe's official MCP server is a remote endpoint. OAuth is preferred, and bearer-token auth is also documented for agent software.",
+			DefaultMCPName:   "stripe",
+			DefaultNamespace: "stripe",
 			TransportOptions: []TransportOption{
 				{
 					ID:          "remote-http",
 					Label:       "Remote HTTP",
 					Description: "Official Stripe remote MCP server.",
-					Transport:   string(connector.TransportHTTP),
+					Transport:   string(mcp.TransportHTTP),
 					Recommended: true,
 					URL:         "https://mcp.stripe.com",
 					Headers: map[string]string{
@@ -149,23 +149,23 @@ func Get(slug string) (Listing, bool) {
 	return Listing{}, false
 }
 
-func BuildConnector(listing Listing, optionID, connectorName, namespace string, values map[string]string) (connector.Config, error) {
+func BuildMCP(listing Listing, optionID, mcpName, namespace string, values map[string]string) (mcp.Config, error) {
 	option, err := listing.transportOption(optionID)
 	if err != nil {
-		return connector.Config{}, err
+		return mcp.Config{}, err
 	}
-	name := strings.TrimSpace(connectorName)
+	name := strings.TrimSpace(mcpName)
 	if name == "" {
-		name = listing.DefaultConnectorName
+		name = listing.DefaultMCPName
 	}
 	ns := strings.TrimSpace(namespace)
 	if ns == "" {
 		ns = listing.DefaultNamespace
 	}
-	cfg := connector.Config{
+	cfg := mcp.Config{
 		Name:      name,
 		Namespace: ns,
-		Transport: connector.Transport(option.Transport),
+		Transport: mcp.Transport(option.Transport),
 		Command:   strings.TrimSpace(option.Command),
 		Args:      append([]string{}, option.Args...),
 		URL:       strings.TrimSpace(option.URL),
@@ -176,7 +176,7 @@ func BuildConnector(listing Listing, optionID, connectorName, namespace string, 
 	for _, field := range option.Fields {
 		value := strings.TrimSpace(values[field.Name])
 		if field.Required && value == "" {
-			return connector.Config{}, fmt.Errorf("marketplace field %q is required", field.Label)
+			return mcp.Config{}, fmt.Errorf("marketplace field %q is required", field.Label)
 		}
 		if value == "" {
 			continue
@@ -187,7 +187,7 @@ func BuildConnector(listing Listing, optionID, connectorName, namespace string, 
 			cfg.URL = value
 		case TargetHeader:
 			if strings.TrimSpace(field.Key) == "" {
-				return connector.Config{}, fmt.Errorf("marketplace field %q is missing a header key", field.Label)
+				return mcp.Config{}, fmt.Errorf("marketplace field %q is missing a header key", field.Label)
 			}
 			if field.Secret {
 				if cfg.SecretHeaders == nil {
@@ -202,7 +202,7 @@ func BuildConnector(listing Listing, optionID, connectorName, namespace string, 
 			}
 		case TargetEnv:
 			if strings.TrimSpace(field.Key) == "" {
-				return connector.Config{}, fmt.Errorf("marketplace field %q is missing an env key", field.Label)
+				return mcp.Config{}, fmt.Errorf("marketplace field %q is missing an env key", field.Label)
 			}
 			if field.Secret {
 				if cfg.SecretEnv == nil {
@@ -216,20 +216,20 @@ func BuildConnector(listing Listing, optionID, connectorName, namespace string, 
 				cfg.Env[field.Key] = value
 			}
 		default:
-			return connector.Config{}, fmt.Errorf("unsupported marketplace field target %q", field.Target)
+			return mcp.Config{}, fmt.Errorf("unsupported marketplace field target %q", field.Target)
 		}
 	}
 	switch cfg.Transport {
-	case connector.TransportStdio:
+	case mcp.TransportStdio:
 		if strings.TrimSpace(cfg.Command) == "" {
-			return connector.Config{}, fmt.Errorf("marketplace connector %q requires a command", listing.Name)
+			return mcp.Config{}, fmt.Errorf("marketplace mcp %q requires a command", listing.Name)
 		}
-	case connector.TransportHTTP, connector.TransportSSE:
+	case mcp.TransportHTTP, mcp.TransportSSE:
 		if strings.TrimSpace(cfg.URL) == "" {
-			return connector.Config{}, fmt.Errorf("marketplace connector %q requires a URL", listing.Name)
+			return mcp.Config{}, fmt.Errorf("marketplace mcp %q requires a URL", listing.Name)
 		}
 	default:
-		return connector.Config{}, fmt.Errorf("unsupported marketplace transport %q", option.Transport)
+		return mcp.Config{}, fmt.Errorf("unsupported marketplace transport %q", option.Transport)
 	}
 	return cfg, nil
 }

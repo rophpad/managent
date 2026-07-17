@@ -28,11 +28,15 @@ func (m *LoggerMiddleware) Handle(ctx context.Context, req middleware.Request, n
 		if resp.Error != nil {
 			decision = "error"
 		} else {
-			decision = "allow"
+			decision = "auto_allowed"
 		}
 	}
 
-	requestBody := map[string]any{"arguments": req.Arguments, "api_key_id": req.APIKeyID, "latency_ms": latency.Milliseconds(), "decision_reason": resp.DecisionReason}
+	requestBody := map[string]any{
+		"arguments":       req.Arguments,
+		"api_key_id":      req.APIKeyID,
+		"decision_reason": resp.DecisionReason,
+	}
 	responseBody := map[string]any{}
 	if resp.Result != nil {
 		responseBody["result"] = resp.Result
@@ -45,6 +49,19 @@ func (m *LoggerMiddleware) Handle(ctx context.Context, req middleware.Request, n
 		m.logger.Info("tool call completed", "tool", req.Tool, "workspace", req.WorkspaceID, "duration_ms", latency.Milliseconds())
 	}
 
-	m.audit.Write(ctx, audit.Record{Timestamp: time.Now().UTC(), WorkspaceID: req.WorkspaceID, Tool: req.Tool, Request: requestBody, Response: responseBody, Decision: decision})
+	m.audit.Write(ctx, audit.Record{
+		Timestamp:      time.Now().UTC(),
+		WorkspaceID:    req.WorkspaceID,
+		AgentID:        req.AgentID,
+		Tool:           req.Tool,
+		ToolID:         req.ToolID,
+		Action:         req.Action,
+		PayloadSummary: req.Arguments,
+		Request:        requestBody,
+		Response:       responseBody,
+		Decision:       decision,
+		DecidedBy:      resp.DecidedBy,
+		LatencyMS:      latency.Milliseconds(),
+	})
 	return resp
 }

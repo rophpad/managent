@@ -1,12 +1,21 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 
-import { getDashboardStats, getOverview } from "./lib";
+import { getOverview } from "./lib";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  if (!process.env.MANAGENT_ADMIN_TOKEN) {
+    const cookieStore = await cookies();
+    if (!cookieStore.get("managent_session")?.value) {
+      redirect("/login");
+    }
+  }
   const overview = await getOverview();
 
   return (
@@ -14,7 +23,6 @@ export default async function DashboardLayout({
       <div className="mx-auto flex h-screen max-w-[1600px] flex-col lg:flex-row">
         <DashboardSidebar
           workspaceName={overview.workspace.name}
-          stats={getDashboardStats(overview)}
         />
         <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8 lg:py-8 h-full overflow-y-auto">
             {children}

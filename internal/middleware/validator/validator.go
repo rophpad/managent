@@ -22,6 +22,9 @@ func (m *Middleware) Handle(ctx context.Context, req middleware.Request, next mi
 	if !ok {
 		return middleware.Response{Error: fmt.Errorf("unknown tool: %s", req.Tool), Decision: "deny", DecisionReason: "unknown tool"}
 	}
+	if req.ToolID == "" {
+		req.ToolID = entry.ToolID
+	}
 	if err := validateSchema(entry.Tool.InputSchema, req.Arguments); err != nil {
 		return middleware.Response{Error: fmt.Errorf("schema validation failed: %w", err), Decision: "deny", DecisionReason: "schema validation failed"}
 	}

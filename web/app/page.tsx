@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 const anxieties = [
   {
@@ -55,13 +56,6 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#f8f7f2] text-[#11140f]">
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between gap-5 px-6 py-6 text-center lg:px-8">
-        {/*<a
-          href="#top"
-          className="text-xl font-semibold"
-          aria-label="Managent home"
-        >
-          Managent
-        </a>*/}
         <Image
           src="/logo.png"
           alt="Managent logo"
@@ -80,12 +74,20 @@ export default function Home() {
             Beta
           </a>
         </nav>
-        <a
-          href="#beta"
-          className="rounded-full bg-[#11140f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2d3329]"
-        >
-          Early access
-        </a>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/login"
+            className="rounded-full border border-[#cfcabb] bg-white px-5 py-3 text-sm font-semibold text-[#11140f] transition hover:border-[#11140f]"
+          >
+            Login
+          </Link>
+          <Link
+            href="/signup"
+            className="rounded-full bg-[#11140f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2d3329]"
+          >
+            Sign up
+          </Link>
+        </div>
       </header>
 
       <section
@@ -106,18 +108,18 @@ export default function Home() {
         </p>
 
         <div className="mt-5 flex w-full flex-col items-center justify-center gap-3 sm:flex-row">
-          <a
-            href="#beta"
+          <Link
+            href="/signup"
             className="inline-flex w-max items-center justify-center rounded-full bg-[#11140f] px-6 py-3 text-base font-semibold text-white transition hover:bg-[#2d3329]"
           >
-            Join the Beta
-          </a>
-          <a
-            href="#problem"
+            Create account
+          </Link>
+          <Link
+            href="/login"
             className="inline-flex w-max items-center justify-center rounded-full border border-[#cfcabb] bg-white px-6 py-3 text-base font-semibold text-[#11140f] transition hover:border-[#11140f]"
           >
-            See how it protects production
-          </a>
+            Log in
+          </Link>
         </div>
 
         <div className="mt-8 flex flex-wrap justify-center gap-2 text-sm font-medium text-[#565b50]">

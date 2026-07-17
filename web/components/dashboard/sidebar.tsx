@@ -3,17 +3,20 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { logoutAction } from "@/app/auth-actions";
+import { secondaryButtonClass } from "./primitives";
 
 const navItems = [
-  { label: "Overview", href: "/dashboard" },
-  { label: "Connectors", href: "/dashboard/connectors" },
-  { label: "Policies", href: "/dashboard/policies" },
-  { label: "Logs", href: "/dashboard/logs" },
-  { label: "Settings", href: "/dashboard/settings" },
+  { label: "Overview", href: "/overview" },
+  { label: "Agents", href: "/agents" },
+  { label: "MCPs", href: "/mcps" },
+  { label: "Policies", href: "/policies" },
+  { label: "Logs", href: "/logs" },
+  { label: "Settings", href: "/settings" },
 ];
 
 function isActivePath(pathname: string, href: string) {
-  if (href === "/dashboard") {
+  if (href === "/overview") {
     return pathname === href;
   }
 
@@ -22,14 +25,8 @@ function isActivePath(pathname: string, href: string) {
 
 export function DashboardSidebar({
   workspaceName,
-  stats,
 }: {
   workspaceName: string;
-  stats: {
-    connectors: number;
-    policies: number;
-    auditLogs: number;
-  };
 }) {
   const pathname = usePathname();
 
@@ -69,14 +66,20 @@ export function DashboardSidebar({
           })}
         </nav>
 
+        <div className="mt-6 lg:mt-auto">
+          <form action={logoutAction}>
+            <button className={`${secondaryButtonClass} w-full`}>Logout</button>
+          </form>
+        </div>
+
         {/* <div className="mt-8 rounded-lg border border-[#e7e7e5] bg-white p-4 lg:mt-auto">
           <p className="text-xs font-medium uppercase tracking-wide text-[#8a8a86]">
             Workspace
           </p>
           <dl className="mt-3 grid gap-3 text-sm text-[#5f5f5b]">
             <div className="flex items-center justify-between gap-3">
-              <dt>Connectors</dt>
-              <dd className="font-medium text-[#191917]">{stats.connectors}</dd>
+              <dt>MCPs</dt>
+              <dd className="font-medium text-[#191917]">{stats.mcps}</dd>
             </div>
             <div className="flex items-center justify-between gap-3">
               <dt>Policies</dt>

@@ -1,27 +1,22 @@
 package app
 
 import (
+	"bytes"
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"log/slog"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-
 	"github.com/rophpad/managent/internal/audit"
-	"github.com/rophpad/managent/internal/authz"
 	"github.com/rophpad/managent/internal/config"
-	"github.com/rophpad/managent/internal/connector"
 	"github.com/rophpad/managent/internal/database"
 	"github.com/rophpad/managent/internal/gateway"
 	"github.com/rophpad/managent/internal/marketplace"
+	"github.com/rophpad/managent/internal/mcp"
 	"github.com/rophpad/managent/internal/mcp/protocol"
 	mcpserver "github.com/rophpad/managent/internal/mcp/server"
 	"github.com/rophpad/managent/internal/middleware"
+	approvalmiddleware "github.com/rophpad/managent/internal/middleware/approval"
 	authmiddleware "github.com/rophpad/managent/internal/middleware/auth"
 	credentialmiddleware "github.com/rophpad/managent/internal/middleware/credential"
 	logmiddleware "github.com/rophpad/managent/internal/middleware/logger"
@@ -31,6 +26,13 @@ import (
 	"github.com/rophpad/managent/internal/registry"
 	"github.com/rophpad/managent/internal/router"
 	"github.com/rophpad/managent/internal/secrets"
+	"io"
+	"log/slog"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type Runtime struct {
@@ -38,27 +40,29 @@ type Runtime struct {
 	logger     *slog.Logger
 	audit      *audit.Logger
 	registry   *registry.Registry
-	connectors *connector.Manager
+	mcps       *mcp.Manager
 	httpServer *gateway.Server
 	handler    *mcpserver.Handler
 	db         *database.Store
 	workspace  database.Workspace
 	policies   *policy.Engine
+	approvals  *approvalStore
 }
 
 type overviewResponse struct {
-	Workspace  database.Workspace         `json:"workspace"`
-	APIKeys    []database.APIKeyRecord    `json:"apiKeys"`
-	Connectors []database.ConnectorRecord `json:"connectors"`
-	Policies   []database.PolicyRecord    `json:"policies"`
-	AuditLogs  []database.AuditLogRecord  `json:"auditLogs"`
+	Workspace            database.Workspace                   `json:"workspace"`
+	Agents               []database.AgentRecord               `json:"agents"`
+	MCPs                 []database.MCPRecord                 `json:"mcps"`
+	Policies             []database.PolicyRecord              `json:"policies"`
+	AuditLogs            []database.AuditLogRecord            `json:"auditLogs"`
+	ApprovalIntegrations []database.ApprovalIntegrationRecord `json:"approvalIntegrations"`
 }
 
 func New(ctx context.Context, cfg *config.Config) (*Runtime, error) {
 	logger := newLogger(cfg)
-	secretCipher, err := secrets.NewCipher(cfg.Security.ConnectorSecretKey)
+	secretCipher, err := secrets.NewCipher(cfg.Security.MCPSecretKey)
 	if err != nil {
-		return nil, fmt.Errorf("connector secret key: %w", err)
+		return nil, fmt.Errorf("mcp secret key: %w", err)
 	}
 	db, err := database.Open(ctx, cfg.Database, secretCipher)
 	if err != nil {
@@ -82,20 +86,20 @@ func New(ctx context.Context, cfg *config.Config) (*Runtime, error) {
 	logger = logger.With("workspace_id", workspace.ID)
 	auditLogger := audit.NewLogger(logger, audit.NewStore(db))
 	reg := registry.New()
-	connMgr := connector.NewManager(logger, db)
+	mcpMgr := mcp.NewManager(logger, db)
 
-	persistedConnectors, err := db.ListConnectorConfigs(ctx, workspace.ID)
+	persistedMCPs, err := db.ListMCPConfigs(ctx, workspace.ID)
 	if err != nil {
-		return nil, fmt.Errorf("load connectors: %w", err)
+		return nil, fmt.Errorf("load mcps: %w", err)
 	}
-	for _, cfgConnector := range persistedConnectors {
-		connMgr.Add(cfgConnector)
+	for _, cfgMCP := range persistedMCPs {
+		mcpMgr.Add(cfgMCP)
 	}
-	if err := connMgr.StartAll(ctx); err != nil {
-		logger.Warn("one or more connectors failed to start", "error", err)
+	if err := mcpMgr.StartAll(ctx); err != nil {
+		logger.Warn("one or more mcps failed to start", "error", err)
 	}
-	if err := connMgr.SyncRegistry(ctx, reg); err != nil {
-		logger.Warn("failed to synchronize connector tools", "error", err)
+	if err := mcpMgr.SyncRegistry(ctx, reg); err != nil {
+		logger.Warn("failed to synchronize mcp tools", "error", err)
 	}
 
 	policyEngine := policy.NewEngine(logger)
@@ -104,18 +108,21 @@ func New(ctx context.Context, cfg *config.Config) (*Runtime, error) {
 		return nil, fmt.Errorf("load policies: %w", err)
 	}
 	policyEngine.ReplaceRules(persistedRules)
+	approvalStore := newApprovalStore(db)
+	approvalNotifier := newApprovalNotifier(db, controlPlaneBaseURL(cfg), logger)
 
 	credentialStore := credentialmiddleware.NewStore()
 	for _, rule := range cfg.CredentialInjection {
 		credentialStore.AddRule(credentialmiddleware.Rule{Name: rule.Name, ToolPattern: rule.ToolPattern, Arguments: rule.Arguments})
 	}
 
-	rtr := router.New(reg, connMgr, logger)
+	rtr := router.New(reg, mcpMgr, logger)
 	pipeline := middleware.Chain(
 		[]middleware.Middleware{
 			authmiddleware.NewMiddleware(db),
 			logmiddleware.New(logger, auditLogger),
 			policymiddleware.NewMiddleware(policyEngine, logger),
+			approvalmiddleware.NewMiddleware(approvalStore, approvalNotifier, 15*time.Minute, logger),
 			validatormiddleware.New(reg),
 			credentialmiddleware.NewMiddleware(credentialStore),
 		},
@@ -124,7 +131,7 @@ func New(ctx context.Context, cfg *config.Config) (*Runtime, error) {
 			if err != nil {
 				return middleware.Response{Error: err, Decision: "error", DecisionReason: err.Error()}
 			}
-			return middleware.Response{Result: result, Decision: "allow"}
+			return middleware.Response{Result: result, Decision: "auto_allowed"}
 		},
 	)
 
@@ -134,19 +141,26 @@ func New(ctx context.Context, cfg *config.Config) (*Runtime, error) {
 	httpServer.RegisterHandler(cfg.Gateway.Endpoint, withBearerContext(handler))
 	httpServer.RegisterHandler(cfg.Gateway.Endpoint+"/sse", withBearerContext(http.HandlerFunc(handler.ServeSSE)))
 
-	runtime := &Runtime{cfg: cfg, logger: logger, audit: auditLogger, registry: reg, connectors: connMgr, httpServer: httpServer, handler: handler, db: db, workspace: workspace, policies: policyEngine}
+	runtime := &Runtime{cfg: cfg, logger: logger, audit: auditLogger, registry: reg, mcps: mcpMgr, httpServer: httpServer, handler: handler, db: db, workspace: workspace, policies: policyEngine, approvals: approvalStore}
 	runtime.registerControlPlaneRoutes()
 	return runtime, nil
 }
 
 func (r *Runtime) registerControlPlaneRoutes() {
+	r.httpServer.RegisterHandler("/api/v1/auth/signup", http.HandlerFunc(r.handleSignup))
+	r.httpServer.RegisterHandler("/api/v1/auth/login", http.HandlerFunc(r.handleLogin))
 	r.httpServer.RegisterHandler("/api/v1/overview", r.adminOnly(http.HandlerFunc(r.handleOverview)))
-	r.httpServer.RegisterHandler("/api/v1/api-keys", r.adminOnly(http.HandlerFunc(r.handleAPIKeys)))
-	r.httpServer.RegisterHandler("/api/v1/connectors", r.adminOnly(http.HandlerFunc(r.handleConnectors)))
-	r.httpServer.RegisterHandler("/api/v1/connectors/", r.adminOnly(http.HandlerFunc(r.handleConnectorActions)))
+	r.httpServer.RegisterHandler("/api/v1/agents", r.adminOnly(http.HandlerFunc(r.handleAgents)))
+	r.httpServer.RegisterHandler("/api/v1/agents/", r.adminOnly(http.HandlerFunc(r.handleAgentActions)))
+	r.httpServer.RegisterHandler("/api/v1/mcps", r.adminOnly(http.HandlerFunc(r.handleMCPs)))
+	r.httpServer.RegisterHandler("/api/v1/mcps/", r.adminOnly(http.HandlerFunc(r.handleMCPActions)))
 	r.httpServer.RegisterHandler("/api/v1/marketplace", r.adminOnly(http.HandlerFunc(r.handleMarketplace)))
 	r.httpServer.RegisterHandler("/api/v1/policies", r.adminOnly(http.HandlerFunc(r.handlePolicies)))
+	r.httpServer.RegisterHandler("/api/v1/policies/reorder", r.adminOnly(http.HandlerFunc(r.handlePolicyReorder)))
+	r.httpServer.RegisterHandler("/api/v1/policies/test", r.adminOnly(http.HandlerFunc(r.handlePolicyTest)))
+	r.httpServer.RegisterHandler("/api/v1/approval-integrations", r.adminOnly(http.HandlerFunc(r.handleApprovalIntegrations)))
 	r.httpServer.RegisterHandler("/api/v1/audit-logs", r.adminOnly(http.HandlerFunc(r.handleAuditLogs)))
+	r.httpServer.RegisterHandler("/api/v1/approvals/webhook/", http.HandlerFunc(r.handleApprovalWebhook))
 }
 
 func (r *Runtime) StartHTTP() error {
@@ -164,7 +178,7 @@ func (r *Runtime) Shutdown(ctx context.Context) error {
 	if err := r.httpServer.Shutdown(ctx); err != nil {
 		errs = append(errs, err)
 	}
-	if err := r.connectors.StopAll(); err != nil {
+	if err := r.mcps.StopAll(); err != nil {
 		errs = append(errs, err)
 	}
 	if r.db != nil {
@@ -191,12 +205,17 @@ func (p *pipelineProvider) CallTool(ctx context.Context, params protocol.ToolCal
 }
 
 func (r *Runtime) adminOnly(next http.Handler) http.Handler {
-	if strings.TrimSpace(r.cfg.Admin.Token) == "" {
-		return next
-	}
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		token := strings.TrimSpace(strings.TrimPrefix(req.Header.Get("Authorization"), "Bearer "))
-		if token != r.cfg.Admin.Token {
+		if token == "" {
+			writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "unauthorized"})
+			return
+		}
+		if strings.TrimSpace(r.cfg.Admin.Token) != "" && token == r.cfg.Admin.Token {
+			next.ServeHTTP(w, req)
+			return
+		}
+		if _, ok, err := r.db.ValidateUserSession(req.Context(), token); err != nil || !ok {
 			writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "unauthorized"})
 			return
 		}
@@ -204,17 +223,69 @@ func (r *Runtime) adminOnly(next http.Handler) http.Handler {
 	})
 }
 
+func (r *Runtime) handleSignup(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
+		return
+	}
+	var payload struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+		return
+	}
+	user, err := r.db.CreateUser(req.Context(), payload.Email, payload.Password)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+		return
+	}
+	token, expiresAt, err := r.db.CreateUserSession(req.Context(), user.ID, 7*24*time.Hour)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"user": user, "token": token, "expiresAt": expiresAt})
+}
+
+func (r *Runtime) handleLogin(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
+		return
+	}
+	var payload struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+		return
+	}
+	user, err := r.db.AuthenticateUser(req.Context(), payload.Email, payload.Password)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": err.Error()})
+		return
+	}
+	token, expiresAt, err := r.db.CreateUserSession(req.Context(), user.ID, 7*24*time.Hour)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"user": user, "token": token, "expiresAt": expiresAt})
+}
+
 func (r *Runtime) handleOverview(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
 		return
 	}
-	apiKeys, err := r.db.ListAPIKeys(req.Context(), r.workspace.ID)
+	agents, err := r.db.ListAgents(req.Context(), r.workspace.ID)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 		return
 	}
-	connectors, err := r.db.ListConnectors(req.Context(), r.workspace.ID)
+	mcps, err := r.db.ListMCPs(req.Context(), r.workspace.ID)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 		return
@@ -229,86 +300,210 @@ func (r *Runtime) handleOverview(w http.ResponseWriter, req *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 		return
 	}
-	writeJSON(w, http.StatusOK, overviewResponse{Workspace: r.workspace, APIKeys: apiKeys, Connectors: connectors, Policies: policies, AuditLogs: auditLogs})
+	approvalIntegrations, err := r.db.ListApprovalIntegrations(req.Context(), r.workspace.ID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, overviewResponse{
+		Workspace:            r.workspace,
+		Agents:               agents,
+		MCPs:                 mcps,
+		Policies:             policies,
+		AuditLogs:            auditLogs,
+		ApprovalIntegrations: approvalIntegrations,
+	})
 }
 
-func (r *Runtime) handleAPIKeys(w http.ResponseWriter, req *http.Request) {
+func (r *Runtime) handleAgents(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		apiKeys, err := r.db.ListAPIKeys(req.Context(), r.workspace.ID)
+		agents, err := r.db.ListAgents(req.Context(), r.workspace.ID)
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]any{"items": apiKeys})
+		writeJSON(w, http.StatusOK, map[string]any{"items": agents})
 	case http.MethodPost:
-		rawToken, err := authz.GenerateAPIKey()
+		var payload struct {
+			Name string   `json:"name"`
+			Tags []string `json:"tags"`
+		}
+		if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+			return
+		}
+		record, err := r.db.CreateAgent(req.Context(), r.workspace.ID, payload.Name, "", payload.Tags)
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return
 		}
-		record, err := r.db.CreateAPIKey(req.Context(), r.workspace.ID, rawToken)
-		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
-			return
-		}
-		writeJSON(w, http.StatusCreated, database.APIKeyCreateResult{Record: record, RawToken: rawToken})
+		writeJSON(w, http.StatusCreated, record)
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
 	}
 }
 
-type connectorPayload struct {
-	Name          string            `json:"name"`
-	Namespace     string            `json:"namespace"`
-	Transport     string            `json:"transport"`
-	Command       string            `json:"command"`
-	Args          []string          `json:"args"`
-	URL           string            `json:"url"`
-	Headers       map[string]string `json:"headers"`
-	Env           map[string]string `json:"env"`
-	SecretEnv     map[string]string `json:"secretEnv"`
-	SecretHeaders map[string]string `json:"secretHeaders"`
-	Enabled       bool              `json:"enabled"`
+func (r *Runtime) handleAgentActions(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
+		return
+	}
+	path := strings.TrimPrefix(req.URL.Path, "/api/v1/agents/")
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) < 2 {
+		writeJSON(w, http.StatusNotFound, map[string]any{"error": "not found"})
+		return
+	}
+	agentID := parts[0]
+	switch {
+	case len(parts) == 2 && parts[1] == "suspend":
+		if err := r.db.UpdateAgentStatus(req.Context(), r.workspace.ID, agentID, "suspended"); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			return
+		}
+		agent, err := r.db.GetAgent(req.Context(), r.workspace.ID, agentID)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, agent)
+	case len(parts) == 2 && parts[1] == "activate":
+		if err := r.db.UpdateAgentStatus(req.Context(), r.workspace.ID, agentID, "active"); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			return
+		}
+		agent, err := r.db.GetAgent(req.Context(), r.workspace.ID, agentID)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, agent)
+	case len(parts) == 2 && parts[1] == "keys":
+		record, rawToken, err := r.db.CreateAgentKey(req.Context(), r.workspace.ID, agentID)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]any{"record": record, "rawToken": rawToken})
+	case len(parts) == 4 && parts[1] == "keys" && parts[3] == "revoke":
+		if err := r.db.RevokeAgentKey(req.Context(), r.workspace.ID, agentID, parts[2]); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"status": "revoked"})
+	case len(parts) == 4 && parts[1] == "keys" && parts[3] == "rotate":
+		record, rawToken, err := r.db.RotateAgentKey(req.Context(), r.workspace.ID, agentID, parts[2])
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"record": record, "rawToken": rawToken})
+	case len(parts) == 2 && parts[1] == "detail":
+		agent, err := r.db.GetAgent(req.Context(), r.workspace.ID, agentID)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			return
+		}
+		keys, err := r.db.ListAgentKeys(req.Context(), r.workspace.ID, agentID)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"agent": agent, "keys": keys})
+	default:
+		writeJSON(w, http.StatusNotFound, map[string]any{"error": "not found"})
+	}
 }
 
-func buildConnectorConfigFromPayload(payload connectorPayload) (connector.Config, error) {
-	cfg := connector.Config{
-		Name:          strings.TrimSpace(payload.Name),
-		Namespace:     strings.TrimSpace(payload.Namespace),
-		Transport:     connector.Transport(strings.TrimSpace(payload.Transport)),
-		Command:       strings.TrimSpace(payload.Command),
-		Args:          append([]string{}, payload.Args...),
-		URL:           strings.TrimSpace(payload.URL),
-		Headers:       payload.Headers,
-		Env:           payload.Env,
-		SecretEnv:     payload.SecretEnv,
-		SecretHeaders: payload.SecretHeaders,
-		Enabled:       payload.Enabled,
+type mcpPayload struct {
+	AgentID         string            `json:"agentId"`
+	Name            string            `json:"name"`
+	Namespace       string            `json:"namespace"`
+	Transport       string            `json:"transport"`
+	Endpoint        string            `json:"endpoint"`
+	Command         string            `json:"command"`
+	Args            []string          `json:"args"`
+	URL             string            `json:"url"`
+	Headers         map[string]string `json:"headers"`
+	Env             map[string]string `json:"env"`
+	Method          string            `json:"method"`
+	URLTemplate     string            `json:"urlTemplate"`
+	CredentialName  string            `json:"credentialName"`
+	CredentialValue string            `json:"credentialValue"`
+	InputSchema     map[string]any    `json:"inputSchema"`
+	OutputSchema    map[string]any    `json:"outputSchema"`
+	SecretEnv       map[string]string `json:"secretEnv"`
+	SecretHeaders   map[string]string `json:"secretHeaders"`
+	Enabled         bool              `json:"enabled"`
+}
+
+func buildMCPConfigFromPayload(payload mcpPayload) (mcp.Config, error) {
+	cfg := mcp.Config{
+		AgentID:          strings.TrimSpace(payload.AgentID),
+		Name:             strings.TrimSpace(payload.Name),
+		Namespace:        strings.TrimSpace(payload.Namespace),
+		Transport:        mcp.Transport(strings.TrimSpace(payload.Transport)),
+		Endpoint:         strings.TrimSpace(payload.Endpoint),
+		Command:          strings.TrimSpace(payload.Command),
+		Args:             append([]string{}, payload.Args...),
+		URL:              strings.TrimSpace(payload.URL),
+		Headers:          payload.Headers,
+		Env:              payload.Env,
+		Method:           strings.TrimSpace(payload.Method),
+		URLTemplate:      strings.TrimSpace(payload.URLTemplate),
+		CredentialTarget: "header",
+		CredentialName:   strings.TrimSpace(payload.CredentialName),
+		InputSchema:      payload.InputSchema,
+		OutputSchema:     payload.OutputSchema,
+		SecretEnv:        payload.SecretEnv,
+		SecretHeaders:    payload.SecretHeaders,
+		Enabled:          payload.Enabled,
+	}
+	if cfg.Endpoint == "" {
+		cfg.Endpoint = cfg.URL
+	}
+	if cfg.CredentialName == "" {
+		cfg.CredentialName = "Authorization"
+	}
+	if payload.CredentialValue != "" {
+		cfg.SecretHeaders = mergeMCPSecrets(cfg.SecretHeaders, map[string]string{cfg.CredentialName: payload.CredentialValue})
+		cfg.CredentialRef = fmt.Sprintf("vault://mcps/%s/%s", cfg.Name, cfg.CredentialName)
 	}
 	switch cfg.Transport {
-	case connector.TransportStdio:
+	case mcp.TransportStdio:
 		if cfg.Command == "" {
-			return connector.Config{}, fmt.Errorf("stdio connectors require a command")
+			return mcp.Config{}, fmt.Errorf("stdio mcps require a command")
 		}
 		cfg.URL = ""
 		cfg.Headers = nil
 		cfg.SecretHeaders = nil
-	case connector.TransportHTTP, connector.TransportSSE:
+	case mcp.TransportHTTP, mcp.TransportSSE:
 		if cfg.URL == "" {
-			return connector.Config{}, fmt.Errorf("%s connectors require a url", payload.Transport)
+			return mcp.Config{}, fmt.Errorf("%s mcps require a url", payload.Transport)
 		}
 		cfg.Command = ""
 		cfg.Args = nil
 		cfg.Env = nil
 		cfg.SecretEnv = nil
+	case mcp.TransportREST:
+		if cfg.URLTemplate == "" {
+			return mcp.Config{}, fmt.Errorf("rest adapters require a url template")
+		}
+		if cfg.Method == "" {
+			cfg.Method = http.MethodPost
+		}
+		cfg.URL = cfg.URLTemplate
+		cfg.Endpoint = cfg.URLTemplate
+		cfg.SecretEnv = nil
+		cfg.Env = nil
 	default:
-		return connector.Config{}, fmt.Errorf("unsupported connector transport %q", payload.Transport)
+		return mcp.Config{}, fmt.Errorf("unsupported mcp transport %q", payload.Transport)
 	}
 	return cfg, nil
 }
 
-func mergeConnectorSecrets(current, update map[string]string) map[string]string {
+func mergeMCPSecrets(current, update map[string]string) map[string]string {
 	if len(current) == 0 && len(update) == 0 {
 		return nil
 	}
@@ -332,8 +527,8 @@ func mergeConnectorSecrets(current, update map[string]string) map[string]string 
 	return out
 }
 
-func (r *Runtime) refreshedConnectorRecord(ctx context.Context, fallback database.ConnectorRecord) database.ConnectorRecord {
-	updated, err := r.db.ListConnectors(ctx, r.workspace.ID)
+func (r *Runtime) refreshedMCPRecord(ctx context.Context, fallback database.MCPRecord) database.MCPRecord {
+	updated, err := r.db.ListMCPs(ctx, r.workspace.ID)
 	if err != nil {
 		return fallback
 	}
@@ -345,69 +540,69 @@ func (r *Runtime) refreshedConnectorRecord(ctx context.Context, fallback databas
 	return fallback
 }
 
-func (r *Runtime) applyConnectorConfig(ctx context.Context, cfg connector.Config, syncWarning string) (database.ConnectorRecord, error) {
-	record, err := r.db.UpdateConnector(ctx, r.workspace.ID, cfg)
+func (r *Runtime) applyMCPConfig(ctx context.Context, cfg mcp.Config, syncWarning string) (database.MCPRecord, error) {
+	record, err := r.db.UpdateMCP(ctx, r.workspace.ID, cfg)
 	if err != nil {
-		return database.ConnectorRecord{}, err
+		return database.MCPRecord{}, err
 	}
-	if err := r.db.ReplaceConnectorTools(ctx, record.ID, nil); err != nil {
-		return database.ConnectorRecord{}, err
+	if err := r.db.ReplaceMCPTools(ctx, record.ID, nil); err != nil {
+		return database.MCPRecord{}, err
 	}
-	if startErr := r.connectors.Replace(ctx, cfg); startErr != nil {
-		record.Status = string(connector.StatusError)
+	if startErr := r.mcps.Replace(ctx, cfg); startErr != nil {
+		record.Status = string(mcp.StatusError)
 		record.LastError = startErr.Error()
 	}
-	if err := r.connectors.SyncRegistry(ctx, r.registry); err != nil {
+	if err := r.mcps.SyncRegistry(ctx, r.registry); err != nil {
 		r.logger.Warn(syncWarning, "error", err)
 	}
-	return r.refreshedConnectorRecord(ctx, record), nil
+	return r.refreshedMCPRecord(ctx, record), nil
 }
 
-func (r *Runtime) handleConnectors(w http.ResponseWriter, req *http.Request) {
+func (r *Runtime) handleMCPs(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		connectors, err := r.db.ListConnectors(req.Context(), r.workspace.ID)
+		mcps, err := r.db.ListMCPs(req.Context(), r.workspace.ID)
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]any{"items": connectors})
+		writeJSON(w, http.StatusOK, map[string]any{"items": mcps})
 	case http.MethodPost:
-		var payload connectorPayload
+		var payload mcpPayload
 		if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 			return
 		}
-		cfg, err := buildConnectorConfigFromPayload(payload)
+		cfg, err := buildMCPConfigFromPayload(payload)
 		if err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 			return
 		}
-		record, err := r.db.CreateConnector(req.Context(), r.workspace.ID, cfg)
+		record, err := r.db.CreateMCP(req.Context(), r.workspace.ID, cfg)
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return
 		}
 		cfg.ID = record.ID
-		if startErr := r.connectors.Replace(req.Context(), cfg); startErr != nil {
-			record.Status = string(connector.StatusError)
+		if startErr := r.mcps.Replace(req.Context(), cfg); startErr != nil {
+			record.Status = string(mcp.StatusError)
 			record.LastError = startErr.Error()
 		}
-		if err := r.connectors.SyncRegistry(req.Context(), r.registry); err != nil {
-			r.logger.Warn("registry sync failed after connector create", "error", err)
+		if err := r.mcps.SyncRegistry(req.Context(), r.registry); err != nil {
+			r.logger.Warn("registry sync failed after mcp create", "error", err)
 		}
-		writeJSON(w, http.StatusCreated, r.refreshedConnectorRecord(req.Context(), record))
+		writeJSON(w, http.StatusCreated, r.refreshedMCPRecord(req.Context(), record))
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
 	}
 }
 
-func (r *Runtime) handleConnectorActions(w http.ResponseWriter, req *http.Request) {
+func (r *Runtime) handleMCPActions(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
 		return
 	}
-	path := strings.TrimPrefix(req.URL.Path, "/api/v1/connectors/")
+	path := strings.TrimPrefix(req.URL.Path, "/api/v1/mcps/")
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 	if len(parts) != 2 {
 		writeJSON(w, http.StatusNotFound, map[string]any{"error": "not found"})
@@ -417,75 +612,93 @@ func (r *Runtime) handleConnectorActions(w http.ResponseWriter, req *http.Reques
 	action := parts[1]
 	switch action {
 	case "reconnect":
-		if err := r.db.ReplaceConnectorTools(req.Context(), id, nil); err != nil {
+		if err := r.db.ReplaceMCPTools(req.Context(), id, nil); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return
 		}
-		if err := r.connectors.Reconnect(req.Context(), id); err != nil {
+		if err := r.mcps.Reconnect(req.Context(), id); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return
 		}
-		if err := r.connectors.SyncRegistry(req.Context(), r.registry); err != nil {
-			r.logger.Warn("registry sync failed after connector reconnect", "error", err)
+		if err := r.mcps.SyncRegistry(req.Context(), r.registry); err != nil {
+			r.logger.Warn("registry sync failed after mcp reconnect", "error", err)
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"status": "reconnected"})
 	case "connect":
-		cfg, err := r.db.GetConnectorConfig(req.Context(), r.workspace.ID, id)
+		cfg, err := r.db.GetMCPConfig(req.Context(), r.workspace.ID, id)
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return
 		}
 		cfg.Enabled = true
-		record, err := r.applyConnectorConfig(req.Context(), cfg, "registry sync failed after connector connect")
+		record, err := r.applyMCPConfig(req.Context(), cfg, "registry sync failed after mcp connect")
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return
 		}
 		writeJSON(w, http.StatusOK, record)
 	case "disconnect":
-		cfg, err := r.db.GetConnectorConfig(req.Context(), r.workspace.ID, id)
+		cfg, err := r.db.GetMCPConfig(req.Context(), r.workspace.ID, id)
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return
 		}
 		cfg.Enabled = false
-		record, err := r.applyConnectorConfig(req.Context(), cfg, "registry sync failed after connector disconnect")
+		record, err := r.applyMCPConfig(req.Context(), cfg, "registry sync failed after mcp disconnect")
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return
 		}
 		writeJSON(w, http.StatusOK, record)
 	case "update":
-		var payload connectorPayload
+		var payload mcpPayload
 		if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 			return
 		}
-		current, err := r.db.GetConnectorConfig(req.Context(), r.workspace.ID, id)
+		current, err := r.db.GetMCPConfig(req.Context(), r.workspace.ID, id)
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return
 		}
-		cfg, err := buildConnectorConfigFromPayload(payload)
+		cfg, err := buildMCPConfigFromPayload(payload)
 		if err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 			return
 		}
 		cfg.ID = id
 		cfg.Enabled = current.Enabled
-		if cfg.Transport == connector.TransportStdio {
-			cfg.SecretEnv = mergeConnectorSecrets(current.SecretEnv, payload.SecretEnv)
+		if cfg.Transport == mcp.TransportStdio {
+			cfg.SecretEnv = mergeMCPSecrets(current.SecretEnv, payload.SecretEnv)
 			cfg.SecretHeaders = nil
 		} else {
-			cfg.SecretHeaders = mergeConnectorSecrets(current.SecretHeaders, payload.SecretHeaders)
+			cfg.SecretHeaders = mergeMCPSecrets(current.SecretHeaders, payload.SecretHeaders)
 			cfg.SecretEnv = nil
 		}
-		record, err := r.applyConnectorConfig(req.Context(), cfg, "registry sync failed after connector update")
+		record, err := r.applyMCPConfig(req.Context(), cfg, "registry sync failed after mcp update")
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return
 		}
 		writeJSON(w, http.StatusOK, record)
+	case "test":
+		var payload mcpPayload
+		if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+			return
+		}
+		cfg, err := buildMCPConfigFromPayload(payload)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+			return
+		}
+		testMCP := mcp.New(cfg, r.logger, nil)
+		if err := testMCP.Start(req.Context()); err != nil {
+			writeJSON(w, http.StatusOK, map[string]any{"status": "error", "message": err.Error()})
+			return
+		}
+		_ = testMCP.Stop()
+		writeJSON(w, http.StatusOK, map[string]any{"status": "connected", "message": "Connection successful"})
 	default:
 		writeJSON(w, http.StatusNotFound, map[string]any{"error": "not found"})
 	}
@@ -512,27 +725,27 @@ func (r *Runtime) handleMarketplace(w http.ResponseWriter, req *http.Request) {
 			writeJSON(w, http.StatusNotFound, map[string]any{"error": "marketplace listing not found"})
 			return
 		}
-		cfg, err := marketplace.BuildConnector(listing, payload.TransportOption, payload.Name, payload.Namespace, payload.Values)
+		cfg, err := marketplace.BuildMCP(listing, payload.TransportOption, payload.Name, payload.Namespace, payload.Values)
 		if err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 			return
 		}
-		record, err := r.db.CreateConnector(req.Context(), r.workspace.ID, cfg)
+		record, err := r.db.CreateMCP(req.Context(), r.workspace.ID, cfg)
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return
 		}
 		cfg.ID = record.ID
-		r.connectors.Add(cfg)
-		startErr := r.connectors.Reconnect(req.Context(), record.ID)
-		if err := r.connectors.SyncRegistry(req.Context(), r.registry); err != nil {
+		r.mcps.Add(cfg)
+		startErr := r.mcps.Reconnect(req.Context(), record.ID)
+		if err := r.mcps.SyncRegistry(req.Context(), r.registry); err != nil {
 			r.logger.Warn("registry sync failed after marketplace install", "error", err)
 		}
 		if startErr != nil {
-			record.Status = string(connector.StatusError)
+			record.Status = string(mcp.StatusError)
 			record.LastError = startErr.Error()
 		}
-		updated, err := r.db.ListConnectors(req.Context(), r.workspace.ID)
+		updated, err := r.db.ListMCPs(req.Context(), r.workspace.ID)
 		if err == nil {
 			for _, item := range updated {
 				if item.ID == record.ID {
@@ -558,16 +771,33 @@ func (r *Runtime) handlePolicies(w http.ResponseWriter, req *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"items": policies})
 	case http.MethodPost:
 		var payload struct {
-			Name       string                            `json:"name"`
-			Tool       string                            `json:"tool"`
-			Action     string                            `json:"action"`
-			Conditions map[string]config.ConditionConfig `json:"conditions"`
+			Name            string           `json:"name"`
+			SubjectType     string           `json:"subjectType"`
+			SubjectValue    string           `json:"subjectValue"`
+			Tool            string           `json:"tool"`
+			ActionName      string           `json:"actionName"`
+			Effect          string           `json:"effect"`
+			Condition       policy.Condition `json:"condition"`
+			RateLimit       string           `json:"rateLimit"`
+			ChannelOverride string           `json:"channelOverride"`
+			Precedence      int              `json:"precedence"`
 		}
 		if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 			return
 		}
-		record, err := r.db.CreatePolicy(req.Context(), r.workspace.ID, database.PolicyRecord{Name: payload.Name, Tool: payload.Tool, Action: payload.Action, Conditions: payload.Conditions})
+		record, err := r.db.CreatePolicy(req.Context(), r.workspace.ID, database.PolicyRecord{
+			Name:            payload.Name,
+			SubjectType:     payload.SubjectType,
+			SubjectValue:    payload.SubjectValue,
+			Tool:            payload.Tool,
+			ActionName:      payload.ActionName,
+			Effect:          payload.Effect,
+			Condition:       payload.Condition,
+			RateLimit:       payload.RateLimit,
+			ChannelOverride: payload.ChannelOverride,
+			Precedence:      payload.Precedence,
+		})
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return
@@ -582,12 +812,61 @@ func (r *Runtime) handlePolicies(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (r *Runtime) handlePolicyReorder(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
+		return
+	}
+	var payload struct {
+		IDs []string `json:"ids"`
+	}
+	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+		return
+	}
+	if err := r.db.ReorderPolicies(req.Context(), r.workspace.ID, payload.IDs); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return
+	}
+	rules, err := r.db.LoadPolicyRules(req.Context(), r.workspace.ID)
+	if err == nil {
+		r.policies.ReplaceRules(rules)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+func (r *Runtime) handlePolicyTest(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
+		return
+	}
+	var payload struct {
+		AgentID string         `json:"agentId"`
+		Tags    []string       `json:"tags"`
+		Tool    string         `json:"tool"`
+		Action  string         `json:"action"`
+		Request map[string]any `json:"request"`
+	}
+	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+		return
+	}
+	decision := r.policies.Evaluate(policy.Request{
+		AgentID:   payload.AgentID,
+		AgentTags: payload.Tags,
+		Tool:      payload.Tool,
+		Action:    payload.Action,
+		Arguments: payload.Request,
+	})
+	writeJSON(w, http.StatusOK, decision)
+}
+
 func (r *Runtime) handleAuditLogs(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
 		return
 	}
-	limit := 50
+	limit := 250
 	if raw := req.URL.Query().Get("limit"); raw != "" {
 		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
 			limit = parsed
@@ -598,7 +877,165 @@ func (r *Runtime) handleAuditLogs(w http.ResponseWriter, req *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 		return
 	}
+	logs = filterAuditLogs(logs, req.URL.Query())
+	if req.URL.Query().Get("format") == "csv" {
+		w.Header().Set("Content-Type", "text/csv")
+		w.Header().Set("Content-Disposition", `attachment; filename="audit-logs.csv"`)
+		_, _ = w.Write([]byte(renderAuditLogsCSV(logs)))
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"items": logs})
+}
+
+func (r *Runtime) handleApprovalIntegrations(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		items, err := r.db.ListApprovalIntegrations(req.Context(), r.workspace.ID)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	case http.MethodPost:
+		var payload struct {
+			Provider       string `json:"provider"`
+			DefaultChannel string `json:"defaultChannel"`
+			WebhookURL     string `json:"webhookUrl"`
+			AccessToken    string `json:"accessToken"`
+			SigningSecret  string `json:"signingSecret"`
+			TeamName       string `json:"teamName"`
+		}
+		if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+			return
+		}
+		record, err := r.db.UpsertApprovalIntegration(req.Context(), r.workspace.ID, strings.ToLower(strings.TrimSpace(payload.Provider)), payload.DefaultChannel, map[string]any{
+			"webhookUrl":  payload.WebhookURL,
+			"teamName":    payload.TeamName,
+			"connectedAt": time.Now().UTC(),
+		}, map[string]string{
+			"access_token":   payload.AccessToken,
+			"signing_secret": payload.SigningSecret,
+		})
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusCreated, record)
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
+	}
+}
+
+func (r *Runtime) handleApprovalWebhook(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
+		return
+	}
+	provider := strings.TrimPrefix(req.URL.Path, "/api/v1/approvals/webhook/")
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+		return
+	}
+	record, secrets, err := r.db.GetApprovalIntegration(req.Context(), r.workspace.ID, provider)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "integration not found"})
+		return
+	}
+	signature := req.Header.Get("X-Managent-Signature")
+	if !approvalSignatureValid(secrets["signing_secret"], body, signature) {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "invalid signature"})
+		return
+	}
+	var payload struct {
+		ApprovalID string `json:"approvalId"`
+		Decision   string `json:"decision"`
+		DecidedBy  string `json:"decidedBy"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+		return
+	}
+	status := approvalmiddleware.StatusDenied
+	if strings.EqualFold(payload.Decision, "approved") {
+		status = approvalmiddleware.StatusApproved
+	}
+	pending, ok, err := r.approvals.Resolve(req.Context(), payload.ApprovalID, approvalmiddleware.Resolution{
+		Status:     status,
+		DecidedBy:  payload.DecidedBy,
+		Reason:     strings.ToLower(payload.Decision),
+		MessageID:  payload.ApprovalID,
+		Provider:   record.Provider,
+		OccurredAt: time.Now().UTC(),
+	})
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return
+	}
+	if !ok {
+		writeJSON(w, http.StatusConflict, map[string]any{"error": "approval already resolved"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "approval": pending})
+}
+
+func controlPlaneBaseURL(cfg *config.Config) string {
+	host := cfg.Gateway.Host
+	if host == "" || host == "0.0.0.0" {
+		host = "127.0.0.1"
+	}
+	return fmt.Sprintf("http://%s:%d", host, cfg.Gateway.Port)
+}
+
+func filterAuditLogs(logs []database.AuditLogRecord, query map[string][]string) []database.AuditLogRecord {
+	search := strings.ToLower(strings.TrimSpace(firstQueryValue(query, "search")))
+	decision := strings.TrimSpace(firstQueryValue(query, "decision"))
+	agentID := strings.TrimSpace(firstQueryValue(query, "agentId"))
+	var out []database.AuditLogRecord
+	for _, entry := range logs {
+		if decision != "" && entry.Decision != decision {
+			continue
+		}
+		if agentID != "" && entry.AgentID != agentID {
+			continue
+		}
+		if search != "" {
+			haystack := strings.ToLower(entry.Tool + " " + entry.Decision + " " + entry.DecidedBy + " " + fmt.Sprint(entry.PayloadSummary))
+			if !strings.Contains(haystack, search) {
+				continue
+			}
+		}
+		out = append(out, entry)
+	}
+	return out
+}
+
+func firstQueryValue(query map[string][]string, key string) string {
+	values := query[key]
+	if len(values) == 0 {
+		return ""
+	}
+	return values[0]
+}
+
+func renderAuditLogsCSV(logs []database.AuditLogRecord) string {
+	var buffer bytes.Buffer
+	writer := csv.NewWriter(&buffer)
+	_ = writer.Write([]string{"timestamp", "agent_id", "tool", "action", "decision", "decided_by", "latency_ms"})
+	for _, entry := range logs {
+		_ = writer.Write([]string{
+			entry.CreatedAt.Format(time.RFC3339),
+			entry.AgentID,
+			entry.Tool,
+			entry.Action,
+			entry.Decision,
+			entry.DecidedBy,
+			strconv.FormatInt(entry.LatencyMS, 10),
+		})
+	}
+	writer.Flush()
+	return buffer.String()
 }
 
 func withBearerContext(next http.Handler) http.Handler {

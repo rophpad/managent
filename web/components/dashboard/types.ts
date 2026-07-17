@@ -3,7 +3,7 @@ export type MarketplaceListing = {
   name: string;
   provider: string;
   description: string;
-  defaultConnectorName: string;
+  defaultMCPName: string;
   defaultNamespace: string;
   transportOptions: Array<{
     id: string;
@@ -32,16 +32,34 @@ export type MarketplaceListing = {
 
 export type Overview = {
   workspace: { id: number; name: string };
-  apiKeys: Array<{ id: string; workspaceId: string; createdAt: string }>;
-  connectors: Array<{
+  agents: Array<{
     id: string;
     workspaceId: string;
     name: string;
+    owner: string;
+    tags: string[];
+    status: string;
+    createdAt: string;
+    lastSeenAt?: string;
+  }>;
+  mcps: Array<{
+    id: string;
+    workspaceId: string;
+    agentId?: string;
+    name: string;
     namespace: string;
     transport: string;
+    endpoint?: string;
+    credentialRef?: string;
     command?: string;
     args?: string[];
     url?: string;
+    method?: string;
+    urlTemplate?: string;
+    credentialTarget?: string;
+    credentialName?: string;
+    inputSchema?: Record<string, unknown>;
+    outputSchema?: Record<string, unknown>;
     headers?: Record<string, string>;
     env?: Record<string, string>;
     enabled: boolean;
@@ -56,17 +74,39 @@ export type Overview = {
     id: string;
     workspaceId: string;
     name: string;
+    subjectType: string;
+    subjectValue: string;
     tool: string;
-    action: string;
-    conditions?: Record<string, Record<string, string | number | boolean>>;
+    actionName: string;
+    effect: string;
+    condition?: { field?: string; operator?: string; value?: string | number | boolean };
+    rateLimit?: string;
+    channelOverride?: string;
+    precedence: number;
     createdAt: string;
   }>;
   auditLogs: Array<{
     id: string;
+    agentId?: string;
+    toolId?: string;
     tool: string;
+    action?: string;
     decision: string;
+    decidedBy?: string;
+    latencyMs?: number;
     createdAt: string;
+    payloadSummary?: Record<string, unknown>;
     request?: Record<string, unknown>;
     response?: Record<string, unknown>;
+  }>;
+  approvalIntegrations: Array<{
+    id: string;
+    workspaceId: string;
+    provider: string;
+    status: string;
+    defaultChannel?: string;
+    credentialRef?: string;
+    createdAt: string;
+    updatedAt: string;
   }>;
 };
