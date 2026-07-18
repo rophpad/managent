@@ -1,235 +1,360 @@
 import Image from "next/image";
 
-const anxieties = [
+const navigationItems = [
+  { label: "Learn", href: "#learn" },
+  { label: "Products", href: "#products" },
+  { label: "Labs", href: "#labs" },
+];
+
+const ecosystemItems = [
   {
-    title: "The Prompt Lie",
-    body: 'You write "Never refund more than $100" inside your LangChain system prompt, but you know deep down a basic jailbreak or user-injection can completely bypass it.',
+    id: "learn",
+    title: "Learn",
+    description:
+      "Practical guides, tutorials, and roadmaps for AI Agent Engineering.",
+    cta: "Explore Learn",
+    icon: BookOpenIcon,
   },
   {
-    title: "The Credentials Mess",
-    body: "Your developers are copy-pasting live production Stripe, HubSpot, or SQL database tokens directly into random agent scripts and GitHub repositories.",
+    id: "products",
+    title: "Products",
+    description:
+      "Developer tools for securing and operating AI agents in production.",
+    cta: "Explore Products",
+    icon: BoxesIcon,
   },
   {
-    title: "The Loop-Death Fear",
-    body: "You leave a CrewAI or AutoGen loop running unsupervised, only to wake up to a $500 token bill because the agent got stuck in an infinite try-and-fail loop.",
-  },
-  {
-    title: "The CISO Block",
-    body: "Your security team won't let you deploy your agent because they refuse to route sensitive corporate data and internal conversation logs through an external third-party text proxy.",
+    id: "labs",
+    title: "Labs",
+    description:
+      "Experimental projects, prototypes, and ideas exploring the future of AI agents.",
+    cta: "Explore Labs",
+    icon: FlaskConicalIcon,
   },
 ];
 
-const controls = [
+const roadmapItems = [
   {
-    label: "Deterministic Parameter Guardrails",
-    command: "stripe__issue_refund.amount <= 100",
-    body: "If an LLM commands an action outside that boundary, Managent drops the packet at the network layer and passes a native error block back to your running framework.",
+    name: "Managent Learn",
+    description: "Knowledge and education.",
+    status: "In Development",
   },
   {
-    label: "Network-Level Stream Freezing",
-    command: "slack.approval.required = true",
-    body: "When an agent requests a high-stakes mutation, Managent long-polls the connection and dispatches an interactive card to Slack. The code thread resumes only after a human clicks Approve.",
+    name: "Managent Credential",
+    description: "Secure credential management.",
+    status: "Coming Soon",
   },
   {
-    label: "Virtual Token Vaulting",
-    command: "proxy_token -> encrypted_secret",
-    body: "Your codebase handles temporary proxy tokens while Managent securely injects the real production API secrets into payload headers mid-flight.",
+    name: "Managent Gateway",
+    description: "Secure access to tools and services.",
+    status: "Coming Soon",
+  },
+  {
+    name: "Managent Registry",
+    description: "Discover and manage agents and services.",
+    status: "Coming Soon",
+  },
+   {
+    name: "Managent Test  ",
+    description: "Test and evaluate agents.",
+    status: "Coming Soon",
+  },
+  {
+    name: "Managent Cloud",
+    description: "Managed infrastructure.",
+    status: "Coming Soon",
   },
 ];
 
-const blockers = [
-  "Data Privacy",
-  "Financial Risk / Hallucinated spending",
-  "Cost / API loops",
-  "Credential management",
+const whyItems = [
+  "New frameworks appear every month.",
+  "Protocols are still emerging.",
+  "Best practices are constantly changing.",
+  "Production tooling is fragmented.",
+];
+
+const footerColumns = [
+  {
+    title: "Company",
+    links: [
+      { label: "About", href: "#vision" },
+      { label: "Mission", href: "#manifesto" },
+      { label: "Blog", href: "#learn" },
+    ],
+  },
+  {
+    title: "Explore",
+    links: [
+      { label: "Learn", href: "#learn" },
+      { label: "Products", href: "#products" },
+      { label: "Open Source", href: "#open-source" },
+      { label: "Research", href: "#research" },
+      { label: "Labs", href: "#labs" },
+    ],
+  },
+  {
+    title: "Community",
+    links: [
+      { label: "GitHub", href: "#open-source" },
+      { label: "Newsletter", href: "#newsletter" },
+      { label: "Discord", href: "#built-in-public" },
+    ],
+  },
+  {
+    title: "Social",
+    links: [
+      { label: "Research", href: "#research" },
+      { label: "Built in Public", href: "#built-in-public" },
+      { label: "Legal", href: "#footer" },
+    ],
+  },
 ];
 
 const heroBenefits = [
-  "Deterministic policies",
-  "Human approvals",
-  "Vaulted credentials",
-  "Audit trails",
+  "Education",
+  "Open source",
+  "Research",
+  "Infrastructure",
 ];
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#f8f7f2] text-[#11140f]">
+    <main className="min-h-screen bg-white text-[#11140f]">
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between gap-5 px-6 py-6 text-center lg:px-8">
-        {/*<a
-          href="#top"
-          className="text-xl font-semibold"
-          aria-label="Managent home"
-        >
-          Managent
-        </a>*/}
-        <Image
-          src="/logo.png"
-          alt="Managent logo"
-          width={100}
-          height={100}
-          style={{ height: "auto" }}
-        />
-        <nav className="hidden items-center justify-center gap-8 text-sm font-medium text-[#565b50] md:flex">
-          <a className="transition hover:text-[#11140f]" href="#problem">
-            Problem
-          </a>
-          <a className="transition hover:text-[#11140f]" href="#solution">
-            Solution
-          </a>
-          <a className="transition hover:text-[#11140f]" href="#beta">
-            Beta
-          </a>
-        </nav>
-        <a
-          href="#beta"
-          className="rounded-full bg-[#11140f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2d3329]"
-        >
-          Early access
+        <a href="#top" aria-label="Managent home" className="shrink-0">
+          <Image
+            src="/logo.png"
+            alt="Managent logo"
+            width={100}
+            height={100}
+            style={{ height: "auto" }}
+            priority
+          />
         </a>
+
+        <nav className="hidden items-center justify-center gap-8 text-sm font-medium text-[#565b50] md:flex">
+          {navigationItems.map((item) => (
+            <a key={item.label} href={item.href} className="transition hover:text-[#11140f]">
+              {item.label}
+            </a>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-3">
+          <a
+            href="#open-source"
+            className="hidden text-sm font-semibold text-[#565b50] transition hover:text-[#11140f] sm:inline-flex"
+          >
+            GitHub
+          </a>
+          <a
+            href="#newsletter"
+            className="rounded-full bg-[#11140f] px-5 py-3 text-sm font-semibold transition hover:bg-[#2d3329]"
+          >
+            <p className="text-white">
+              Newsletter
+            </p>
+          </a>
+        </div>
       </header>
 
       <section
         id="top"
         className="mx-auto flex w-full max-w-6xl flex-col items-center px-6 pb-20 pt-10 text-center lg:px-8 lg:pb-28 lg:pt-16"
       >
-        <p className="mb-5 rounded-full border border-[#d9d6c8] bg-white px-4 py-2 text-sm font-semibold text-[#345436]">
-          Open-source MCP tool gateway
-        </p>
-        <h1 className="mt-6 max-w-4xl text-4xl font-medium leading-[1.02] text-[#11140f] sm:text-5xl lg:text-6xl">
-          The control plane for your autonomous workforce.
+        <h1 className="mt-6 max-w-6xl text-4xl font-medium leading-none text-[#11140f] sm:text-5xl lg:text-7xl">
+          The Home of AI Agent Engineering.
         </h1>
-        <p className="mt-5 max-w-4xl text-xl leading-8 text-[#3d4238]">
-          Managent sits between AI agents and the tools they use, validating
-          every action before it reaches Stripe, databases, Slack, or internal
-          APIs. Enforce policy, pause risky calls for approval, and keep
-          production keys out of agent code.
+        <p className="mt-6 max-w-xl text-xl leading-8 text-[#3d4238]">
+          Helping developers and companies build, secure, and operate the next
+          generation of AI agents.
         </p>
 
-        <div className="mt-5 flex w-full flex-col items-center justify-center gap-3 sm:flex-row">
+        <div className="mt-6 flex w-full flex-col items-center justify-center gap-3 sm:flex-row">
           <a
-            href="#beta"
+            href="#ecosystem"
             className="inline-flex w-max items-center justify-center rounded-full bg-[#11140f] px-6 py-3 text-base font-semibold text-white transition hover:bg-[#2d3329]"
           >
-            Join the Beta
+            <p className="text-white">
+              Explore the ecosystem
+            </p>
           </a>
           <a
-            href="#problem"
+            href="#newsletter"
             className="inline-flex w-max items-center justify-center rounded-full border border-[#cfcabb] bg-white px-6 py-3 text-base font-semibold text-[#11140f] transition hover:border-[#11140f]"
           >
-            See how it protects production
+            Join the newsletter
           </a>
-        </div>
-
-        <div className="mt-8 flex flex-wrap justify-center gap-2 text-sm font-medium text-[#565b50]">
-          {heroBenefits.map((item) => (
-            <span
-              key={item}
-              className="rounded-full border border-[#d9d6c8] bg-white px-3 py-1.5"
-            >
-              {item}
-            </span>
-          ))}
-        </div>
-
-        <div className="mt-14 w-full max-w-4xl rounded-lg border border-[#d8d4c5] bg-white p-4 text-left shadow-[0_24px_80px_rgba(17,20,15,0.10)] sm:p-6">
-          <div className="rounded-lg border border-[#e7e3d5] bg-[#fbfaf6] p-5">
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#e2dece] pb-4">
-              <div>
-                <p className="text-sm font-semibold text-[#345436]">
-                  MCP tool call review
-                </p>
-                <h2 className="mt-1 text-2xl font-semibold">
-                  High-risk action paused
-                </h2>
-              </div>
-              <span className="rounded-full bg-[#e7efe3] px-3 py-1 text-sm font-semibold text-[#345436]">
-                Needs approval
-              </span>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-lg border border-[#e4dfd0] bg-white p-4">
-                <p className="text-sm font-semibold text-[#345436]">Request</p>
-                <p className="mt-2 text-sm leading-6 text-[#565b50]">
-                  Agent requests a Stripe refund for $10,000
-                </p>
-              </div>
-              <div className="rounded-lg border border-[#e4dfd0] bg-white p-4">
-                <p className="text-sm font-semibold text-[#345436]">Policy</p>
-                <p className="mt-2 text-sm leading-6 text-[#565b50]">
-                  Rule: pause refunds over $100 for human approval
-                </p>
-              </div>
-              <div className="rounded-lg border border-[#e4dfd0] bg-white p-4">
-                <p className="text-sm font-semibold text-[#345436]">Routing</p>
-                <p className="mt-2 text-sm leading-6 text-[#565b50]">
-                  Routed to approval through Slack
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 rounded-lg bg-[#11140f] p-5 text-white">
-              <p className="text-sm font-medium text-[#dfe7d9]">
-                Validated automatically
-              </p>
-              <p className="mt-2 text-3xl font-semibold">&lt;10ms</p>
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-[#e8eee3]">
-                Socket held. Audit event logged. Real API key stays vaulted.
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
       <section
-        id="problem"
+        id="ecosystem"
         className="border-y border-[#e3dfd0] bg-white py-20"
       >
         <div className="mx-auto flex max-w-6xl flex-col items-center px-6 text-center lg:px-8">
           <SectionIntro
-            eyebrow="Do you relate?"
-            title="We love AI agents. But we are terrified to give them production keys."
-            description="Does your current agent workflow look like this?"
+            eyebrow="Our Ecosystem"
+            title="Everything you need to build AI agents."
+            description="Instead of a single product page, Managent introduces the pillars of the ecosystem."
           />
-          <div className="mt-10 grid w-full gap-6 md:grid-cols-2">
-            {anxieties.map((item) => (
-              <ProblemCard
-                key={item.title}
-                title={item.title}
-                body={item.body}
-              />
-            ))}
+          <div className="mt-10 grid w-full gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {ecosystemItems.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <FeatureCard
+                  key={item.title}
+                  id={item.id}
+                  icon={<Icon className="size-6" />}
+                  title={item.title}
+                  body={item.description}
+                  cta={item.cta}
+                />
+              );
+            })}
           </div>
         </div>
       </section>
 
       <section
-        id="solution"
+        id="vision"
         className="mx-auto flex max-w-6xl flex-col items-center px-6 py-20 text-center lg:px-8"
       >
         <SectionIntro
-          eyebrow="The infrastructure answer"
-          title="Managent firewalls the AI's hands, not its brain."
-          description="Stop trying to bury production policy inside natural language. Put every tool call through a gateway that can inspect parameters, freeze risky streams, and inject secrets without exposing them to agent code."
+          eyebrow="Our Vision"
+          title="AI agents are becoming a new software platform."
+          description="Just as web and mobile transformed software development, AI agents are changing how applications are built and interact with the world."
         />
-        <div className="mt-10 grid w-full gap-5 lg:grid-cols-3">
-          {controls.map((item) => (
-            <ControlCard
-              key={item.label}
-              title={item.label}
-              command={item.command}
-              body={item.body}
-            />
+        <div className="mt-10 w-full rounded-lg border border-[#d8d4c5] bg-white p-8 shadow-[0_18px_60px_rgba(17,20,15,0.06)]">
+          <p className="mx-auto max-w-4xl text-lg leading-8 text-[#565b50]">
+            Our mission is to help developers navigate this shift by creating
+            the knowledge, tools, and infrastructure needed to build reliable AI
+            agents.
+          </p>
+        </div>
+      </section>
+
+      <section
+        id="products"
+        className="mx-auto flex max-w-6xl flex-col items-center px-6 py-20 text-center lg:px-8"
+      >
+        <SectionIntro
+          eyebrow="What We&apos;re Building"
+          title="A long-term ecosystem for AI Agent Engineering."
+          description="This is the stack Managent is growing into over time."
+        />
+        <div className="mt-10 grid w-full gap-5">
+          {roadmapItems.map((item, index) => (
+            <div key={item.name}>
+              <RoadmapCard
+                title={item.name}
+                body={item.description}
+                status={item.status}
+              />
+              {index + 1 < roadmapItems.length ? (
+                <div className="py-4 text-[#8e9486]">
+                  <ArrowDownIcon className="mx-auto size-5" />
+                </div>
+              ) : null}
+            </div>
           ))}
         </div>
       </section>
 
-      <section id="beta" className="border-t border-[#e3dfd0] bg-white py-20">
+      <section
+        id="research"
+        className="border-y border-[#e3dfd0] bg-white py-20"
+      >
+        <div className="mx-auto flex max-w-6xl flex-col items-center px-6 text-center lg:px-8">
+          <SectionIntro
+            eyebrow="Why Managent Exists"
+            title="AI agent development is evolving quickly."
+            description="This is where most startups under-explain the problem. Managent exists to bring clarity to the ecosystem."
+          />
+          <div className="mt-10 grid w-full gap-6 md:grid-cols-2">
+            {whyItems.map((item) => (
+              <ProblemCard key={item} title={item} body="" />
+            ))}
+          </div>
+          <div className="mt-6 w-full rounded-lg border border-[#d8d4c5] bg-[#fbfaf6] p-8 shadow-[0_18px_60px_rgba(17,20,15,0.06)]">
+            <p className="mx-auto max-w-4xl text-lg leading-8 text-[#565b50]">
+              Whether through education, open source, research, or products,
+              we&apos;re building resources that help developers create better
+              AI agents.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="built-in-public"
+        className="mx-auto flex max-w-6xl flex-col items-center px-6 py-20 text-center lg:px-8"
+      >
+        <SectionIntro
+          eyebrow="Built in Public"
+          title="We believe the future of AI Agent Engineering should be open."
+          description="That&apos;s why we share our research, publish our work, contribute to open source, and build alongside the community."
+        />
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <a
+            href="#open-source"
+            className="inline-flex w-max items-center justify-center rounded-full border border-[#cfcabb] bg-white px-6 py-3 text-base font-semibold text-[#11140f] transition hover:border-[#11140f]"
+          >
+            GitHub
+          </a>
+          <a
+            href="#learn"
+            className="inline-flex w-max items-center justify-center rounded-full border border-[#cfcabb] bg-white px-6 py-3 text-base font-semibold text-[#11140f] transition hover:border-[#11140f]"
+          >
+            Blog
+          </a>
+          <a
+            href="#research"
+            className="inline-flex w-max items-center justify-center rounded-full border border-[#cfcabb] bg-white px-6 py-3 text-base font-semibold text-[#11140f] transition hover:border-[#11140f]"
+          >
+            Research
+          </a>
+        </div>
+      </section>
+
+      <section id="newsletter" className="border-t border-[#e3dfd0] bg-white py-20">
         <div className="mx-auto flex max-w-4xl flex-col items-center px-6 text-center lg:px-8">
           <SectionIntro
-            eyebrow="Help us prioritize the roadmap"
-            title="Tell us what is blocking your production agent rollout."
-            description="We are measuring the exact failure mode: prompt-only permissions, hallucinated tool execution, runaway loops, exposed credentials, and security review dead ends."
+            eyebrow="Stay Connected"
+            title="Follow the evolution of AI Agent Engineering."
+            description="Receive product updates, research, technical articles, and new open-source releases."
+          />
+
+          <form className="mt-10 grid w-full max-w-2xl gap-4 rounded-lg border border-[#d8d4c5] bg-white p-6 text-left shadow-[0_18px_60px_rgba(17,20,15,0.06)] sm:grid-cols-[1fr_auto] sm:items-end sm:p-8">
+            <label className="grid gap-2">
+              <span className="text-sm font-semibold leading-5 text-[#11140f]">
+                Email
+              </span>
+              <input
+                type="email"
+                name="newsletter-email"
+                placeholder="you@company.com"
+                className="min-h-12 w-full rounded-lg border border-[#d8d4c5] bg-[#fbfaf6] px-4 text-base outline-none transition focus:border-[#345436] focus:ring-4 focus:ring-[#e7efe3]"
+              />
+            </label>
+
+            <button
+              type="submit"
+              className="min-h-12 rounded-full bg-[#11140f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2d3329] focus:outline-none focus:ring-4 focus:ring-[#d8d4c5]"
+            >
+              Subscribe
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <section id="labs" className="border-t border-[#e3dfd0] bg-white py-20">
+        <div className="mx-auto flex max-w-4xl flex-col items-center px-6 text-center lg:px-8">
+          <SectionIntro
+            eyebrow="Help Shape the Future"
+            title="We&apos;re talking with developers building AI agents every day."
+            description="Your feedback helps us decide what to teach, what to research, what to open-source, and what products to build."
           />
 
           <form className="mt-10 w-full max-w-2xl rounded-lg border border-[#d8d4c5] bg-white p-6 text-left shadow-[0_18px_60px_rgba(17,20,15,0.06)] sm:p-8">
@@ -241,7 +366,6 @@ export default function Home() {
                 <input
                   type="email"
                   name="email"
-                  required
                   placeholder="you@company.com"
                   className="min-h-12 w-full rounded-lg border border-[#d8d4c5] bg-[#fbfaf6] px-4 text-base outline-none transition focus:border-[#345436] focus:ring-4 focus:ring-[#e7efe3]"
                 />
@@ -249,57 +373,91 @@ export default function Home() {
 
               <label className="grid gap-2">
                 <span className="text-sm font-semibold leading-5 text-[#11140f]">
-                  Which AI framework are you currently building with?
+                  Framework
                 </span>
                 <select
                   name="framework"
                   defaultValue=""
-                  required
                   className="min-h-12 w-full rounded-lg border border-[#d8d4c5] bg-[#fbfaf6] px-4 text-base outline-none transition focus:border-[#345436] focus:ring-4 focus:ring-[#e7efe3]"
                 >
                   <option value="" disabled>
                     Select a framework
                   </option>
-                  <option>CrewAI</option>
+                  <option>OpenAI Agents SDK</option>
                   <option>LangChain</option>
+                  <option>CrewAI</option>
                   <option>AutoGen</option>
-                  <option>Custom Script</option>
-                  <option>Cursor / IDE</option>
+                  <option>Custom stack</option>
                 </select>
               </label>
 
-              <fieldset className="grid gap-3">
-                <legend className="text-sm font-semibold leading-5 text-[#11140f]">
-                  What is your biggest blocker to putting agents in production?
-                </legend>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {blockers.map((blocker) => (
-                    <label
-                      key={blocker}
-                      className="flex min-h-12 items-center gap-3 rounded-lg border border-[#d8d4c5] bg-[#fbfaf6] px-4 py-3 text-sm font-medium leading-5 text-[#565b50] transition hover:border-[#11140f]"
-                    >
-                      <input
-                        type="checkbox"
-                        name="blocker"
-                        value={blocker}
-                        className="size-4 shrink-0 accent-[#345436]"
-                      />
-                      <span>{blocker}</span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
+              <label className="grid gap-2">
+                <span className="text-sm font-semibold leading-5 text-[#11140f]">
+                  What are you building?
+                </span>
+                <textarea
+                  name="building"
+                  rows={4}
+                  placeholder="Agent workflows, internal copilots, customer support, automation pipelines..."
+                  className="w-full rounded-lg border border-[#d8d4c5] bg-[#fbfaf6] px-4 py-3 text-base outline-none transition focus:border-[#345436] focus:ring-4 focus:ring-[#e7efe3]"
+                />
+              </label>
+
+              <label className="grid gap-2">
+                <span className="text-sm font-semibold leading-5 text-[#11140f]">
+                  What&apos;s your biggest challenge?
+                </span>
+                <textarea
+                  name="challenge"
+                  rows={4}
+                  placeholder="Reliability, evaluation, orchestration, security, cost control..."
+                  className="w-full rounded-lg border border-[#d8d4c5] bg-[#fbfaf6] px-4 py-3 text-base outline-none transition focus:border-[#345436] focus:ring-4 focus:ring-[#e7efe3]"
+                />
+              </label>
 
               <button
                 type="submit"
                 className="min-h-12 w-full rounded-full bg-[#11140f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2d3329] focus:outline-none focus:ring-4 focus:ring-[#d8d4c5]"
               >
-                Join the Beta
+                Share Feedback
               </button>
             </div>
           </form>
         </div>
       </section>
+
+      <footer id="footer" className="mx-auto w-full max-w-7xl px-6 py-12 lg:px-8">
+        <div className="border-t border-[#ddd8c8] pt-8">
+          <div className="mb-8">
+            <p className="text-lg font-semibold">Managent</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#565b50]">
+              Building the infrastructure and knowledge layer for AI Agent
+              Engineering.
+            </p>
+          </div>
+
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {footerColumns.map((column) => (
+              <div key={column.title}>
+                <h3 className="text-sm font-semibold uppercase text-[#345436]">
+                  {column.title}
+                </h3>
+                <div className="mt-4 grid gap-3 text-sm text-[#565b50]">
+                  {column.links.map((link) => (
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      className="transition hover:text-[#11140f]"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }
@@ -326,31 +484,162 @@ function SectionIntro({
   );
 }
 
+function FeatureCard({
+  id,
+  icon,
+  title,
+  body,
+  cta,
+}: {
+  id: string;
+  icon: React.ReactNode;
+  title: string;
+  body: string;
+  cta: string;
+}) {
+  return (
+    <article
+      id={id}
+      className="rounded-lg border border-[#e4dfd0] bg-[#fbfaf6] p-6 text-left"
+    >
+      <div className="flex size-12 items-center justify-center rounded-lg border border-[#d8d4c5] bg-white text-[#345436]">
+        {icon}
+      </div>
+      <h3 className="mt-5 text-2xl font-semibold">{title}</h3>
+      <p className="mt-4 leading-7 text-[#565b50]">{body}</p>
+      <a
+        href={`#${id}`}
+        className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#345436] transition hover:text-[#11140f]"
+      >
+        {cta}
+        <ArrowRightIcon className="size-4" />
+      </a>
+    </article>
+  );
+}
+
 function ProblemCard({ title, body }: { title: string; body: string }) {
   return (
     <article className="rounded-lg border border-[#e4dfd0] bg-[#fbfaf6] p-6 text-center">
       <h3 className="text-xl font-semibold">{title}</h3>
+      {body ? <p className="mt-4 leading-7 text-[#565b50]">{body}</p> : null}
+    </article>
+  );
+}
+
+function RoadmapCard({
+  title,
+  body,
+  status,
+}: {
+  title: string;
+  body: string;
+  status: string;
+}) {
+  return (
+    <article className="rounded-lg border border-[#d8d4c5] bg-white p-6 text-center shadow-[0_18px_60px_rgba(17,20,15,0.06)]">
+      <span className="inline-flex rounded-full border border-[#d9d6c8] bg-[#f8f7f2] px-3 py-1 text-xs font-semibold uppercase text-[#345436]">
+        {status}
+      </span>
+      <h3 className="mt-5 text-2xl font-semibold leading-tight">{title}</h3>
       <p className="mt-4 leading-7 text-[#565b50]">{body}</p>
     </article>
   );
 }
 
-function ControlCard({
-  title,
-  command,
-  body,
-}: {
-  title: string;
-  command: string;
-  body: string;
-}) {
+type IconProps = {
+  className?: string;
+};
+
+function IconBase({
+  className,
+  children,
+}: IconProps & { children: React.ReactNode }) {
   return (
-    <article className="rounded-lg border border-[#d8d4c5] bg-white p-6 text-center shadow-[0_18px_60px_rgba(17,20,15,0.06)]">
-      <code className="mx-auto block w-fit max-w-full break-all rounded-lg border border-[#d8d4c5] bg-[#11140f] px-3 py-2 font-mono text-xs font-semibold text-[#dfe7d9]">
-        {command}
-      </code>
-      <h3 className="mt-5 text-2xl font-semibold leading-tight">{title}</h3>
-      <p className="mt-4 leading-7 text-[#565b50]">{body}</p>
-    </article>
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      {children}
+    </svg>
+  );
+}
+
+function BookOpenIcon({ className }: IconProps) {
+  return (
+    <IconBase className={className}>
+      <path d="M12 7v14" />
+      <path d="M3 18.5A2.5 2.5 0 0 1 5.5 16H12V5.5A2.5 2.5 0 0 0 9.5 3H5.75A2.75 2.75 0 0 0 3 5.75Z" />
+      <path d="M21 18.5A2.5 2.5 0 0 0 18.5 16H12V5.5A2.5 2.5 0 0 1 14.5 3h3.75A2.75 2.75 0 0 1 21 5.75Z" />
+    </IconBase>
+  );
+}
+
+function BoxesIcon({ className }: IconProps) {
+  return (
+    <IconBase className={className}>
+      <path d="M2.97 7.27 12 12l9.03-4.73" />
+      <path d="M12 22V12" />
+      <path d="m7.5 4.27 9 4.73" />
+      <path d="m7.5 19.73-4.53-2.37V7.27L12 12l9.03-4.73v10.09L16.5 19.73" />
+      <path d="m7.5 4.27-4.53 2.37L12 11.37l9.03-4.73-4.53-2.37Z" />
+    </IconBase>
+  );
+}
+
+function CodeXmlIcon({ className }: IconProps) {
+  return (
+    <IconBase className={className}>
+      <path d="m8 16-4-4 4-4" />
+      <path d="m16 8 4 4-4 4" />
+      <path d="m14 4-4 16" />
+    </IconBase>
+  );
+}
+
+function ChartColumnIcon({ className }: IconProps) {
+  return (
+    <IconBase className={className}>
+      <path d="M3 3v18h18" />
+      <path d="M8 15v3" />
+      <path d="M12 11v7" />
+      <path d="M16 7v11" />
+    </IconBase>
+  );
+}
+
+function FlaskConicalIcon({ className }: IconProps) {
+  return (
+    <IconBase className={className}>
+      <path d="M10 2v7.31" />
+      <path d="M14 2v7.31" />
+      <path d="M8.5 2h7" />
+      <path d="M6 15.5 11.5 9h1L18 15.5A4 4 0 0 1 14.94 22H9.06A4 4 0 0 1 6 15.5Z" />
+      <path d="M9 16h6" />
+    </IconBase>
+  );
+}
+
+function ArrowRightIcon({ className }: IconProps) {
+  return (
+    <IconBase className={className}>
+      <path d="M5 12h14" />
+      <path d="m12 5 7 7-7 7" />
+    </IconBase>
+  );
+}
+
+function ArrowDownIcon({ className }: IconProps) {
+  return (
+    <IconBase className={className}>
+      <path d="M12 5v14" />
+      <path d="m5 12 7 7 7-7" />
+    </IconBase>
   );
 }
