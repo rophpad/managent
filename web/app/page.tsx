@@ -54,7 +54,7 @@ const roadmapItems = [
     description: "Discover and manage agents and services.",
     status: "Coming Soon",
   },
-   {
+  {
     name: "Managent Test  ",
     description: "Test and evaluate agents.",
     status: "Coming Soon",
@@ -160,7 +160,7 @@ export default function Home() {
 
       <section
         id="top"
-        className="mx-auto flex w-full max-w-6xl flex-col items-center px-6 pb-20 pt-10 text-center lg:px-8 lg:pb-28 lg:pt-16"
+        className="mx-auto flex w-full max-w-6xl flex-col items-center px-6 pb-20 pt-16 text-center lg:px-8 lg:pb-28 lg:pt-24"
       >
         <h1 className="mt-6 max-w-6xl text-4xl font-medium leading-none text-[#11140f] sm:text-5xl lg:text-7xl">
           The Home of AI Agent Engineering.
@@ -196,7 +196,7 @@ export default function Home() {
           <SectionIntro
             eyebrow="Our Ecosystem"
             title="Everything you need to build AI agents."
-            description="Instead of a single product page, Managent introduces the pillars of the ecosystem."
+            description=""
           />
           <div className="mt-10 grid w-full gap-6 md:grid-cols-2 xl:grid-cols-3">
             {ecosystemItems.map((item) => {
@@ -221,18 +221,23 @@ export default function Home() {
         id="vision"
         className="mx-auto flex max-w-6xl flex-col items-center px-6 py-20 text-center lg:px-8"
       >
-        <SectionIntro
-          eyebrow="Our Vision"
-          title="AI agents are becoming a new software platform."
-          description="Just as web and mobile transformed software development, AI agents are changing how applications are built and interact with the world."
-        />
-        <div className="mt-10 w-full rounded-lg border border-[#d8d4c5] bg-white p-8 shadow-[0_18px_60px_rgba(17,20,15,0.06)]">
-          <p className="mx-auto max-w-4xl text-lg leading-8 text-[#565b50]">
-            Our mission is to help developers navigate this shift by creating
-            the knowledge, tools, and infrastructure needed to build reliable AI
-            agents.
+
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-sm font-semibold uppercase text-[#345436]">
+            Our Vision
           </p>
+          <h2 className="mt-4 text-4xl font-semibold leading-tight text-[#11140f]">
+            AI agents are becoming a new software platform.
+          </h2>
+          <div className="mt-10 w-full rounded-lg border border-[#d8d4c5] bg-white p-8 shadow-[0_18px_60px_rgba(17,20,15,0.06)]">
+            <p className="mx-auto max-w-4xl text-lg leading-8 text-[#565b50]">
+              Our mission is to help developers navigate this shift by creating
+              the knowledge, tools, and infrastructure needed to build reliable AI
+              agents.
+            </p>
+          </div>
         </div>
+
       </section>
 
       <section
@@ -241,10 +246,10 @@ export default function Home() {
       >
         <SectionIntro
           eyebrow="What We&apos;re Building"
-          title="A long-term ecosystem for AI Agent Engineering."
-          description="This is the stack Managent is growing into over time."
+          title="A control plane for autonomous systems"
+          description=""
         />
-        <div className="mt-10 grid w-full gap-5">
+        <div className="mt-10 flex flex-wrap  items-center justify-center w-full gap-5">
           {roadmapItems.map((item, index) => (
             <div key={item.name}>
               <RoadmapCard
@@ -252,73 +257,18 @@ export default function Home() {
                 body={item.description}
                 status={item.status}
               />
-              {index + 1 < roadmapItems.length ? (
+              {/* {index + 1 < roadmapItems.length ? (
                 <div className="py-4 text-[#8e9486]">
                   <ArrowDownIcon className="mx-auto size-5" />
                 </div>
-              ) : null}
+              ) : null} */}
             </div>
           ))}
         </div>
       </section>
 
-      <section
-        id="research"
-        className="border-y border-[#e3dfd0] bg-white py-20"
-      >
-        <div className="mx-auto flex max-w-6xl flex-col items-center px-6 text-center lg:px-8">
-          <SectionIntro
-            eyebrow="Why Managent Exists"
-            title="AI agent development is evolving quickly."
-            description="This is where most startups under-explain the problem. Managent exists to bring clarity to the ecosystem."
-          />
-          <div className="mt-10 grid w-full gap-6 md:grid-cols-2">
-            {whyItems.map((item) => (
-              <ProblemCard key={item} title={item} body="" />
-            ))}
-          </div>
-          <div className="mt-6 w-full rounded-lg border border-[#d8d4c5] bg-[#fbfaf6] p-8 shadow-[0_18px_60px_rgba(17,20,15,0.06)]">
-            <p className="mx-auto max-w-4xl text-lg leading-8 text-[#565b50]">
-              Whether through education, open source, research, or products,
-              we&apos;re building resources that help developers create better
-              AI agents.
-            </p>
-          </div>
-        </div>
-      </section>
 
-      <section
-        id="built-in-public"
-        className="mx-auto flex max-w-6xl flex-col items-center px-6 py-20 text-center lg:px-8"
-      >
-        <SectionIntro
-          eyebrow="Built in Public"
-          title="We believe the future of AI Agent Engineering should be open."
-          description="That&apos;s why we share our research, publish our work, contribute to open source, and build alongside the community."
-        />
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <a
-            href="#open-source"
-            className="inline-flex w-max items-center justify-center rounded-full border border-[#cfcabb] bg-white px-6 py-3 text-base font-semibold text-[#11140f] transition hover:border-[#11140f]"
-          >
-            GitHub
-          </a>
-          <a
-            href="#learn"
-            className="inline-flex w-max items-center justify-center rounded-full border border-[#cfcabb] bg-white px-6 py-3 text-base font-semibold text-[#11140f] transition hover:border-[#11140f]"
-          >
-            Blog
-          </a>
-          <a
-            href="#research"
-            className="inline-flex w-max items-center justify-center rounded-full border border-[#cfcabb] bg-white px-6 py-3 text-base font-semibold text-[#11140f] transition hover:border-[#11140f]"
-          >
-            Research
-          </a>
-        </div>
-      </section>
-
-      <section id="newsletter" className="border-t border-[#e3dfd0] bg-white py-20">
+      {/* <section id="newsletter" className="border-t border-[#e3dfd0] bg-white py-20">
         <div className="mx-auto flex max-w-4xl flex-col items-center px-6 text-center lg:px-8">
           <SectionIntro
             eyebrow="Stay Connected"
@@ -347,14 +297,14 @@ export default function Home() {
             </button>
           </form>
         </div>
-      </section>
+      </section> */}
 
       <section id="labs" className="border-t border-[#e3dfd0] bg-white py-20">
         <div className="mx-auto flex max-w-4xl flex-col items-center px-6 text-center lg:px-8">
           <SectionIntro
             eyebrow="Help Shape the Future"
             title="We&apos;re talking with developers building AI agents every day."
-            description="Your feedback helps us decide what to teach, what to research, what to open-source, and what products to build."
+            description="Your feedback helps us decide what to teach and what products to build."
           />
 
           <form className="mt-10 w-full max-w-2xl rounded-lg border border-[#d8d4c5] bg-white p-6 text-left shadow-[0_18px_60px_rgba(17,20,15,0.06)] sm:p-8">
