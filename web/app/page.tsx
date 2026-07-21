@@ -128,32 +128,39 @@ export default function Home() {
 
 
 
-        <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center px-6 pb-24 pt-24 text-center lg:px-8 lg:pt-32">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#e4dfd0] bg-[#fbfaf6] px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-[#345436]">
-            <span className="size-1.5 rounded-full bg-[#345436]" />
-            AI Agent Engineering
-          </span>
+        <div className="absolute inset-x-0 top-0 z-10 h-160 overflow-hidden">
+          <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center px-6 pb-24 pt-24 text-center lg:px-8 lg:pt-32">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#e4dfd0] bg-[#fbfaf6] px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-[#345436]">
+              <span className="size-1.5 rounded-full bg-[#345436]" />
+              AI Agent Engineering
+            </span>
 
-          <h1 className="mt-7 max-w-3xl text-[2.6rem] font-medium leading-[1.05] tracking-tight text-[#11140f] sm:text-6xl lg:text-[4.25rem]">
-            The home of AI agent engineering.
-          </h1>
+            <h1 className="mt-7 max-w-3xl text-[2.6rem] font-medium leading-[1.05] tracking-tight text-[#11140f] sm:text-6xl lg:text-[4.25rem]">
+              The home of AI agent engineering.
+            </h1>
 
-          <p className="mt-6 max-w-xl text-lg leading-8 text-[#565b50] sm:text-xl">
-            Helping developers and companies build, secure, and operate the
-            next generation of AI agents.
-          </p>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-[#565b50] sm:text-xl">
+              Helping developers and companies build, secure, and operate the
+              next generation of AI agents.
+            </p>
 
-          <div className="mt-9 flex w-full flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button href="#ecosystem" size="lg">
-              <span className="text-white">Explore the ecosystem</span>
-            </Button>
-            <Button href="#newsletter" variant="outline" size="lg">
-              Join the newsletter
-            </Button>
+            <div className="mt-9 flex w-full flex-col items-center justify-center gap-3 sm:flex-row">
+              <Button href="#ecosystem" size="lg">
+                <span className="text-white">Explore the ecosystem</span>
+              </Button>
+              <Button href="#newsletter" variant="outline" size="lg">
+                Join the newsletter
+              </Button>
+            </div>
           </div>
         </div>
+
+        <div className="w-full mx-auto max-w-5xl flex justify-center items-center  pt-96 pb-36 ">
+          <Image src="/illustration.svg" alt="illustration" width={1500} height={1500} />
+        </div>
+
         {/* agent / permission-gate / resource illustration */}
-        <HeroIllustration className="pointer-events-none absolute inset-0 h-full w-full" />
+        {/* <HeroIllustration className="pointer-events-none absolute inset-0 h-full w-full" /> */}
       </section>
 
       {/* ================= ECOSYSTEM ================= */}
