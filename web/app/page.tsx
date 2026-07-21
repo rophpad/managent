@@ -1,4 +1,5 @@
 import Image from "next/image";
+import type { ReactNode } from "react";
 
 const navigationItems = [
   { label: "Learn", href: "#learn" },
@@ -34,43 +35,12 @@ const ecosystemItems = [
 ];
 
 const roadmapItems = [
-  {
-    name: "Managent Learn",
-    description: "Knowledge and education.",
-    status: "In Development",
-  },
-  {
-    name: "Managent Credential",
-    description: "Secure credential management.",
-    status: "Coming Soon",
-  },
-  {
-    name: "Managent Gateway",
-    description: "Secure access to tools and services.",
-    status: "Coming Soon",
-  },
-  {
-    name: "Managent Registry",
-    description: "Discover and manage agents and services.",
-    status: "Coming Soon",
-  },
-  {
-    name: "Managent Test  ",
-    description: "Test and evaluate agents.",
-    status: "Coming Soon",
-  },
-  {
-    name: "Managent Cloud",
-    description: "Managed infrastructure.",
-    status: "Coming Soon",
-  },
-];
-
-const whyItems = [
-  "New frameworks appear every month.",
-  "Protocols are still emerging.",
-  "Best practices are constantly changing.",
-  "Production tooling is fragmented.",
+  { name: "Managent Learn", description: "Knowledge and education.", status: "In development" },
+  { name: "Managent Credential", description: "Secure credential management.", status: "Coming soon" },
+  { name: "Managent Gateway", description: "Secure access to tools and services.", status: "Coming soon" },
+  { name: "Managent Registry", description: "Discover and manage agents and services.", status: "Coming soon" },
+  { name: "Managent Test", description: "Test and evaluate agents.", status: "Coming soon" },
+  { name: "Managent Cloud", description: "Managed infrastructure.", status: "Coming soon" },
 ];
 
 const footerColumns = [
@@ -110,295 +80,200 @@ const footerColumns = [
   },
 ];
 
-const heroBenefits = [
-  "Education",
-  "Open source",
-  "Research",
-  "Infrastructure",
-];
+const INK = "#11140f";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white text-[#11140f]">
-      <header className="mx-auto flex w-full max-w-7xl items-center justify-between gap-5 px-6 py-6 text-center lg:px-8">
-        <a href="#top" aria-label="Managent home" className="shrink-0">
-          <Image
-            src="/logo.png"
-            alt="Managent logo"
-            width={100}
-            height={100}
-            style={{ height: "auto" }}
-            priority
-          />
-        </a>
+    <main className="min-h-screen bg-white text-(--ink)" style={{ ["--ink" as string]: INK }}>
+      {/* ================= HEADER ================= */}
+      <header className="sticky top-0 z-50 border-b border-[#ece7d8]/80 bg-white/85 backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-6 px-6 py-4 lg:px-8">
+          <a href="#top" aria-label="Managent home" className="shrink-0">
+            <Image src="/logo.png" alt="Managent" width={100} height={100} style={{ height: "auto" }} priority />
+          </a>
 
-        <nav className="hidden items-center justify-center gap-8 text-sm font-medium text-[#565b50] md:flex">
-          {navigationItems.map((item) => (
-            <a key={item.label} href={item.href} className="transition hover:text-[#11140f]">
-              {item.label}
+          <nav className="hidden items-center gap-8 text-sm font-medium text-[#565b50] md:flex">
+            {navigationItems.map((item) => (
+              <a key={item.label} href={item.href} className="transition-colors hover:text-[#11140f]">
+                {item.label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <a
+              href="#open-source"
+              className="hidden rounded-full px-3 py-2 text-sm font-medium text-[#565b50] transition-colors hover:text-[#11140f] sm:inline-flex"
+            >
+              GitHub
             </a>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-3">
-          <a
-            href="#open-source"
-            className="hidden text-sm font-semibold text-[#565b50] transition hover:text-[#11140f] sm:inline-flex"
-          >
-            GitHub
-          </a>
-          <a
-            href="#newsletter"
-            className="rounded-full bg-[#11140f] px-5 py-3 text-sm font-semibold transition hover:bg-[#2d3329]"
-          >
-            <p className="text-white">
-              Newsletter
-            </p>
-          </a>
+            <Button href="#newsletter" size="sm">
+              <span className="text-white">Newsletter</span>
+            </Button>
+          </div>
         </div>
       </header>
 
-      <section
-        id="top"
-        className="mx-auto flex w-full max-w-6xl flex-col items-center px-6 pb-20 pt-16 text-center lg:px-8 lg:pb-28 lg:pt-24"
-      >
-        <h1 className="mt-6 max-w-6xl text-4xl font-medium leading-none text-[#11140f] sm:text-5xl lg:text-7xl">
-          The Home of AI Agent Engineering.
-        </h1>
-        <p className="mt-6 max-w-xl text-xl leading-8 text-[#3d4238]">
-          Helping developers and companies build, secure, and operate the next
-          generation of AI agents.
-        </p>
+      {/* ================= HERO ================= */}
+      <section id="top" className="relative overflow-hidden">
+        {/* soft radial glow */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-105 opacity-[0.35]"
+          style={{
+            background:
+              "radial-gradient(600px 260px at 50% 0%, rgba(52,84,54,0.14), transparent 70%)",
+          }}
+        />
 
-        <div className="mt-6 flex w-full flex-col items-center justify-center gap-3 sm:flex-row">
-          <a
-            href="#ecosystem"
-            className="inline-flex w-max items-center justify-center rounded-full bg-[#11140f] px-6 py-3 text-base font-semibold text-white transition hover:bg-[#2d3329]"
-          >
-            <p className="text-white">
-              Explore the ecosystem
-            </p>
-          </a>
-          <a
-            href="#newsletter"
-            className="inline-flex w-max items-center justify-center rounded-full border border-[#cfcabb] bg-white px-6 py-3 text-base font-semibold text-[#11140f] transition hover:border-[#11140f]"
-          >
-            Join the newsletter
-          </a>
-        </div>
-      </section>
 
-      <section
-        id="ecosystem"
-        className="border-y border-[#e3dfd0] bg-white py-20"
-      >
-        <div className="mx-auto flex max-w-6xl flex-col items-center px-6 text-center lg:px-8">
-          <SectionIntro
-            eyebrow="Our Ecosystem"
-            title="Everything you need to build AI agents."
-            description=""
-          />
-          <div className="mt-10 grid w-full gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {ecosystemItems.map((item) => {
-              const Icon = item.icon;
 
-              return (
-                <FeatureCard
-                  key={item.title}
-                  id={item.id}
-                  icon={<Icon className="size-6" />}
-                  title={item.title}
-                  body={item.description}
-                  cta={item.cta}
-                />
-              );
-            })}
+        <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center px-6 pb-24 pt-24 text-center lg:px-8 lg:pt-32">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#e4dfd0] bg-[#fbfaf6] px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-[#345436]">
+            <span className="size-1.5 rounded-full bg-[#345436]" />
+            AI Agent Engineering
+          </span>
+
+          <h1 className="mt-7 max-w-3xl text-[2.6rem] font-medium leading-[1.05] tracking-tight text-[#11140f] sm:text-6xl lg:text-[4.25rem]">
+            The home of AI agent engineering.
+          </h1>
+
+          <p className="mt-6 max-w-xl text-lg leading-8 text-[#565b50] sm:text-xl">
+            Helping developers and companies build, secure, and operate the
+            next generation of AI agents.
+          </p>
+
+          <div className="mt-9 flex w-full flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button href="#ecosystem" size="lg">
+              <span className="text-white">Explore the ecosystem</span>
+            </Button>
+            <Button href="#newsletter" variant="outline" size="lg">
+              Join the newsletter
+            </Button>
           </div>
         </div>
+        {/* agent / permission-gate / resource illustration */}
+        <HeroIllustration className="pointer-events-none absolute inset-0 h-full w-full" />
       </section>
 
-      <section
-        id="vision"
-        className="mx-auto flex max-w-6xl flex-col items-center px-6 py-20 text-center lg:px-8"
-      >
+      {/* ================= ECOSYSTEM ================= */}
+      <Section id="ecosystem" tone="tint">
+        <SectionIntro
+          eyebrow="Our ecosystem"
+          title="Everything you need to build AI agents."
+        />
+        <div className="mt-12 grid w-full gap-5 md:grid-cols-3">
+          {ecosystemItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <FeatureCard
+                key={item.title}
+                id={item.id}
+                icon={<Icon className="size-5" />}
+                title={item.title}
+                body={item.description}
+                cta={item.cta}
+              />
+            );
+          })}
+        </div>
+      </Section>
 
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="text-sm font-semibold uppercase text-[#345436]">
-            Our Vision
-          </p>
-          <h2 className="mt-4 text-4xl font-semibold leading-tight text-[#11140f]">
+      {/* ================= VISION ================= */}
+      <Section id="vision">
+        <div className="mx-auto max-w-2xl text-center">
+          <Eyebrow>Our vision</Eyebrow>
+          <h2 className="mt-4 text-3xl font-semibold leading-tight tracking-tight text-[#11140f] sm:text-4xl">
             AI agents are becoming a new software platform.
           </h2>
-          <div className="mt-10 w-full rounded-lg border border-[#d8d4c5] bg-white p-8 shadow-[0_18px_60px_rgba(17,20,15,0.06)]">
-            <p className="mx-auto max-w-4xl text-lg leading-8 text-[#565b50]">
-              Our mission is to help developers navigate this shift by creating
-              the knowledge, tools, and infrastructure needed to build reliable AI
-              agents.
-            </p>
-          </div>
+          <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-[#565b50]">
+            Our mission is to help developers navigate this shift by creating
+            the knowledge, tools, and infrastructure needed to build reliable
+            AI agents.
+          </p>
         </div>
+      </Section>
 
-      </section>
-
-      <section
-        id="products"
-        className="mx-auto flex max-w-6xl flex-col items-center px-6 py-20 text-center lg:px-8"
-      >
-        <SectionIntro
-          eyebrow="What We&apos;re Building"
-          title="A control plane for autonomous systems"
-          description=""
-        />
-        <div className="mt-10 flex flex-wrap  items-center justify-center w-full gap-5">
-          {roadmapItems.map((item, index) => (
-            <div key={item.name}>
-              <RoadmapCard
-                title={item.name}
-                body={item.description}
-                status={item.status}
-              />
-              {/* {index + 1 < roadmapItems.length ? (
-                <div className="py-4 text-[#8e9486]">
-                  <ArrowDownIcon className="mx-auto size-5" />
-                </div>
-              ) : null} */}
-            </div>
+      {/* ================= PRODUCTS / ROADMAP ================= */}
+      <Section id="products" tone="tint">
+        <SectionIntro eyebrow="What we're building" title="A control plane for autonomous systems." />
+        <div className="mt-12 grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {roadmapItems.map((item) => (
+            <RoadmapCard key={item.name} title={item.name} body={item.description} status={item.status} />
           ))}
         </div>
-      </section>
+      </Section>
 
+      {/* ================= LABS / FEEDBACK ================= */}
+      <Section id="labs">
+        <SectionIntro
+          eyebrow="Help shape the future"
+          title="We're talking with developers building AI agents every day."
+          description="Your feedback helps us decide what to teach and what products to build."
+        />
 
-      {/* <section id="newsletter" className="border-t border-[#e3dfd0] bg-white py-20">
-        <div className="mx-auto flex max-w-4xl flex-col items-center px-6 text-center lg:px-8">
-          <SectionIntro
-            eyebrow="Stay Connected"
-            title="Follow the evolution of AI Agent Engineering."
-            description="Receive product updates, research, technical articles, and new open-source releases."
-          />
+        <form className="mt-12 w-full max-w-xl rounded-2xl border border-[#e4dfd0] bg-white p-6 text-left sm:p-8">
+          <div className="grid gap-5">
+            <Field label="Work email">
+              <input type="email" name="email" placeholder="you@company.com" className={inputClass} />
+            </Field>
 
-          <form className="mt-10 grid w-full max-w-2xl gap-4 rounded-lg border border-[#d8d4c5] bg-white p-6 text-left shadow-[0_18px_60px_rgba(17,20,15,0.06)] sm:grid-cols-[1fr_auto] sm:items-end sm:p-8">
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold leading-5 text-[#11140f]">
-                Email
-              </span>
-              <input
-                type="email"
-                name="newsletter-email"
-                placeholder="you@company.com"
-                className="min-h-12 w-full rounded-lg border border-[#d8d4c5] bg-[#fbfaf6] px-4 text-base outline-none transition focus:border-[#345436] focus:ring-4 focus:ring-[#e7efe3]"
+            <Field label="Framework">
+              <select name="framework" defaultValue="" className={inputClass}>
+                <option value="" disabled>Select a framework</option>
+                <option>OpenAI Agents SDK</option>
+                <option>LangChain</option>
+                <option>CrewAI</option>
+                <option>AutoGen</option>
+                <option>Custom stack</option>
+              </select>
+            </Field>
+
+            <Field label="What are you building?">
+              <textarea
+                name="building"
+                rows={3}
+                placeholder="Agent workflows, internal copilots, customer support, automation pipelines..."
+                className={inputClass}
               />
-            </label>
+            </Field>
 
-            <button
-              type="submit"
-              className="min-h-12 rounded-full bg-[#11140f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2d3329] focus:outline-none focus:ring-4 focus:ring-[#d8d4c5]"
-            >
-              Subscribe
-            </button>
-          </form>
-        </div>
-      </section> */}
+            <Field label="What's your biggest challenge?">
+              <textarea
+                name="challenge"
+                rows={3}
+                placeholder="Reliability, evaluation, orchestration, security, cost control..."
+                className={inputClass}
+              />
+            </Field>
 
-      <section id="labs" className="border-t border-[#e3dfd0] bg-white py-20">
-        <div className="mx-auto flex max-w-4xl flex-col items-center px-6 text-center lg:px-8">
-          <SectionIntro
-            eyebrow="Help Shape the Future"
-            title="We&apos;re talking with developers building AI agents every day."
-            description="Your feedback helps us decide what to teach and what products to build."
-          />
+            <Button type="submit" size="lg" className="w-full justify-center">
+              Share feedback
+            </Button>
+          </div>
+        </form>
+      </Section>
 
-          <form className="mt-10 w-full max-w-2xl rounded-lg border border-[#d8d4c5] bg-white p-6 text-left shadow-[0_18px_60px_rgba(17,20,15,0.06)] sm:p-8">
-            <div className="grid gap-5">
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold leading-5 text-[#11140f]">
-                  Work email
-                </span>
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="you@company.com"
-                  className="min-h-12 w-full rounded-lg border border-[#d8d4c5] bg-[#fbfaf6] px-4 text-base outline-none transition focus:border-[#345436] focus:ring-4 focus:ring-[#e7efe3]"
-                />
-              </label>
-
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold leading-5 text-[#11140f]">
-                  Framework
-                </span>
-                <select
-                  name="framework"
-                  defaultValue=""
-                  className="min-h-12 w-full rounded-lg border border-[#d8d4c5] bg-[#fbfaf6] px-4 text-base outline-none transition focus:border-[#345436] focus:ring-4 focus:ring-[#e7efe3]"
-                >
-                  <option value="" disabled>
-                    Select a framework
-                  </option>
-                  <option>OpenAI Agents SDK</option>
-                  <option>LangChain</option>
-                  <option>CrewAI</option>
-                  <option>AutoGen</option>
-                  <option>Custom stack</option>
-                </select>
-              </label>
-
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold leading-5 text-[#11140f]">
-                  What are you building?
-                </span>
-                <textarea
-                  name="building"
-                  rows={4}
-                  placeholder="Agent workflows, internal copilots, customer support, automation pipelines..."
-                  className="w-full rounded-lg border border-[#d8d4c5] bg-[#fbfaf6] px-4 py-3 text-base outline-none transition focus:border-[#345436] focus:ring-4 focus:ring-[#e7efe3]"
-                />
-              </label>
-
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold leading-5 text-[#11140f]">
-                  What&apos;s your biggest challenge?
-                </span>
-                <textarea
-                  name="challenge"
-                  rows={4}
-                  placeholder="Reliability, evaluation, orchestration, security, cost control..."
-                  className="w-full rounded-lg border border-[#d8d4c5] bg-[#fbfaf6] px-4 py-3 text-base outline-none transition focus:border-[#345436] focus:ring-4 focus:ring-[#e7efe3]"
-                />
-              </label>
-
-              <button
-                type="submit"
-                className="min-h-12 w-full rounded-full bg-[#11140f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2d3329] focus:outline-none focus:ring-4 focus:ring-[#d8d4c5]"
-              >
-                Share Feedback
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <footer id="footer" className="mx-auto w-full max-w-7xl px-6 py-12 lg:px-8">
-        <div className="border-t border-[#ddd8c8] pt-8">
-          <div className="mb-8">
-            <p className="text-lg font-semibold">Managent</p>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#565b50]">
+      {/* ================= FOOTER ================= */}
+      <footer id="footer" className="border-t border-[#ece7d8] bg-white">
+        <div className="mx-auto w-full max-w-7xl px-6 py-14 lg:px-8">
+          <div className="mb-10 max-w-md">
+            <p className="text-base font-semibold text-[#11140f]">Managent</p>
+            <p className="mt-2 text-sm leading-6 text-[#565b50]">
               Building the infrastructure and knowledge layer for AI Agent
               Engineering.
             </p>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             {footerColumns.map((column) => (
               <div key={column.title}>
-                <h3 className="text-sm font-semibold uppercase text-[#345436]">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-[#345436]">
                   {column.title}
                 </h3>
-                <div className="mt-4 grid gap-3 text-sm text-[#565b50]">
+                <div className="mt-4 grid gap-2.5 text-sm text-[#565b50]">
                   {column.links.map((link) => (
-                    <a
-                      key={link.label}
-                      href={link.href}
-                      className="transition hover:text-[#11140f]"
-                    >
+                    <a key={link.label} href={link.href} className="transition-colors hover:text-[#11140f]">
                       {link.label}
                     </a>
                   ))}
@@ -406,9 +281,52 @@ export default function Home() {
               </div>
             ))}
           </div>
+
+          <div className="mt-12 border-t border-[#ece7d8] pt-6 text-xs text-[#8e9486]">
+            © {new Date().getFullYear()} Managent. All rights reserved.
+          </div>
         </div>
       </footer>
     </main>
+  );
+}
+
+/* ============================================================
+   Shared primitives
+   ============================================================ */
+
+const inputClass =
+  "min-h-12 w-full rounded-lg border border-[#e4dfd0] bg-[#fbfaf6] px-4 text-base text-[#11140f] outline-none transition placeholder:text-[#9a9686] focus:border-[#345436] focus:ring-4 focus:ring-[#e7efe3]";
+
+function Section({
+  id,
+  tone = "plain",
+  children,
+}: {
+  id: string;
+  tone?: "plain" | "tint";
+  children: ReactNode;
+}) {
+  return (
+    <section
+      id={id}
+      className={
+        "border-t border-[#ece7d8] py-20 lg:py-24 " +
+        (tone === "tint" ? "bg-[#fbfaf6]" : "bg-white")
+      }
+    >
+      <div className="mx-auto flex w-full max-w-6xl flex-col items-center px-6 text-center lg:px-8">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function Eyebrow({ children }: { children: ReactNode }) {
+  return (
+    <p className="text-xs font-semibold uppercase tracking-wide text-[#345436]">
+      {children}
+    </p>
   );
 }
 
@@ -419,18 +337,65 @@ function SectionIntro({
 }: {
   eyebrow: string;
   title: string;
-  description: string;
+  description?: string;
 }) {
   return (
-    <div className="mx-auto max-w-3xl text-center">
-      <p className="text-sm font-semibold uppercase text-[#345436]">
-        {eyebrow}
-      </p>
-      <h2 className="mt-4 text-4xl font-semibold leading-tight text-[#11140f]">
+    <div className="mx-auto max-w-2xl text-center">
+      <Eyebrow>{eyebrow}</Eyebrow>
+      <h2 className="mt-4 text-3xl font-semibold leading-tight tracking-tight text-[#11140f] sm:text-4xl">
         {title}
       </h2>
-      <p className="mt-4 text-lg leading-8 text-[#565b50]">{description}</p>
+      {description ? (
+        <p className="mt-4 text-lg leading-8 text-[#565b50]">{description}</p>
+      ) : null}
     </div>
+  );
+}
+
+function Button({
+  href,
+  children,
+  variant = "primary",
+  size = "md",
+  type,
+  className = "",
+}: {
+  href?: string;
+  children: ReactNode;
+  variant?: "primary" | "outline";
+  size?: "sm" | "md" | "lg";
+  type?: "button" | "submit";
+  className?: string;
+}) {
+  const sizeClass =
+    size === "lg" ? "px-6 py-3 text-base" : size === "sm" ? "px-4 py-2 text-sm" : "px-5 py-2.5 text-sm";
+  const variantClass =
+    variant === "primary"
+      ? "bg-[#11140f] text-white hover:bg-[#2d3329]"
+      : "border border-[#d8d4c5] bg-white text-[#11140f] hover:border-[#11140f]";
+
+  const classes = `inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-colors ${sizeClass} ${variantClass} ${className}`;
+
+  if (href) {
+    return (
+      <a href={href} className={classes}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <button type={type ?? "button"} className={classes}>
+      {children}
+    </button>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="grid gap-2">
+      <span className="text-sm font-semibold text-[#11140f]">{label}</span>
+      {children}
+    </label>
   );
 }
 
@@ -442,7 +407,7 @@ function FeatureCard({
   cta,
 }: {
   id: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   body: string;
   cta: string;
@@ -450,61 +415,133 @@ function FeatureCard({
   return (
     <article
       id={id}
-      className="rounded-lg border border-[#e4dfd0] bg-[#fbfaf6] p-6 text-left"
+      className="group rounded-2xl border border-[#e4dfd0] bg-white p-6 text-left transition-colors hover:border-[#c9c3ae]"
     >
-      <div className="flex size-12 items-center justify-center rounded-lg border border-[#d8d4c5] bg-white text-[#345436]">
+      <div className="flex size-10 items-center justify-center rounded-lg border border-[#e4dfd0] bg-[#fbfaf6] text-[#345436]">
         {icon}
       </div>
-      <h3 className="mt-5 text-2xl font-semibold">{title}</h3>
-      <p className="mt-4 leading-7 text-[#565b50]">{body}</p>
+      <h3 className="mt-5 text-xl font-semibold text-[#11140f]">{title}</h3>
+      <p className="mt-2.5 text-[15px] leading-6 text-[#565b50]">{body}</p>
       <a
         href={`#${id}`}
-        className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#345436] transition hover:text-[#11140f]"
+        className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-[#345436] transition-colors group-hover:text-[#11140f]"
       >
         {cta}
-        <ArrowRightIcon className="size-4" />
+        <ArrowRightIcon className="size-3.5 transition-transform group-hover:translate-x-0.5" />
       </a>
     </article>
   );
 }
 
-function ProblemCard({ title, body }: { title: string; body: string }) {
+function RoadmapCard({ title, body, status }: { title: string; body: string; status: string }) {
+  const isActive = status.toLowerCase().includes("development");
   return (
-    <article className="rounded-lg border border-[#e4dfd0] bg-[#fbfaf6] p-6 text-center">
-      <h3 className="text-xl font-semibold">{title}</h3>
-      {body ? <p className="mt-4 leading-7 text-[#565b50]">{body}</p> : null}
-    </article>
-  );
-}
-
-function RoadmapCard({
-  title,
-  body,
-  status,
-}: {
-  title: string;
-  body: string;
-  status: string;
-}) {
-  return (
-    <article className="rounded-lg border border-[#d8d4c5] bg-white p-6 text-center shadow-[0_18px_60px_rgba(17,20,15,0.06)]">
-      <span className="inline-flex rounded-full border border-[#d9d6c8] bg-[#f8f7f2] px-3 py-1 text-xs font-semibold uppercase text-[#345436]">
+    <article className="flex flex-col items-start rounded-2xl border border-[#e4dfd0] bg-white p-6 text-left">
+      <span
+        className={
+          "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide " +
+          (isActive ? "bg-[#e7efe3] text-[#345436]" : "bg-[#f3f1e8] text-[#8e9486]")
+        }
+      >
+        <span className={"size-1.5 rounded-full " + (isActive ? "bg-[#345436]" : "bg-[#c9c5b3]")} />
         {status}
       </span>
-      <h3 className="mt-5 text-2xl font-semibold leading-tight">{title}</h3>
-      <p className="mt-4 leading-7 text-[#565b50]">{body}</p>
+      <h3 className="mt-4 text-lg font-semibold leading-snug text-[#11140f]">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-[#565b50]">{body}</p>
     </article>
   );
 }
 
-type IconProps = {
-  className?: string;
-};
+/* ============================================================
+   Hero illustration
+   Agents (left) route through a central permission gate before
+   reaching resources (right) — a literal picture of what
+   Managent does, kept faint enough to read as background texture.
+   ============================================================ */
 
-function IconBase({
-  className,
-  children,
-}: IconProps & { children: React.ReactNode }) {
+function HeroIllustration({ className }: { className?: string }) {
+  const agents = [
+    { x: 120, y: 90 },
+    { x: 90, y: 200 },
+    { x: 130, y: 320 },
+  ];
+  const resources = [
+    { x: 1080, y: 80 },
+    { x: 1110, y: 190 },
+    { x: 1070, y: 300 },
+    // { x: 1100, y: 400 },
+  ];
+  const gate = { x: 600, y: 220 };
+
+  return (
+    <svg
+      viewBox="0 0 1200 480"
+      preserveAspectRatio="xMidYMin slice"
+      className={className}
+      aria-hidden="true"
+      style={{
+        maskImage: "linear-gradient(to bottom, black 0%, black 55%, transparent 92%)",
+        WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 55%, transparent 92%)",
+        opacity: 0.4,
+      }}
+    >
+      {/* connecting lines: agents -> gate -> resources */}
+      {agents.map((a, i) => (
+        <path
+          key={`a-${i}`}
+          d={`M ${a.x} ${a.y} C ${a.x + 160} ${a.y}, ${gate.x - 160} ${gate.y}, ${gate.x} ${gate.y}`}
+          stroke="#a9a38f"
+          strokeWidth="2"
+          fill="none"
+        />
+      ))}
+      {resources.map((r, i) => (
+        <path
+          key={`r-${i}`}
+          d={`M ${gate.x} ${gate.y} C ${gate.x + 160} ${gate.y}, ${r.x - 160} ${r.y}, ${r.x} ${r.y}`}
+          stroke="#a9a38f"
+          strokeWidth="2"
+          fill="none"
+        />
+      ))}
+
+      {/* agent nodes */}
+      {agents.map((a, i) => (
+        <g key={`agent-node-${i}`}>
+          <circle cx={a.x} cy={a.y} r="16" fill="#fbfaf6" stroke="#a9a38f" strokeWidth="2" />
+          <circle cx={a.x} cy={a.y} r="4" fill="#6b7064" />
+        </g>
+      ))}
+
+      {/* resource nodes */}
+      {resources.map((r, i) => (
+        <g key={`resource-node-${i}`}>
+          <rect x={r.x - 14} y={r.y - 14} width="28" height="28" rx="7" fill="#fbfaf6" stroke="#a9a38f" strokeWidth="2" />
+          <rect x={r.x - 4} y={r.y - 4} width="8" height="8" rx="2" fill="#6b7064" />
+        </g>
+      ))}
+
+      {/* central permission gate */}
+      <circle cx={gate.x} cy={gate.y} r="34" fill="#fbfaf6" stroke="#345436" strokeWidth="2" />
+      <path
+        d={`M ${gate.x - 9} ${gate.y - 2} v-6 a9 9 0 0 1 18 0 v6`}
+        stroke="#345436"
+        strokeWidth="2.5"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <rect x={gate.x - 13} y={gate.y - 2} width="26" height="20" rx="4" fill="none" stroke="#345436" strokeWidth="2.5" />
+    </svg>
+  );
+}
+
+/* ============================================================
+   Icons
+   ============================================================ */
+
+type IconProps = { className?: string };
+
+function IconBase({ className, children }: IconProps & { children: ReactNode }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -543,27 +580,6 @@ function BoxesIcon({ className }: IconProps) {
   );
 }
 
-function CodeXmlIcon({ className }: IconProps) {
-  return (
-    <IconBase className={className}>
-      <path d="m8 16-4-4 4-4" />
-      <path d="m16 8 4 4-4 4" />
-      <path d="m14 4-4 16" />
-    </IconBase>
-  );
-}
-
-function ChartColumnIcon({ className }: IconProps) {
-  return (
-    <IconBase className={className}>
-      <path d="M3 3v18h18" />
-      <path d="M8 15v3" />
-      <path d="M12 11v7" />
-      <path d="M16 7v11" />
-    </IconBase>
-  );
-}
-
 function FlaskConicalIcon({ className }: IconProps) {
   return (
     <IconBase className={className}>
@@ -581,15 +597,6 @@ function ArrowRightIcon({ className }: IconProps) {
     <IconBase className={className}>
       <path d="M5 12h14" />
       <path d="m12 5 7 7-7 7" />
-    </IconBase>
-  );
-}
-
-function ArrowDownIcon({ className }: IconProps) {
-  return (
-    <IconBase className={className}>
-      <path d="M12 5v14" />
-      <path d="m5 12 7 7 7-7" />
     </IconBase>
   );
 }
