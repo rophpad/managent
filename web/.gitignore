@@ -17,14 +17,9 @@
 # next.js
 /.next/
 /out/
-**/.next/
-**/.turbo/
 
 # production
 /build
-/dist/
-**/build/
-**/dist/
 
 # misc
 .DS_Store
@@ -38,7 +33,6 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-!.env.example
 
 # vercel
 .vercel
@@ -46,7 +40,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+<<<<<<< HEAD
 
-# nested app dependencies and caches
-**/node_modules/
-**/coverage/
+/web/.next/
+/dist/
+/build/
+=======
+>>>>>>> a96bd9b7c8408c0bf50dc3db4d792f60227af381
