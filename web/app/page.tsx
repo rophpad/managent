@@ -113,7 +113,7 @@ export default function Home() {
       </header>
 
       {/* ================= HERO ================= */}
-      <section id="top" className="relative overflow-hidden">
+      <section id="top" className="relative inset-x-0 top-0 z-10 h-160 overflow-hidden">
         {/* soft radial glow */}
         <div
           aria-hidden
@@ -126,8 +126,17 @@ export default function Home() {
 
 
 
-        <div className="absolute inset-x-0 top-0 z-10 h-160 overflow-hidden">
-          <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center px-6 pb-24 pt-24 text-center lg:px-8 lg:pt-32">
+        <div className="relative mx-4 grid grid-cols-[auto_1fr_auto] items-center sm:mx-8 lg:mx-16 2xl:mx-72">
+          <Image
+            className="col-start-1 row-start-1 opacity-90"
+            src="/left.svg"
+            alt="illustration-1"
+            width={300}
+            height={300}
+            style={{ height: "auto" }}
+            priority
+          />
+          <div className="relative z-10 col-span-3 col-start-1 row-start-1 mx-auto flex w-full flex-col items-center px-6 pb-24 pt-24 text-center lg:px-8 lg:pt-32">
             <span className="inline-flex items-center gap-2 rounded-full border border-[#e4dfd0] bg-[#fbfaf6] px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-[#345436]">
               <span className="size-1.5 rounded-full bg-[#345436]" />
               AI Agent Engineering
@@ -151,61 +160,20 @@ export default function Home() {
               </Button> */}
             </div>
           </div>
+          <Image
+            className="col-start-3 row-start-1 opacity-90"
+            src="/right.svg"
+            alt="illustration-2"
+            width={300}
+            height={300}
+            style={{ height: "auto" }}
+            priority
+          />
         </div>
-
-        <div className="w-full mx-auto max-w-5xl flex justify-center items-center  pt-96 pb-  relative">
-          <Image src="/illustration.svg" alt="illustration" width={1500} height={1500} className="opacity-80" />
-          <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 text-lg font-semibold text-[#11140f] flex flex-col items-center justify-center gap-4">
-            {/* <p className="px-4 py-2 rounded-full bg-[#fbfaf6] border border-[#e4dfd0] shadow-md text-xs">
-              Testing
-            </p> */}
-            <p className="px-4 py-2 rounded-full bg-[#fbfaf6] border border-[#e4dfd0] shadow-md text-xs">
-              Gateway
-            </p>
-            <p className="px-4 py-2 rounded-full bg-[#fbfaf6] border border-[#e4dfd0] shadow-md text-xs">
-              Credentials
-            </p>
-            <p className="px-4 py-2 rounded-full bg-[#fbfaf6] border border-[#e4dfd0] shadow-md text-xs">
-              ...
-            </p>
-          </div>
-
-        </div>
-
-        {/* agent / permission-gate / resource illustration */}
-        {/* <HeroIllustration className="pointer-events-none absolute inset-0 h-full w-full" /> */}
-        <section
-          className="pb-20 lg:pb-24"
-        >
-          <div className="mx-auto flex w-full max-w-6xl flex-col items-center px-6 text-center lg:px-8">
-            <div className="mx-auto max-w-2xl text-center">
-              <Eyebrow>Our ecosystem</Eyebrow>
-              <h2 className="mt-4 text-3xl font-semibold leading-tight tracking-tight text-[#11140f] sm:text-4xl">
-                Everything you need to build AI agents.
-              </h2>
-
-            </div>
-            <div className="mt-12 grid w-full gap-5 md:grid-cols-3">
-              {ecosystemItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <FeatureCard
-                    key={item.title}
-                    id={item.id}
-                    icon={<Icon className="size-5" />}
-                    title={item.title}
-                    body={item.description}
-                    cta={item.cta}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        </section>
       </section>
 
       {/* ================= ECOSYSTEM ================= */}
-      {/* <Section id="ecosystem" tone="tint">
+      <Section id="ecosystem" tone="tint">
         <SectionIntro
           eyebrow="Our ecosystem"
           title="Everything you need to build AI agents."
@@ -225,7 +193,7 @@ export default function Home() {
             );
           })}
         </div>
-      </Section> */}
+      </Section>
 
       {/* ================= VISION ================= */}
       <Section id="vision">
