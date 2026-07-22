@@ -57,8 +57,6 @@ const footerColumns = [
     links: [
       { label: "Learn", href: "#learn" },
       { label: "Products", href: "#products" },
-      { label: "Open Source", href: "#open-source" },
-      { label: "Research", href: "#research" },
       { label: "Labs", href: "#labs" },
     ],
   },
@@ -73,9 +71,9 @@ const footerColumns = [
   {
     title: "Social",
     links: [
-      { label: "Research", href: "#research" },
-      { label: "Built in Public", href: "#built-in-public" },
-      { label: "Legal", href: "#footer" },
+      { label: "LinkedIn", href: "#linkedIn" },
+      { label: "X", href: "#x" },
+      { label: "YouTube", href: "#youtube" },
     ],
   },
 ];
@@ -86,7 +84,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white text-(--ink)" style={{ ["--ink" as string]: INK }}>
       {/* ================= HEADER ================= */}
-      <header className="sticky top-0 z-50 border-b border-[#ece7d8]/80 bg-white/85 backdrop-blur-md">
+      <header className="sticky top-0 z-50  bg-white/85 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-6 px-6 py-4 lg:px-8">
           <a href="#top" aria-label="Managent home" className="shrink-0">
             <Image src="/logo.png" alt="Managent" width={100} height={100} style={{ height: "auto" }} priority />
@@ -148,23 +146,66 @@ export default function Home() {
               <Button href="#ecosystem" size="lg">
                 <span className="text-white">Explore the ecosystem</span>
               </Button>
-              <Button href="#newsletter" variant="outline" size="lg">
+              {/* <Button href="#newsletter" variant="outline" size="lg">
                 Join the newsletter
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>
 
-        <div className="w-full mx-auto max-w-5xl flex justify-center items-center  pt-96 pb-36 ">
-          <Image src="/illustration.svg" alt="illustration" width={1500} height={1500} />
+        <div className="w-full mx-auto max-w-5xl flex justify-center items-center  pt-96 pb-  relative">
+          <Image src="/illustration.svg" alt="illustration" width={1500} height={1500} className="opacity-80" />
+          <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 text-lg font-semibold text-[#11140f] flex flex-col items-center justify-center gap-4">
+            {/* <p className="px-4 py-2 rounded-full bg-[#fbfaf6] border border-[#e4dfd0] shadow-md text-xs">
+              Testing
+            </p> */}
+            <p className="px-4 py-2 rounded-full bg-[#fbfaf6] border border-[#e4dfd0] shadow-md text-xs">
+              Gateway
+            </p>
+            <p className="px-4 py-2 rounded-full bg-[#fbfaf6] border border-[#e4dfd0] shadow-md text-xs">
+              Credentials
+            </p>
+            <p className="px-4 py-2 rounded-full bg-[#fbfaf6] border border-[#e4dfd0] shadow-md text-xs">
+              ...
+            </p>
+          </div>
+
         </div>
 
         {/* agent / permission-gate / resource illustration */}
         {/* <HeroIllustration className="pointer-events-none absolute inset-0 h-full w-full" /> */}
+        <section
+          className="pb-20 lg:pb-24"
+        >
+          <div className="mx-auto flex w-full max-w-6xl flex-col items-center px-6 text-center lg:px-8">
+            <div className="mx-auto max-w-2xl text-center">
+              <Eyebrow>Our ecosystem</Eyebrow>
+              <h2 className="mt-4 text-3xl font-semibold leading-tight tracking-tight text-[#11140f] sm:text-4xl">
+                Everything you need to build AI agents.
+              </h2>
+
+            </div>
+            <div className="mt-12 grid w-full gap-5 md:grid-cols-3">
+              {ecosystemItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <FeatureCard
+                    key={item.title}
+                    id={item.id}
+                    icon={<Icon className="size-5" />}
+                    title={item.title}
+                    body={item.description}
+                    cta={item.cta}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </section>
       </section>
 
       {/* ================= ECOSYSTEM ================= */}
-      <Section id="ecosystem" tone="tint">
+      {/* <Section id="ecosystem" tone="tint">
         <SectionIntro
           eyebrow="Our ecosystem"
           title="Everything you need to build AI agents."
@@ -184,7 +225,7 @@ export default function Home() {
             );
           })}
         </div>
-      </Section>
+      </Section> */}
 
       {/* ================= VISION ================= */}
       <Section id="vision">
@@ -262,7 +303,7 @@ export default function Home() {
       </Section>
 
       {/* ================= FOOTER ================= */}
-      <footer id="footer" className="border-t border-[#ece7d8] bg-white">
+      <footer id="footer" className=" bg-white">
         <div className="mx-auto w-full max-w-7xl px-6 py-14 lg:px-8">
           <div className="mb-10 max-w-md">
             <p className="text-base font-semibold text-[#11140f]">Managent</p>
@@ -318,7 +359,7 @@ function Section({
     <section
       id={id}
       className={
-        "border-t border-[#ece7d8] py-20 lg:py-24 " +
+        " py-20 lg:py-24 " +
         (tone === "tint" ? "bg-[#fbfaf6]" : "bg-white")
       }
     >
@@ -422,7 +463,7 @@ function FeatureCard({
   return (
     <article
       id={id}
-      className="group rounded-2xl border border-[#e4dfd0] bg-white p-6 text-left transition-colors hover:border-[#c9c3ae]"
+      className="group rounded-2xl border border-[#e4dfd0] bg-black/2 p-6 text-left transition-colors hover:border-[#c9c3ae]"
     >
       <div className="flex size-10 items-center justify-center rounded-lg border border-[#e4dfd0] bg-[#fbfaf6] text-[#345436]">
         {icon}
