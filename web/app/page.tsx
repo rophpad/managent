@@ -154,7 +154,7 @@ export default function Home() {
         </div>
 
         <div className="w-full mx-auto max-w-5xl flex justify-center items-center  pt-96 pb-  relative">
-          <Image src="/illustration.svg" alt="illustration" width={1500} height={1500} className="opacity-80" />
+          <Image src="/illustration-managent.svg" alt="illustration" width={1500} height={1500} className="opacity-80" />
           <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 text-lg font-semibold text-[#11140f] flex flex-col items-center justify-center gap-4">
             {/* <p className="px-4 py-2 rounded-full bg-[#fbfaf6] border border-[#e4dfd0] shadow-md text-xs">
               Testing
@@ -171,9 +171,6 @@ export default function Home() {
           </div>
 
         </div>
-
-        {/* agent / permission-gate / resource illustration */}
-        {/* <HeroIllustration className="pointer-events-none absolute inset-0 h-full w-full" /> */}
         <section
           className="pb-20 lg:pb-24"
         >
@@ -499,14 +496,6 @@ function RoadmapCard({ title, body, status }: { title: string; body: string; sta
     </article>
   );
 }
-
-/* ============================================================
-   Hero illustration
-   Agents (left) route through a central permission gate before
-   reaching resources (right) — a literal picture of what
-   Managent does, kept faint enough to read as background texture.
-   ============================================================ */
-
 
 
 /* ============================================================
