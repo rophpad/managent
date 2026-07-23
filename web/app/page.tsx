@@ -445,7 +445,7 @@ export default function Home() {
       {/* ================= PRODUCTS / ROADMAP ================= */}
       <Section id="products" tone="tint">
         <Reveal>
-          <SectionIntro eyebrow="What we're building" title="A control plane for autonomous systems." />
+          <SectionIntro eyebrow="We're building" title="A control plane for autonomous systems." />
         </Reveal>
         <div className="mt-12 grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {roadmapItems.map((item, i) => (
