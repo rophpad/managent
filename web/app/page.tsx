@@ -129,7 +129,7 @@ export default function Home() {
         <div className="relative mx-4 grid grid-cols-[auto_1fr_auto] items-center sm:mx-8 lg:mx-16 2xl:mx-72">
           <Image
             className="col-start-1 row-start-1 opacity-90"
-            src="/left.svg"
+            src="/left-light.svg"
             alt="illustration-1"
             width={300}
             height={300}
@@ -162,7 +162,7 @@ export default function Home() {
           </div>
           <Image
             className="col-start-3 row-start-1 opacity-90"
-            src="/right.svg"
+            src="/right-light.svg"
             alt="illustration-2"
             width={300}
             height={300}
