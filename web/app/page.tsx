@@ -402,7 +402,7 @@ export default function Home() {
         <section className="pb-20 lg:pb-24">
           <div className="mx-auto flex w-full max-w-6xl flex-col items-center px-6 text-center lg:px-8">
             <Reveal className="mx-auto max-w-2xl text-center">
-              <Eyebrow>Our ecosystem</Eyebrow>
+              {/*<Eyebrow>Our ecosystem</Eyebrow>*/}
               <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight text-[#11140f] sm:text-4xl">
                 Everything you need to build AI agents.
               </h2>
