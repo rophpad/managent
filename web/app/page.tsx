@@ -2,6 +2,14 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  ArrowRight,
+  BookOpen,
+  Boxes,
+  FlaskConical,
+  Menu,
+  X,
+} from "lucide-react";
 
 // Exact source geometry for illustration-managent.svg is untouched: every `d`,
 // `stroke`, `fill`, and `mask` attribute below is byte-for-byte identical to the
@@ -36,26 +44,23 @@ const AGENT_ILLUSTRATION_SVG = `<svg width="1196" height="651" viewBox="0 0 1196
   @keyframes agentSignalFlow {
     to { stroke-dashoffset: -56; }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .agent-node, .agent-chip, .agent-line { animation: none !important; }
-  }
 </style>
-<path class="agent-node n1" d="M67 1H8C4.13401 1 1 4.13401 1 8V67L1.00879 67.3604C1.19633 71.0589 4.25486 74 8 74H67C70.866 74 74 70.866 74 67V8L73.9912 7.63965C73.8097 4.06046 70.9395 1.19028 67.3604 1.00879L67 1ZM37.5 29C42.1944 29 46 32.8056 46 37.5C46 42.1944 42.1944 46 37.5 46C32.8056 46 29 42.1944 29 37.5C29 32.8056 32.8056 29 37.5 29Z" stroke="black" stroke-width="2"/>
-<path class="agent-node n2" d="M67 289H8C4.13401 289 1 292.134 1 296V355L1.00879 355.36C1.19633 359.059 4.25486 362 8 362H67C70.866 362 74 358.866 74 355V296L73.9912 295.64C73.8097 292.06 70.9395 289.19 67.3604 289.009L67 289ZM37.5 317C42.1944 317 46 320.806 46 325.5C46 330.194 42.1944 334 37.5 334C32.8056 334 29 330.194 29 325.5C29 320.806 32.8056 317 37.5 317Z" stroke="black" stroke-width="2"/>
-<path class="agent-node n3" d="M67 577H8C4.13401 577 1 580.134 1 584V643L1.00879 643.36C1.19633 647.059 4.25486 650 8 650H67C70.866 650 74 646.866 74 643V584L73.9912 583.64C73.8097 580.06 70.9395 577.19 67.3604 577.009L67 577ZM37.5 605C42.1944 605 46 608.806 46 613.5C46 618.194 42.1944 622 37.5 622C32.8056 622 29 618.194 29 613.5C29 608.806 32.8056 605 37.5 605Z" stroke="black" stroke-width="2"/>
+<path class="agent-node n1" d="M67 1H8C4.13401 1 1 4.13401 1 8V67L1.00879 67.3604C1.19633 71.0589 4.25486 74 8 74H67C70.866 74 74 70.866 74 67V8L73.9912 7.63965C73.8097 4.06046 70.9395 1.19028 67.3604 1.00879L67 1ZM37.5 29C42.1944 29 46 32.8056 46 37.5C46 42.1944 42.1944 46 37.5 46C32.8056 46 29 42.1944 29 37.5C29 32.8056 32.8056 29 37.5 29Z" stroke="black" strokeWidth="2"/>
+<path class="agent-node n2" d="M67 289H8C4.13401 289 1 292.134 1 296V355L1.00879 355.36C1.19633 359.059 4.25486 362 8 362H67C70.866 362 74 358.866 74 355V296L73.9912 295.64C73.8097 292.06 70.9395 289.19 67.3604 289.009L67 289ZM37.5 317C42.1944 317 46 320.806 46 325.5C46 330.194 42.1944 334 37.5 334C32.8056 334 29 330.194 29 325.5C29 320.806 32.8056 317 37.5 317Z" stroke="black" strokeWidth="2"/>
+<path class="agent-node n3" d="M67 577H8C4.13401 577 1 580.134 1 584V643L1.00879 643.36C1.19633 647.059 4.25486 650 8 650H67C70.866 650 74 646.866 74 643V584L73.9912 583.64C73.8097 580.06 70.9395 577.19 67.3604 577.009L67 577ZM37.5 605C42.1944 605 46 608.806 46 613.5C46 618.194 42.1944 622 37.5 622C32.8056 622 29 618.194 29 613.5C29 608.806 32.8056 605 37.5 605Z" stroke="black" strokeWidth="2"/>
 <mask id="path-4-inside-1_50_41" fill="white">
 <path d="M644.5 254C653.337 254 660.5 261.163 660.5 270V359C660.5 367.837 653.337 375 644.5 375H555.5C546.663 375 539.5 367.837 539.5 359V270C539.5 261.163 546.663 254 555.5 254H644.5ZM626.022 298.25C623.064 295.72 618.863 295.282 615.451 297.147L603.987 303.416C601.189 304.946 597.811 304.946 595.013 303.416L583.549 297.147C580.137 295.282 575.936 295.72 572.978 298.25L551.863 316.304C544.146 322.903 550.837 335.426 560.564 332.589L596.884 321.996C598.593 321.498 600.407 321.498 602.116 321.996L638.436 332.589C648.163 335.426 654.854 322.903 647.137 316.304L626.022 298.25Z"/>
 </mask>
 <path class="agent-chip" d="M644.5 254V252V252V254ZM660.5 359H662.5V359H660.5ZM555.5 375V377V377V375ZM539.5 270H537.5V270H539.5ZM626.022 298.25L627.322 296.73L627.322 296.73L626.022 298.25ZM615.451 297.147L614.492 295.393L614.492 295.393L615.451 297.147ZM603.987 303.416L603.028 301.661V301.661L603.987 303.416ZM595.013 303.416L595.972 301.661V301.661L595.013 303.416ZM583.549 297.147L584.508 295.393L584.508 295.393L583.549 297.147ZM572.978 298.25L571.678 296.73L571.678 296.73L572.978 298.25ZM551.863 316.304L550.564 314.784L550.564 314.784L551.863 316.304ZM560.564 332.589L561.124 334.509L561.124 334.509L560.564 332.589ZM596.884 321.996L596.324 320.076L596.324 320.076L596.884 321.996ZM602.116 321.996L602.676 320.076L602.676 320.076L602.116 321.996ZM638.436 332.589L637.876 334.509L637.876 334.509L638.436 332.589ZM647.137 316.304L648.436 314.784L648.436 314.784L647.137 316.304ZM644.5 254V256C652.232 256 658.5 262.268 658.5 270H660.5H662.5C662.5 260.059 654.441 252 644.5 252V254ZM660.5 270H658.5V359H660.5H662.5V270H660.5ZM660.5 359H658.5C658.5 366.732 652.232 373 644.5 373V375V377C654.441 377 662.5 368.941 662.5 359H660.5ZM644.5 375V373H555.5V375V377H644.5V375ZM555.5 375V373C547.768 373 541.5 366.732 541.5 359H539.5H537.5C537.5 368.941 545.559 377 555.5 377V375ZM539.5 359H541.5V270H539.5H537.5V359H539.5ZM539.5 270H541.5C541.5 262.268 547.768 256 555.5 256V254V252C545.559 252 537.5 260.059 537.5 270H539.5ZM555.5 254V256H644.5V254V252H555.5V254ZM626.022 298.25L627.322 296.73C623.733 293.661 618.633 293.128 614.492 295.393L615.451 297.147L616.411 298.902C619.092 297.436 622.394 297.779 624.723 299.77L626.022 298.25ZM615.451 297.147L614.492 295.393L603.028 301.661L603.987 303.416L604.947 305.171L616.411 298.902L615.451 297.147ZM603.987 303.416L603.028 301.661C600.828 302.864 598.172 302.864 595.972 301.661L595.013 303.416L594.053 305.171C597.449 307.028 601.551 307.028 604.947 305.171L603.987 303.416ZM595.013 303.416L595.972 301.661L584.508 295.393L583.549 297.147L582.589 298.902L594.053 305.171L595.013 303.416ZM583.549 297.147L584.508 295.393C580.367 293.128 575.267 293.661 571.678 296.73L572.978 298.25L574.277 299.77C576.606 297.779 579.908 297.436 582.589 298.902L583.549 297.147ZM572.978 298.25L571.678 296.73L550.564 314.784L551.863 316.304L553.163 317.824L574.277 299.77L572.978 298.25ZM551.863 316.304L550.564 314.784C541.256 322.742 549.269 337.966 561.124 334.509L560.564 332.589L560.005 330.669C552.404 332.885 547.036 323.063 553.163 317.824L551.863 316.304ZM560.564 332.589L561.124 334.509L597.444 323.916L596.884 321.996L596.324 320.076L560.004 330.669L560.564 332.589ZM596.884 321.996L597.444 323.916C598.787 323.524 600.213 323.524 601.556 323.916L602.116 321.996L602.676 320.076C600.602 319.471 598.398 319.471 596.324 320.076L596.884 321.996ZM602.116 321.996L601.556 323.916L637.876 334.509L638.436 332.589L638.996 330.669L602.676 320.076L602.116 321.996ZM638.436 332.589L637.876 334.509C649.731 337.966 657.744 322.742 648.436 314.784L647.137 316.304L645.837 317.824C651.964 323.063 646.596 332.885 638.995 330.669L638.436 332.589ZM647.137 316.304L648.436 314.784L627.322 296.73L626.022 298.25L624.723 299.77L645.837 317.824L647.137 316.304Z" fill="black" mask="url(#path-4-inside-1_50_41)"/>
-<path class="agent-line l1" d="M89 38C159 38.0002 282.75 47.5002 313 157.5C342.917 266.29 424.5 282.5 528 282.5" stroke="black" stroke-width="2" stroke-linecap="round"/>
-<path class="agent-line l2" d="M1107 599.5C1037 599.5 913.25 590 883 480C853.083 371.21 771.5 355 668 355" stroke="black" stroke-width="2" stroke-linecap="round"/>
-<path class="agent-line l3" d="M528 363C458 363 334.25 372.5 304 482.5C274.083 591.29 192.5 607.5 89 607.5" stroke="black" stroke-width="2" stroke-linecap="round"/>
-<path class="agent-line l4" d="M668 274.5C738 274.5 861.75 265 892 155C921.917 46.21 1003.5 30 1107 30" stroke="black" stroke-width="2" stroke-linecap="round"/>
-<path class="agent-line l5" d="M94 323H526.5" stroke="black" stroke-width="2" stroke-linecap="round"/>
-<path class="agent-line l6" d="M1102 315.5H674.5" stroke="black" stroke-width="2" stroke-linecap="round"/>
-<path class="agent-node n4" d="M1158.5 1C1178.66 1 1195 17.3416 1195 37.5C1195 57.6584 1178.66 74 1158.5 74C1138.34 74 1122 57.6584 1122 37.5C1122 17.3416 1138.34 1 1158.5 1ZM1158 32C1154.69 32 1152 34.6863 1152 38C1152 41.3137 1154.69 44 1158 44C1161.31 44 1164 41.3137 1164 38C1164 34.6863 1161.31 32 1158 32Z" stroke="black" stroke-width="2"/>
-<path class="agent-node n5" d="M1158.5 278C1178.66 278 1195 294.342 1195 314.5C1195 334.658 1178.66 351 1158.5 351C1138.34 351 1122 334.658 1122 314.5C1122 294.342 1138.34 278 1158.5 278ZM1158 309C1154.69 309 1152 311.686 1152 315C1152 318.314 1154.69 321 1158 321C1161.31 321 1164 318.314 1164 315C1164 311.686 1161.31 309 1158 309Z" stroke="black" stroke-width="2"/>
-<path class="agent-node n6" d="M1158.5 555C1178.66 555 1195 571.342 1195 591.5C1195 611.658 1178.66 628 1158.5 628C1138.34 628 1122 611.658 1122 591.5C1122 571.342 1138.34 555 1158.5 555ZM1158 586C1154.69 586 1152 588.686 1152 592C1152 595.314 1154.69 598 1158 598C1161.31 598 1164 595.314 1164 592C1164 588.686 1161.31 586 1158 586Z" stroke="black" stroke-width="2"/>
+<path class="agent-line l1" d="M89 38C159 38.0002 282.75 47.5002 313 157.5C342.917 266.29 424.5 282.5 528 282.5" stroke="black" strokeWidth="2" strokeLinecap="round"/>
+<path class="agent-line l2" d="M1107 599.5C1037 599.5 913.25 590 883 480C853.083 371.21 771.5 355 668 355" stroke="black" strokeWidth="2" strokeLinecap="round"/>
+<path class="agent-line l3" d="M528 363C458 363 334.25 372.5 304 482.5C274.083 591.29 192.5 607.5 89 607.5" stroke="black" strokeWidth="2" strokeLinecap="round"/>
+<path class="agent-line l4" d="M668 274.5C738 274.5 861.75 265 892 155C921.917 46.21 1003.5 30 1107 30" stroke="black" strokeWidth="2" strokeLinecap="round"/>
+<path class="agent-line l5" d="M94 323H526.5" stroke="black" strokeWidth="2" strokeLinecap="round"/>
+<path class="agent-line l6" d="M1102 315.5H674.5" stroke="black" strokeWidth="2" strokeLinecap="round"/>
+<path class="agent-node n4" d="M1158.5 1C1178.66 1 1195 17.3416 1195 37.5C1195 57.6584 1178.66 74 1158.5 74C1138.34 74 1122 57.6584 1122 37.5C1122 17.3416 1138.34 1 1158.5 1ZM1158 32C1154.69 32 1152 34.6863 1152 38C1152 41.3137 1154.69 44 1158 44C1161.31 44 1164 41.3137 1164 38C1164 34.6863 1161.31 32 1158 32Z" stroke="black" strokeWidth="2"/>
+<path class="agent-node n5" d="M1158.5 278C1178.66 278 1195 294.342 1195 314.5C1195 334.658 1178.66 351 1158.5 351C1138.34 351 1122 334.658 1122 314.5C1122 294.342 1138.34 278 1158.5 278ZM1158 309C1154.69 309 1152 311.686 1152 315C1152 318.314 1154.69 321 1158 321C1161.31 321 1164 318.314 1164 315C1164 311.686 1161.31 309 1158 309Z" stroke="black" strokeWidth="2"/>
+<path class="agent-node n6" d="M1158.5 555C1178.66 555 1195 571.342 1195 591.5C1195 611.658 1178.66 628 1158.5 628C1138.34 628 1122 611.658 1122 591.5C1122 571.342 1138.34 555 1158.5 555ZM1158 586C1154.69 586 1152 588.686 1152 592C1152 595.314 1154.69 598 1158 598C1161.31 598 1164 595.314 1164 592C1164 588.686 1161.31 586 1158 586Z" stroke="black" strokeWidth="2"/>
 </svg>`;
 
 const navigationItems = [
@@ -71,7 +76,7 @@ const ecosystemItems = [
     description:
       "Practical guides, tutorials, and roadmaps for AI Agent Engineering.",
     cta: "Explore Learn",
-    icon: BookOpenIcon,
+    icon: BookOpen,
   },
   {
     id: "products",
@@ -79,7 +84,7 @@ const ecosystemItems = [
     description:
       "Developer tools for securing and operating AI agents in production.",
     cta: "Explore Products",
-    icon: BoxesIcon,
+    icon: Boxes,
   },
   {
     id: "labs",
@@ -87,7 +92,7 @@ const ecosystemItems = [
     description:
       "Experimental projects, prototypes, and ideas exploring the future of AI agents.",
     cta: "Explore Labs",
-    icon: FlaskConicalIcon,
+    icon: FlaskConical,
   },
 ];
 
@@ -218,26 +223,28 @@ export default function Home() {
           overflow: hidden;
         }
 
-        @media (prefers-reduced-motion: reduce) {
-          .hero-anim,
-          .float-anim,
-          .reveal {
-            animation: none !important;
-            transition: none !important;
-            opacity: 1 !important;
-            transform: none !important;
-          }
-        }
       `}</style>
 
       {/* ================= HEADER ================= */}
       <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-6 px-6 py-4 lg:px-8">
-          <a href="#top" aria-label="Managent home" className="shrink-0">
-            <Image src="/logo.png" alt="Managent" width={100} height={100} style={{ height: "auto" }} priority />
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8 lg:py-4">
+          <a
+            href="#top"
+            aria-label="Managent home"
+            className="flex shrink-0 items-center gap-1 font-semibold leading-none text-[#11140f]"
+          >
+            <Image
+              src="/logo.svg"
+              alt=""
+              width={108}
+              height={44}
+              className="h-auto w-8 sm:w-11"
+              priority
+            />
+            <span className="text-sm sm:text-lg">anagent</span>
           </a>
 
-          <nav className="hidden items-center gap-8 text-sm font-medium text-[#565b50] md:flex">
+          <nav className="hidden items-center gap-7 text-sm font-medium text-[#565b50] lg:flex">
             {navigationItems.map((item) => (
               <a key={item.label} href={item.href} className="transition-colors hover:text-[#11140f]">
                 {item.label}
@@ -248,28 +255,32 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <a
               href="#open-source"
-              className="hidden rounded-full px-3 py-2 text-sm font-medium text-[#565b50] transition-colors hover:text-[#11140f] sm:inline-flex"
+              aria-label="GitHub"
+              title="GitHub"
+              className="hidden size-9 items-center justify-center rounded-full border border-black/50 text-[#565b50] transition-colors hover:border-black hover:text-[#11140f] lg:inline-flex"
             >
-              GitHub
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"  viewBox="0 0 24 24" className="size-6 stroke-black"><path fill="none" stroke="" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2c2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2a4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6c-.6.6-.6 1.2-.5 2V21" /></svg>
             </a>
-            <Button href="#newsletter" size="sm" className="hidden sm:inline-flex">
-              <span className="text-white">Newsletter</span>
-            </Button>
+            <div className="hidden lg:block">
+              <Button href="#built-in-public" size="sm">
+                <span className="text-white">Join Discord</span>
+              </Button>
+            </div>
 
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
               aria-expanded={menuOpen}
               aria-label={menuOpen ? "Close menu" : "Open menu"}
-              className="inline-flex size-10 items-center justify-center rounded-full border border-[#e4dfd0] text-[#11140f] transition-colors hover:border-[#c9c3ae] md:hidden"
+              className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-[#e4dfd0] text-[#11140f] transition-colors hover:border-[#c9c3ae] lg:hidden"
             >
-              <MenuIcon open={menuOpen} className="size-5" />
+              {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
             </button>
           </div>
         </div>
 
         {/* Mobile nav panel */}
-        <div className={`mobile-menu border-t border-[#ece7d8] md:hidden ${menuOpen ? "is-open" : ""}`}>
+        <div className={`mobile-menu border-t border-[#ece7d8] lg:hidden ${menuOpen ? "is-open" : ""}`}>
           <div>
             <nav className="flex flex-col gap-1 px-6 py-4 text-sm font-medium text-[#565b50]">
               {navigationItems.map((item) => (
@@ -289,8 +300,8 @@ export default function Home() {
               >
                 GitHub
               </a>
-              <Button href="#newsletter" size="sm" className="mt-2 w-full justify-center">
-                <span className="text-white">Newsletter</span>
+              <Button href="#built-in-public" size="sm" className="mt-2 w-full justify-center">
+                <span className="text-white">Join Discord</span>
               </Button>
             </nav>
           </div>
@@ -365,13 +376,13 @@ export default function Home() {
                   a gentle fade rather than hiding any part of the artwork. */}
               <div
                 aria-hidden
-                className="pointer-events-none absolute inset-x-0 top-0 z-5 hidden h-[40%] bg-linear-to-b from-white via-white/75 to-transparent sm:block"
+                className=" pointer-events-none absolute left-1/2 -top-10 z-5 hidden h-[40%] w-screen max-w-none -translate-x-1/2 bg-linear-to-b from-white via-white/75 to-transparent sm:block"
               />
 
               <div
                 role="img"
                 aria-label="Illustration of connected AI agent nodes"
-                className="agent-illustration float-anim relative w-full opacity-90"
+                className="agent-illustration float-anim relative w-full opacity-90 "
                 dangerouslySetInnerHTML={{ __html: AGENT_ILLUSTRATION_SVG }}
               />
               <div className="pointer-events-none absolute left-1/2 bottom-[0%] md:bottom-[10%] z-5 flex -translate-x-1/2 flex-col items-center justify-center gap-2 sm:gap-2.5">
@@ -511,8 +522,8 @@ export default function Home() {
       </Section>
 
       {/* ================= FOOTER ================= */}
-      <footer id="footer" className="bg-white">
-        <div className="mx-auto w-full max-w-7xl px-6 py-14 lg:px-8">
+      <footer id="footer" className="overflow-hidden bg-white">
+        <div className="mx-auto w-full max-w-7xl px-6 pt-14 lg:px-8">
           <div className="mb-10 max-w-md">
             <p className="text-base font-semibold text-[#11140f]">Managent</p>
             <p className="mt-2 text-sm leading-6 text-[#565b50]">
@@ -521,7 +532,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid gap-10 grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-10 lg:grid-cols-4">
             {footerColumns.map((column) => (
               <div key={column.title}>
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-[#345436]">
@@ -538,9 +549,13 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="mt-12 border-t border-[#ece7d8] pt-6 text-xs text-[#8e9486]">
+          <div className="mt-12 border-t border-[#ece7d8] py-6 text-xs text-[#8e9486]">
             © {new Date().getFullYear()} Managent. All rights reserved.
           </div>
+
+          <p aria-hidden="true" className="select-none whitespace-nowrap text-center text-[clamp(4.5rem,17vw,13.5rem)] font-semibold leading-[0.72] tracking-[-0.075em] text-[#11140f]">
+            Managent
+          </p>
         </div>
       </footer>
     </main>
@@ -719,7 +734,7 @@ function FeatureCard({
         className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-[#345436] transition-colors group-hover:text-[#11140f]"
       >
         {cta}
-        <ArrowRightIcon className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+        <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
       </a>
     </article>
   );
@@ -741,102 +756,5 @@ function RoadmapCard({ title, body, status }: { title: string; body: string; sta
       <h3 className="mt-4 text-lg font-semibold leading-snug text-[#11140f]">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-[#565b50]">{body}</p>
     </article>
-  );
-}
-
-/* ============================================================
-   Icons
-   ============================================================ */
-
-type IconProps = { className?: string };
-
-function IconBase({ className, children }: IconProps & { children: ReactNode }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      {children}
-    </svg>
-  );
-}
-
-function BookOpenIcon({ className }: IconProps) {
-  return (
-    <IconBase className={className}>
-      <path d="M12 7v14" />
-      <path d="M3 18.5A2.5 2.5 0 0 1 5.5 16H12V5.5A2.5 2.5 0 0 0 9.5 3H5.75A2.75 2.75 0 0 0 3 5.75Z" />
-      <path d="M21 18.5A2.5 2.5 0 0 0 18.5 16H12V5.5A2.5 2.5 0 0 1 14.5 3h3.75A2.75 2.75 0 0 1 21 5.75Z" />
-    </IconBase>
-  );
-}
-
-function BoxesIcon({ className }: IconProps) {
-  return (
-    <IconBase className={className}>
-      <path d="M2.97 7.27 12 12l9.03-4.73" />
-      <path d="M12 22V12" />
-      <path d="m7.5 4.27 9 4.73" />
-      <path d="m7.5 19.73-4.53-2.37V7.27L12 12l9.03-4.73v10.09L16.5 19.73" />
-      <path d="m7.5 4.27-4.53 2.37L12 11.37l9.03-4.73-4.53-2.37Z" />
-    </IconBase>
-  );
-}
-
-function FlaskConicalIcon({ className }: IconProps) {
-  return (
-    <IconBase className={className}>
-      <path d="M10 2v7.31" />
-      <path d="M14 2v7.31" />
-      <path d="M8.5 2h7" />
-      <path d="M6 15.5 11.5 9h1L18 15.5A4 4 0 0 1 14.94 22H9.06A4 4 0 0 1 6 15.5Z" />
-      <path d="M9 16h6" />
-    </IconBase>
-  );
-}
-
-function ArrowRightIcon({ className }: IconProps) {
-  return (
-    <IconBase className={className}>
-      <path d="M5 12h14" />
-      <path d="m12 5 7 7-7 7" />
-    </IconBase>
-  );
-}
-
-function MenuIcon({ className, open }: IconProps & { open: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path
-        d="M4 7h16"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        className="origin-center transition-transform duration-300"
-        style={open ? { transform: "translateY(5px) rotate(45deg)" } : undefined}
-      />
-      <path
-        d="M4 12h16"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        className="transition-opacity duration-200"
-        style={open ? { opacity: 0 } : undefined}
-      />
-      <path
-        d="M4 17h16"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        className="origin-center transition-transform duration-300"
-        style={open ? { transform: "translateY(-5px) rotate(-45deg)" } : undefined}
-      />
-    </svg>
   );
 }
