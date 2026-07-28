@@ -231,17 +231,25 @@ export default function Home() {
           <a
             href="#top"
             aria-label="Managent home"
-            className="flex shrink-0 items-center gap-1 font-semibold leading-none text-[#11140f]"
+            className="flex shrink-0 items-center gap-1 font-semibold leading-none text-[#11140f] "
           >
-            <Image
+            {/* <Image
               src="/logo.svg"
               alt=""
               width={108}
               height={44}
-              className="h-auto w-8 sm:w-11"
+              className="h-auto w-8 sm:w-11 "
               priority
             />
-            <span className="text-sm sm:text-lg">anagent</span>
+            <span className="text-sm sm:text-lg font-light">anagent</span> */}
+             <Image
+              src="/logo1.svg"
+              alt=""
+              width={100}
+              height={100}
+              className=""
+              priority
+            />
           </a>
 
           <nav className="hidden items-center gap-7 text-sm font-medium text-[#565b50] lg:flex">
