@@ -360,7 +360,7 @@ export default function Home() {
                 style={{ animationDelay: "270ms" }}
               >
                 <Button href="#ecosystem" size="md" className="w-max sm:w-auto">
-                  <span className="text-white">Explore the ecosystem</span>
+                  <span className="text-white">Talk to an expert</span>
                 </Button>
               </div>
             </div>
