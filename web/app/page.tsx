@@ -242,7 +242,7 @@ export default function Home() {
               priority
             />
             <span className="text-sm sm:text-lg font-light">anagent</span> */}
-             <Image
+            <Image
               src="/logo1.svg"
               alt=""
               width={100}
@@ -265,13 +265,15 @@ export default function Home() {
               href="#open-source"
               aria-label="GitHub"
               title="GitHub"
-              className="hidden size-9 items-center justify-center rounded-full border border-black/50 text-[#565b50] transition-colors hover:border-black hover:text-[#11140f] lg:inline-flex"
+              className="hidden text-[#565b50] transition-colors hover:border-black hover:text-[#11140f] lg:inline-flex"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"  viewBox="0 0 24 24" className="size-6 stroke-black"><path fill="none" stroke="" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2c2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2a4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6c-.6.6-.6 1.2-.5 2V21" /></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2" />
+              </svg>
             </a>
             <div className="hidden lg:block">
               <Button href="#built-in-public" size="sm">
-                <span className="text-white">Join Discord</span>
+                <span className="text-white">Talk with us</span>
               </Button>
             </div>
 
