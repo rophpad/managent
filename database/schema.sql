@@ -58,6 +58,27 @@ create table if not exists tools (
     created_at timestamptz not null default now()
 );
 
+-- Migrate the legacy connector-backed tool cache. Tool rows are disposable
+-- snapshots and are repopulated from connected MCPs during gateway startup.
+do $$
+begin
+    if exists (
+        select 1
+        from information_schema.columns
+        where table_schema = 'public' and table_name = 'tools' and column_name = 'connector_id'
+    ) and not exists (
+        select 1
+        from information_schema.columns
+        where table_schema = 'public' and table_name = 'tools' and column_name = 'mcp_id'
+    ) then
+        truncate table tools;
+        alter table tools drop constraint if exists tools_connector_id_fkey;
+        alter table tools rename column connector_id to mcp_id;
+        alter table tools add constraint tools_mcp_id_fkey
+            foreign key (mcp_id) references mcps(id) on delete cascade;
+    end if;
+end $$;
+
 create table if not exists policies (
     id bigserial primary key,
     workspace_id bigint not null references workspaces(id) on delete cascade,
@@ -86,6 +107,8 @@ create table if not exists agents (
     created_at timestamptz not null default now(),
     last_seen_at timestamptz
 );
+
+update agents set tags = '[]'::jsonb where tags = 'null'::jsonb;
 
 create table if not exists agent_keys (
     id bigserial primary key,

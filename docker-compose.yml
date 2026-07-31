@@ -42,7 +42,7 @@ services:
       gateway:
         condition: service_started
     environment:
-      MANAGENT_API_BASE_URL: http://gateway:8081
+      MANAGENT_API_BASE_URL: http://gateway:8080
       MANAGENT_ADMIN_TOKEN: ${MANAGENT_ADMIN_TOKEN:-}
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"

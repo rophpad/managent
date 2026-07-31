@@ -262,14 +262,14 @@ func (s *Store) seedAgents(ctx context.Context, workspace Workspace, keys []conf
 }
 
 func (s *Store) seedPolicies(ctx context.Context, workspace Workspace, rules []config.PolicyConfig) error {
-	var count int
-	if err := s.pool.QueryRow(ctx, `select count(*) from policies where workspace_id = $1`, workspace.ID).Scan(&count); err != nil {
-		return err
-	}
-	if count > 0 {
-		return nil
-	}
-	for index, rule := range rules {
+	for _, rule := range rules {
+		var exists bool
+		if err := s.pool.QueryRow(ctx, `select exists(select 1 from policies where workspace_id = $1 and name = $2)`, workspace.ID, rule.Name).Scan(&exists); err != nil {
+			return err
+		}
+		if exists {
+			continue
+		}
 		condition := policyengine.Condition{}
 		for field, cfg := range rule.Conditions {
 			condition.Field = field
@@ -300,11 +300,15 @@ func (s *Store) seedPolicies(ctx context.Context, workspace Workspace, rules []c
 		if err != nil {
 			return err
 		}
+		var precedence int
+		if err := s.pool.QueryRow(ctx, `select coalesce(max(precedence), 0) + 1 from policies where workspace_id = $1`, workspace.ID).Scan(&precedence); err != nil {
+			return err
+		}
 		if _, err := s.pool.Exec(ctx, `
 			insert into policies (
 				workspace_id, rule, action, name, subject_type, subject_value, action_name, effect, condition, precedence
 			) values ($1, $2, $3, $4, 'tag', '*', 'call', $3, $5, $6)
-		`, workspace.ID, ruleJSON, rule.Action, rule.Name, conditionJSON, index+1); err != nil {
+		`, workspace.ID, ruleJSON, rule.Action, rule.Name, conditionJSON, precedence); err != nil {
 			return err
 		}
 	}
@@ -312,14 +316,14 @@ func (s *Store) seedPolicies(ctx context.Context, workspace Workspace, rules []c
 }
 
 func (s *Store) seedMCPs(ctx context.Context, workspace Workspace, mcps []config.MCPConfig) error {
-	var count int
-	if err := s.pool.QueryRow(ctx, `select count(*) from mcps where workspace_id = $1`, workspace.ID).Scan(&count); err != nil {
-		return err
-	}
-	if count > 0 {
-		return nil
-	}
 	for _, cfgMCP := range mcps {
+		var exists bool
+		if err := s.pool.QueryRow(ctx, `select exists(select 1 from mcps where workspace_id = $1 and name = $2)`, workspace.ID, cfgMCP.Name).Scan(&exists); err != nil {
+			return err
+		}
+		if exists {
+			continue
+		}
 		cfgJSON, err := json.Marshal(map[string]any{
 			"id":               cfgMCP.ID,
 			"namespace":        cfgMCP.Namespace,

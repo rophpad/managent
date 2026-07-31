@@ -6,6 +6,8 @@ It exposes one northbound MCP endpoint for agents, connects to downstream MCP se
 
 See [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) for the repo map and [docs/prd.txt](docs/prd.txt) for the current product spec.
 
+To connect Codex, Claude, Cursor, LangChain, CrewAI, or another AI agent, see [Using Managent with AI Agents](docs/AI_AGENTS.md).
+
 ## What Exists Today
 
 - northbound MCP server over HTTP at `/mcp`
@@ -127,7 +129,8 @@ docker compose up -d --build
 
 ### Docker Notes
 
-- the Docker gateway image no longer bundles demo MCP binaries
+- the Docker gateway image bundles the `hello-mcp` demo binary and seeds it as the `hello` namespace
+- the demo includes an allow policy for `hello.greet`; other tools remain denied unless you add policies
 - remote HTTP/SSE MCPs work out of the box
 - local `stdio` MCPs inside Docker require binaries that exist in the gateway container or a custom image you provide
 
@@ -149,7 +152,7 @@ That command:
 - creates the `managent` database if you are using local Postgres
 - skips database bootstrap automatically when `MANAGENT_DATABASE_URL` points to a hosted Postgres provider such as Neon
 - installs dashboard dependencies when needed
-- starts the Go gateway on `http://127.0.0.1:8080`
+- starts the Go gateway on `http://127.0.0.1:8081`
 - starts the Next.js dashboard on `http://127.0.0.1:3000`
 
 Useful script modes:

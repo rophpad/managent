@@ -1,0 +1,8 @@
+[mcp_servers.managent]
+url = "http://127.0.0.1:8081/mcp"
+bearer_token_env_var = "MANAGENT_AGENT_KEY"
+enabled = true
+required = false
+default_tools_approval_mode = "approve"
+startup_timeout_sec = 10
+tool_timeout_sec = 60

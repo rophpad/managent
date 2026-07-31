@@ -6,7 +6,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WEB_DIR="$ROOT_DIR/web"
 
 CONFIG_PATH="${MANAGENT_CONFIG:-$ROOT_DIR/config/managent.example.json}"
-DATABASE_URL="${MANAGENT_DATABASE_URL:-postgresql://neondb_owner:npg_AlLnCWK5rjI2@ep-late-firefly-atuf5bzi-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require}"
+DATABASE_URL="${MANAGENT_DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:5432/managent?sslmode=disable}"
 MCP_SECRET_KEY="${MANAGENT_MCP_SECRET_KEY:-0123456789abcdef0123456789abcdef}"
 API_BASE_URL="${MANAGENT_API_BASE_URL:-http://127.0.0.1:8081}"
 ADMIN_TOKEN="${MANAGENT_ADMIN_TOKEN:-managent-admin-demo}"
@@ -122,7 +122,7 @@ install_web_deps() {
 run_gateway() {
   require_cmd go
 
-  info "starting gateway on http://127.0.0.1:8080"
+  info "starting gateway on http://127.0.0.1:8081"
   (
     cd "$ROOT_DIR"
     MANAGENT_CONFIG="$CONFIG_PATH" \

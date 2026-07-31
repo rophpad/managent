@@ -105,7 +105,8 @@ The current schema includes tables for:
 Current Docker behavior:
 
 - the gateway image contains the compiled Go binary and config/schema assets
-- it does not bundle helper MCP binaries like GitHub MCP or the demo hello server
+- it bundles the demo hello MCP at `/app/bin/hello-mcp`
+- it does not bundle third-party MCP binaries such as the GitHub MCP server
 - the dashboard image runs `next dev` inside the container for local development
 
 ## `internal/`

@@ -9,7 +9,7 @@
     "format": "text"
   },
   "database": {
-    "url": "postgresql://neondb_owner:npg_AlLnCWK5rjI2@ep-late-firefly-atuf5bzi-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
+    "url": "postgresql://postgres:postgres@127.0.0.1:5432/managent?sslmode=disable",
     "schema_path": "database/schema.sql",
     "workspace_name": "Default Workspace",
     "auto_migrate": true,

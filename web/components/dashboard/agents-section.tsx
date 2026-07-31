@@ -113,7 +113,7 @@ export function AgentsSection({
                         <p className="mt-1 text-xs text-[#6b6b67]">{agent.id}</p>
                       </div>
                       <div className="text-sm text-[#6b6b67] lg:w-40 lg:shrink-0">
-                        {agent.tags.join(", ") || "No tags"}
+                        {(agent.tags ?? []).join(", ") || "No tags"}
                       </div>
                       <div className="lg:w-28 lg:shrink-0">
                         <StatusBadge status={agent.status} />

@@ -11,12 +11,14 @@ COPY database ./database
 COPY internal ./internal
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/managent-gateway ./cmd/gateway
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/hello-mcp ./cmd/hello-mcp
 
 FROM alpine:3.20
 
 WORKDIR /app
 
 COPY --from=builder /out/managent-gateway /app/bin/managent-gateway
+COPY --from=builder /out/hello-mcp /app/bin/hello-mcp
 COPY config /app/config
 COPY database/schema.sql /app/database/schema.sql
 

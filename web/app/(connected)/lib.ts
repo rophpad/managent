@@ -188,7 +188,10 @@ export async function getOverview(): Promise<Overview> {
 
     return {
       workspace: overview.workspace || { id: 0, name: "Default Workspace" },
-      agents: overview.agents || [],
+      agents: (overview.agents || []).map((agent) => ({
+        ...agent,
+        tags: Array.isArray(agent.tags) ? agent.tags : [],
+      })),
       mcps: overview.mcps || [],
       policies: overview.policies || [],
       auditLogs: overview.auditLogs || [],

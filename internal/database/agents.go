@@ -172,10 +172,10 @@ func (s *Store) ListAgentKeys(ctx context.Context, workspaceID int64, agentID st
 	var out []AgentKeyRecord
 	for rows.Next() {
 		var (
-			id, agentRef int64
+			id, agentRef  int64
 			last4, status string
-			createdAt time.Time
-			revokedAt sql.NullTime
+			createdAt     time.Time
+			revokedAt     sql.NullTime
 		)
 		if err := rows.Scan(&id, &agentRef, &last4, &status, &createdAt, &revokedAt); err != nil {
 			return nil, err
@@ -286,18 +286,21 @@ func (s *Store) updateAgentKeyStatus(ctx context.Context, workspaceID int64, age
 
 func decodeTags(raw []byte) ([]string, error) {
 	if len(raw) == 0 {
-		return nil, nil
+		return []string{}, nil
 	}
 	var tags []string
 	if err := json.Unmarshal(raw, &tags); err != nil {
 		return nil, err
+	}
+	if tags == nil {
+		return []string{}, nil
 	}
 	return tags, nil
 }
 
 func normalizeTags(tags []string) []string {
 	set := make(map[string]struct{}, len(tags))
-	var out []string
+	out := make([]string, 0, len(tags))
 	for _, tag := range tags {
 		tag = strings.TrimSpace(tag)
 		if tag == "" {
