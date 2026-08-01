@@ -2,14 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  ArrowRight,
-  BookOpen,
-  Boxes,
-  FlaskConical,
-  Menu,
-  X,
-} from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 // Exact source geometry for illustration-managent.svg is untouched: every `d`,
 // `stroke`, `fill`, and `mask` attribute below is byte-for-byte identical to the
@@ -26,7 +19,7 @@ const AGENT_ILLUSTRATION_SVG = `<svg width="1196" height="651" viewBox="0 0 1196
   .agent-node.n3 { animation-delay: 1s; }
   .agent-node.n5 { animation-delay: .7s; }
   .agent-node.n6 { animation-delay: 1.4s; }
-  .agent-chip { transform-box: fill-box; transform-origin: center; animation: agentChipPulse 3.6s ease-in-out infinite; }
+  .agent-chip { transform-box: fill-box; transform-origin: center; animation: agentChipBorder 3.6s ease-in-out infinite; }
   .agent-line { stroke-dasharray: 12 16; animation: agentSignalFlow 2.2s linear infinite; }
   .agent-line.l2 { animation-delay: .3s; }
   .agent-line.l3 { animation-delay: .6s; }
@@ -37,10 +30,11 @@ const AGENT_ILLUSTRATION_SVG = `<svg width="1196" height="651" viewBox="0 0 1196
     0%, 100% { opacity: .55; transform: scale(1); }
     50% { opacity: 1; transform: scale(1.18); }
   }
-  @keyframes agentChipPulse {
-    0%, 100% { opacity: .85; filter: drop-shadow(0 0 0 rgba(52,84,54,0)); }
-    50% { opacity: 1; filter: drop-shadow(0 0 10px rgba(52,84,54,0.55)); }
-  }
+  // @keyframes agentChipBorder {
+  //   0%, 100% { fill: #35D28A; }
+  //   33% { fill: #FF5C5C; }
+  //   66% { fill: #F5B942; }
+  // }
   @keyframes agentSignalFlow {
     to { stroke-dashoffset: -56; }
   }
@@ -64,70 +58,57 @@ const AGENT_ILLUSTRATION_SVG = `<svg width="1196" height="651" viewBox="0 0 1196
 </svg>`;
 
 const navigationItems = [
-  { label: "Learn", href: "#learn" },
-  { label: "Products", href: "#products" },
-  { label: "Labs", href: "#labs" },
+  { label: "Product", href: "#products" },
+  { label: "How it works", href: "#vision" },
+  { label: "Platform", href: "#ecosystem" },
+  { label: "Blog", href: "#blog" },
 ];
 
-const ecosystemItems = [
-  {
-    id: "learn",
-    title: "Learn",
-    description:
-      "Practical guides, tutorials, and roadmaps for AI Agent Engineering.",
-    cta: "Explore Learn",
-    icon: BookOpen,
-  },
-  {
-    id: "products",
-    title: "Products",
-    description:
-      "Developer tools for securing and operating AI agents in production.",
-    cta: "Explore Products",
-    icon: Boxes,
-  },
-  {
-    id: "labs",
-    title: "Labs",
-    description:
-      "Experimental projects, prototypes, and ideas exploring the future of AI agents.",
-    cta: "Explore Labs",
-    icon: FlaskConical,
-  },
-];
+const auditRows = [
+  ["-03s", "support-bot", "stripe:charge", "allow"],
+  ["-06s", "billing-bot", "linear:create_issue", "allow"],
+  ["-09s", "deploy-agent", "github:delete_repo", "deny"],
+  ["-13s", "research-bot", "stripe:refund $840", "review"],
+  ["-16s", "sales-agent", "slack:post_message", "allow"],
+  ["-20s", "ops-bot", "postgres:drop_table", "deny"],
+] as const;
 
-const roadmapItems = [
-  { name: "Managent Learn", description: "Knowledge and education.", status: "In development" },
-  { name: "Managent Credential", description: "Secure credential management.", status: "Coming soon" },
-  { name: "Managent Gateway", description: "Secure access to tools and services.", status: "Coming soon" },
-  { name: "Managent Registry", description: "Discover and manage agents and services.", status: "Coming soon" },
-  { name: "Managent Test", description: "Test and evaluate agents.", status: "Coming soon" },
-  { name: "Managent Cloud", description: "Managed infrastructure.", status: "Coming soon" },
-];
+const decisionStates = [
+  { type: "allow", label: "ALLOW", body: "The call matches an approved scope and runs immediately, with the real credential injected at the last moment.", rule: "agent:support-bot → linear:read_issue" },
+  { type: "review", label: "REQUIRE APPROVAL", body: "The call is held and routed to Slack or Discord. It only runs once a human resolves it — and every resolution is logged.", rule: "agent:billing-bot → stripe:refund > $500" },
+  { type: "deny", label: "DENY", body: "The call is blocked before it reaches the real tool. The agent sees a normal error — no silent failures.", rule: "agent:*-bot → github:delete_repo" },
+] as const;
+
+const platformFeatures = [
+  ["◈", "Agent registry", "Every agent, its owner, and its live coverage — populated automatically as calls come in."],
+  ["▤", "Ordered policy", "Allow, deny, or require approval, with rate limits and conditions, evaluated top to bottom."],
+  ["◷", "Audit log", "Every decision — agent, tool, outcome, timestamp — searchable and exportable."],
+  ["⊘", "One-click revoke", "Cut off an agent's access instantly, across every tool it touches, without a redeploy."],
+] as const;
 
 const footerColumns = [
   {
     title: "Company",
     links: [
-      { label: "About", href: "#vision" },
-      { label: "Mission", href: "#manifesto" },
-      { label: "Blog", href: "#learn" },
+      { label: "Docs", href: "#products" },
+      { label: "Pricing", href: "#labs" },
+      { label: "Changelog", href: "#products" },
     ],
   },
   {
     title: "Explore",
     links: [
-      { label: "Learn", href: "#learn" },
-      { label: "Products", href: "#products" },
-      { label: "Labs", href: "#labs" },
+      { label: "Gateway", href: "#products" },
+      { label: "SDK", href: "#products" },
+      { label: "Platform", href: "#ecosystem" },
     ],
   },
   {
     title: "Community",
     links: [
+      { label: "Security", href: "#vision" },
       { label: "GitHub", href: "#open-source" },
-      { label: "Newsletter", href: "#newsletter" },
-      { label: "Discord", href: "#built-in-public" },
+      { label: "Discord", href: "#labs" },
     ],
   },
   {
@@ -178,6 +159,23 @@ export default function Home() {
             transform: translateY(0) scale(1);
           }
         }
+        @keyframes auditScroll {
+          to {
+            transform: translateY(-50%);
+          }
+        }
+        @keyframes livePulse {
+          50% {
+            opacity: 0.55;
+            box-shadow: 0 0 0 5px rgba(35, 132, 90, 0);
+          }
+        }
+        .audit-track {
+          animation: auditScroll 12s linear infinite;
+        }
+        .live-pulse {
+          animation: livePulse 1.6s ease-in-out infinite;
+        }
 
         .hero-anim {
           opacity: 0;
@@ -227,7 +225,7 @@ export default function Home() {
 
       {/* ================= HEADER ================= */}
       <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8 lg:py-4">
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:h-auto sm:px-6 sm:py-3 lg:px-8 lg:py-4">
           <a
             href="#top"
             aria-label="Managent home"
@@ -247,7 +245,7 @@ export default function Home() {
               alt=""
               width={100}
               height={100}
-              className=""
+              className="h-auto w-[86px] sm:w-[100px]"
               priority
             />
           </a>
@@ -273,7 +271,7 @@ export default function Home() {
             </a>
             <div className="hidden lg:block">
               <Button href="#built-in-public" size="sm">
-                <span className="text-white">Talk with us</span>
+                <span className="text-white">Get started</span>
               </Button>
             </div>
 
@@ -292,7 +290,7 @@ export default function Home() {
         {/* Mobile nav panel */}
         <div className={`mobile-menu border-t border-[#ece7d8] lg:hidden ${menuOpen ? "is-open" : ""}`}>
           <div>
-            <nav className="flex flex-col gap-1 px-6 py-4 text-sm font-medium text-[#565b50]">
+            <nav className="flex max-h-[calc(100vh-4rem)] flex-col gap-1 overflow-y-auto px-4 py-3 text-sm font-medium text-[#565b50] sm:px-6 sm:py-4">
               {navigationItems.map((item) => (
                 <a
                   key={item.label}
@@ -311,7 +309,7 @@ export default function Home() {
                 GitHub
               </a>
               <Button href="#built-in-public" size="sm" className="mt-2 w-full justify-center">
-                <span className="text-white">Join Discord</span>
+                <span className="text-white">Get started</span>
               </Button>
             </nav>
           </div>
@@ -331,7 +329,7 @@ export default function Home() {
         />
 
         <div
-          className="hero-anim relative mx-auto flex w-full max-w-6xl justify-center px-6 pb-6 pt-10 sm:pb-8 sm:pt-10 lg:max-w-272 lg:pb-10 lg:pt-14"
+          className="hero-anim relative mx-auto flex w-full max-w-6xl justify-center px-4 pb-10 pt-8 sm:px-6 sm:pb-8 sm:pt-10 lg:max-w-272 lg:pb-10 lg:pt-14"
           style={{ animationDelay: "360ms" }}
         >
           {/* Shared positioning context for the text + image + pills, sized to the
@@ -341,36 +339,38 @@ export default function Home() {
                 overlay legibly there), becomes an absolute overlay on top of the
                 illustration from `sm` up. z-10 always wins the stacking once it's
                 positioned, regardless of DOM order. */}
-            <div className="relative z-10 mb-6 flex flex-col items-center px-2 text-center sm:absolute sm:inset-x-0 sm:top-0 sm:mb-0 sm:px-6 sm:pt-4 lg:pt-6">
+            <div className="relative z-10 mb-5 flex flex-col items-center text-center sm:absolute sm:inset-x-0 sm:top-0 sm:mb-0 sm:px-6 sm:pt-4 lg:pt-6">
               <span
-                className="hero-anim inline-flex items-center gap-2 rounded-full border border-[#e4dfd0] bg-[#fbfaf6] px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-[#345436]"
+                className="hero-anim inline-flex items-center gap-2 rounded-full border border-[#e4dfd0] bg-[#fbfaf6] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#345436] sm:px-3.5 sm:text-xs"
                 style={{ animationDelay: "0ms" }}
               >
                 <span className="size-1.5 rounded-full bg-[#345436]" />
-                AI Agent Engineering
+                Control plane for AI agents
               </span>
 
               <h1
-                className="hero-anim mt-5 max-w-xs text-[1.7rem] font-medium leading-[1.1] tracking-tight text-[#11140f] sm:max-w-lg sm:text-4xl lg:max-w-2xl lg:text-5xl"
+                className="hero-anim mt-4 max-w-[22rem] text-[1.85rem] font-medium leading-[1.08] tracking-tight text-[#11140f] min-[390px]:text-[2.05rem] sm:mt-5 sm:max-w-lg sm:text-5xl lg:max-w-2xl lg:text-6xl"
                 style={{ animationDelay: "90ms" }}
               >
-                The home of AI agent engineering.
+                Every agent call, <span className="text-[#23845a]">allowed</span>,{" "}
+                <span className="text-[#d94b4b]">denied</span>, or{" "}
+                <span className="text-[#b47a12]">reviewed</span> <br /> on purpose.
               </h1>
 
               <p
-                className="hero-anim mt-4 max-w-64 md:max-w-60 text-sm leading-6 text-[#565b50] sm:max-w-sm sm:text-base sm:leading-7 lg:max-w-md"
+                className="hero-anim mt-4 max-w-sm text-[13.5px] leading-6 text-[#565b50] sm:max-w-sm sm:text-lg sm:leading-7 lg:max-w-md"
                 style={{ animationDelay: "180ms" }}
               >
-                Helping developers and companies build, secure, and operate the
-                next generation of AI agents.
+                Managent scopes what your agents can touch, checks every call against policy, and logs what happened.
+                {/* Connect through a gateway or wrap it into your agent&apos;s own code — same control plane either way. */}
               </p>
 
               <div
-                className="hero-anim mt-6 flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row"
+                className="hero-anim mt-5 flex w-full max-w-xs flex-col items-stretch justify-center gap-3 sm:mt-6 sm:w-auto sm:max-w-none sm:flex-row"
                 style={{ animationDelay: "270ms" }}
               >
-                <Button href="#ecosystem" size="md" className="w-max sm:w-auto">
-                  <span className="text-white">Talk to an expert</span>
+                <Button href="#ecosystem" size="md" className="w-full sm:w-auto">
+                  <span className="text-white">Get started free</span>
                 </Button>
               </div>
             </div>
@@ -379,7 +379,7 @@ export default function Home() {
                 text overlay above: this margin lives on its own block, and the
                 outer wrapper's `flow-root` stops it from collapsing upward into
                 the text overlay's anchor point. Adjust sm:mt-*/}
-            <div className="relative sm:mt-10 lg:mt-38">
+            <div className="relative mt-7 sm:mt-10 lg:mt-64">
               {/* Soft scrim so the overlaid copy stays legible against the diagram
                   beneath it. The top of the illustration is empty space by design
                   (the corner nodes sit far to the sides), so this mostly just adds
@@ -392,103 +392,76 @@ export default function Home() {
               <div
                 role="img"
                 aria-label="Illustration of connected AI agent nodes"
-                className="agent-illustration float-anim relative w-full opacity-90 "
+                className="hidden lg:block agent-illustration float-anim relative left-1/2 w-[138%] -translate-x-1/2 opacity-90 sm:left-auto sm:w-full sm:translate-x-0"
                 dangerouslySetInnerHTML={{ __html: AGENT_ILLUSTRATION_SVG }}
               />
-              <div className="pointer-events-none absolute left-1/2 bottom-[0%] md:bottom-[10%] z-5 flex -translate-x-1/2 flex-col items-center justify-center gap-2 sm:gap-2.5">
-                <p
-                  className="hero-anim rounded-full border border-[#e4dfd0] bg-[#fbfaf6] px-3 py-1 text-[10px] font-semibold text-[#11140f] shadow-md sm:px-3.5 sm:py-1.5 sm:text-[11px]"
-                  style={{ animationDelay: "460ms" }}
-                >
-                  Credentials
-                </p>
-                <p
-                  className="mt-16 md:mt-0 hero-anim rounded-full border border-[#e4dfd0] bg-[#fbfaf6] px-3 py-1 text-[10px] font-semibold text-[#11140f] shadow-md sm:px-3.5 sm:py-1.5 sm:text-[11px]"
-                  style={{ animationDelay: "540ms" }}
-                >
-                  Gateway
-
-                </p>
-                <p
-                  className="hero-anim rounded-full border border-[#e4dfd0] bg-[#fbfaf6] px-3 py-1 text-[10px] font-semibold text-[#11140f] shadow-md sm:px-3.5 sm:py-1.5 sm:text-[11px]"
-                  style={{ animationDelay: "620ms" }}
-                >
-                  ...
-                </p>
+              <div className="absolute bottom-[7%] left-1/2 z-5 hidden w-[82%] max-w-96 -translate-x-1/2 sm:block">
+                <AuditStream />
               </div>
             </div>
-          </div>
-        </div>
-
-        <section className="pb-20 lg:pb-24">
-          <div className="mx-auto flex w-full max-w-6xl flex-col items-center px-6 text-center lg:px-8">
-            <Reveal className="mx-auto max-w-2xl text-center">
-              {/*<Eyebrow>Our ecosystem</Eyebrow>*/}
-              <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight text-[#11140f] sm:text-4xl">
-                Everything you need to build AI agents.
-              </h2>
-            </Reveal>
-            <div className="mt-12 grid w-full gap-5 sm:grid-cols-2 md:grid-cols-3">
-              {ecosystemItems.map((item, i) => {
-                const Icon = item.icon;
-                return (
-                  <Reveal key={item.title} delay={i * 90} className={i === 2 ? "sm:col-span-2 md:col-span-1" : ""}>
-                    <FeatureCard
-                      id={item.id}
-                      icon={<Icon className="size-5" />}
-                      title={item.title}
-                      body={item.description}
-                      cta={item.cta}
-                    />
-                  </Reveal>
-                );
-              })}
+            <div className="relative z-10 mx-auto mt-3 w-full max-w-sm sm:hidden">
+              <AuditStream />
             </div>
           </div>
-        </section>
+        </div>
+
       </section>
 
-      {/* ================= VISION ================= */}
-      <Section id="vision">
-        <Reveal className="mx-auto max-w-2xl text-center">
-          <Eyebrow>Our vision</Eyebrow>
-          <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight text-[#11140f] sm:text-4xl">
-            AI agents are becoming a new software platform.
-          </h2>
-          <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-[#565b50] sm:text-lg sm:leading-8">
-            Our mission is to help developers navigate this shift by creating
-            the knowledge, tools, and infrastructure needed to build reliable
-            AI agents.
-          </p>
-        </Reveal>
-      </Section>
+      <ProductSection id="products" eyebrow="Two ways in" title="Same control plane, however your agents run." description="Pick per agent. Both report into the same registry, policy engine, and audit log — so coverage never fragments.">
+        <div className="grid gap-5 lg:grid-cols-2">
+          <ModeCard badge="Gateway" tone="gateway" title="Point your agent at one endpoint." body="Managent fans out to every tool and MCP server behind it. No code changes in the agent itself — just repoint the connection.">
+            <span className="text-[#8e9486]"># configure once</span><br />
+            <span className="text-[#565b50]">agent</span>.endpoint = <span className="text-[#23845a]">&quot;mcp.managent.dev/gw/acme&quot;</span><br />
+            <span className="text-[#565b50]">agent</span>.token = <span className="text-[#3474a8]">env.MANAGENT_KEY</span><br />
+            <span className="text-[#8e9486]"># every downstream tool is now scoped</span>
+          </ModeCard>
+          <ModeCard badge="SDK" tone="sdk" title="Wrap the calls your agent already makes." body="One line per tool or MCP session. Denied calls raise a normal exception — handle it the same way you handle any other error.">
+            <span className="text-[#8e9486]">from</span> managent <span className="text-[#8e9486]">import</span> Managent<br />
+            mg = <span className="text-[#7656a5]">Managent</span>(token=<span className="text-[#3474a8]">env.MANAGENT_KEY</span>)<br />
+            stripe.charge = mg.<span className="text-[#565b50]">wrap</span>(stripe.charge, scope=<span className="text-[#23845a]">&quot;stripe:charge&quot;</span>)
+          </ModeCard>
+        </div>
+      </ProductSection>
 
-      {/* ================= PRODUCTS / ROADMAP ================= */}
-      <Section id="products" tone="tint">
-        <Reveal>
-          <SectionIntro eyebrow="We're building" title="A control plane for autonomous systems." />
-        </Reveal>
-        <div className="mt-12 grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {roadmapItems.map((item, i) => (
-            <Reveal key={item.name} delay={i * 70}>
-              <RoadmapCard title={item.name} body={item.description} status={item.status} />
-            </Reveal>
+      <ProductSection id="vision" eyebrow="How a call gets decided" title="Three outcomes. Nothing runs by default." description="Policy is ordered and explicit — write the rule once, it applies wherever the call comes from." tone="tint">
+        <div className="grid gap-5 lg:grid-cols-3">
+          {decisionStates.map((state) => <DecisionCard key={state.label} {...state} />)}
+        </div>
+      </ProductSection>
+
+      <ProductSection id="ecosystem" eyebrow="Underneath both modes" title="One registry. One policy. One log." description="Whichever mode an agent uses, it shows up here the same way — including a coverage indicator so you know exactly what's governed.">
+        <div className="grid gap-px overflow-hidden rounded-xl border border-[#e4dfd0] bg-[#e4dfd0] sm:grid-cols-2 lg:grid-cols-4">
+          {platformFeatures.map(([icon, title, body]) => (
+            <article key={title} className="bg-white p-5 text-left sm:p-7">
+              <div className="grid size-9 place-items-center rounded-lg border border-[#e4dfd0] bg-[#fbfaf6] font-mono text-sm text-[#345436]">{icon}</div>
+              <h3 className="mt-4 text-[16.5px] font-semibold text-[#11140f] sm:mt-5">{title}</h3>
+              <p className="mt-2 text-[13.5px] leading-6 text-[#565b50]">{body}</p>
+            </article>
           ))}
         </div>
-      </Section>
+      </ProductSection>
 
       {/* ================= LABS / FEEDBACK ================= */}
       <Section id="labs">
-        <Reveal>
-          <SectionIntro
-            eyebrow="Help shape the future"
-            title="We're talking with developers building AI agents every day."
-            description="Your feedback helps us decide what to teach and what products to build."
-          />
+        <Reveal className="w-full">
+          <div className="relative w-full overflow-hidden rounded-xl border border-[#e4dfd0] bg-[#fbfaf6] px-5 py-10 text-center sm:rounded-2xl sm:px-10 sm:py-16">
+            <div aria-hidden className="pointer-events-none absolute left-1/2 -top-60 size-150 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(52,84,54,.13),transparent_68%)]" />
+            <h2 className="relative text-[1.65rem] font-semibold leading-tight tracking-tight text-[#11140f] sm:text-4xl">Put a control plane in front of your agents.</h2>
+            <p className="relative mx-auto mt-3 max-w-lg text-sm leading-6 text-[#565b50] sm:mt-4 sm:text-base sm:leading-7">Start free with up to 3 agents. No infrastructure required to try it.</p>
+            <div className="relative mt-6 flex flex-col justify-center gap-3 sm:mt-8 sm:flex-row">
+              <Button href="#feedback-form" size="lg" className="w-full sm:w-auto">
+                <span className="text-white">
+                  Get started free
+
+                </span>
+              </Button>
+              <Button href="#footer" variant="outline" size="lg" className="w-full sm:w-auto">Talk to us</Button>
+            </div>
+          </div>
         </Reveal>
 
-        <Reveal delay={120} className="mt-12 w-full max-w-xl">
-          <form className="w-full rounded-2xl border border-[#e4dfd0] bg-white p-5 text-left sm:p-8">
+        <Reveal delay={120} className="mt-8 w-full max-w-xl sm:mt-12">
+          <form id="feedback-form" className="w-full scroll-mt-20 rounded-xl border border-[#e4dfd0] bg-white p-4 text-left sm:rounded-2xl sm:p-8">
             <div className="grid gap-5">
               <Field label="Work email">
                 <input type="email" name="email" placeholder="you@company.com" className={inputClass} />
@@ -533,16 +506,15 @@ export default function Home() {
 
       {/* ================= FOOTER ================= */}
       <footer id="footer" className="overflow-hidden bg-white">
-        <div className="mx-auto w-full max-w-7xl px-6 pt-14 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl px-4 pt-10 sm:px-6 sm:pt-14 lg:px-8">
           <div className="mb-10 max-w-md">
             <p className="text-base font-semibold text-[#11140f]">Managent</p>
             <p className="mt-2 text-sm leading-6 text-[#565b50]">
-              Building the infrastructure and knowledge layer for AI Agent
-              Engineering.
+              Every agent call, allowed, denied, or reviewed — on purpose.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-10 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-5 gap-y-9 sm:gap-10 lg:grid-cols-4">
             {footerColumns.map((column) => (
               <div key={column.title}>
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-[#345436]">
@@ -563,7 +535,7 @@ export default function Home() {
             © {new Date().getFullYear()} Managent. All rights reserved.
           </div>
 
-          <p aria-hidden="true" className="select-none whitespace-nowrap text-center text-[clamp(4.5rem,17vw,13.5rem)] font-semibold leading-[0.72] tracking-[-0.075em] text-[#11140f]">
+          <p aria-hidden="true" className="select-none whitespace-nowrap text-center text-[clamp(3.7rem,17vw,13.5rem)] font-semibold leading-[0.72] tracking-[-0.075em] text-[#11140f]">
             Managent
           </p>
         </div>
@@ -630,42 +602,12 @@ function Section({
   return (
     <section
       id={id}
-      className={"py-16 sm:py-20 lg:py-24 " + (tone === "tint" ? "bg-[#fbfaf6]" : "bg-white")}
+      className={"py-12 sm:py-20 lg:py-24 " + (tone === "tint" ? "bg-[#fbfaf6]" : "bg-white")}
     >
-      <div className="mx-auto flex w-full max-w-6xl flex-col items-center px-6 text-center lg:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col items-center px-4 text-center sm:px-6 lg:px-8">
         {children}
       </div>
     </section>
-  );
-}
-
-function Eyebrow({ children }: { children: ReactNode }) {
-  return (
-    <p className="text-xs font-semibold uppercase tracking-wide text-[#345436]">
-      {children}
-    </p>
-  );
-}
-
-function SectionIntro({
-  eyebrow,
-  title,
-  description,
-}: {
-  eyebrow: string;
-  title: string;
-  description?: string;
-}) {
-  return (
-    <div className="mx-auto max-w-2xl text-center">
-      <Eyebrow>{eyebrow}</Eyebrow>
-      <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight text-[#11140f] sm:text-4xl">
-        {title}
-      </h2>
-      {description ? (
-        <p className="mt-4 text-base leading-7 text-[#565b50] sm:text-lg sm:leading-8">{description}</p>
-      ) : null}
-    </div>
   );
 }
 
@@ -685,7 +627,7 @@ function Button({
   className?: string;
 }) {
   const sizeClass =
-    size === "lg" ? "px-6 py-3 text-base" : size === "sm" ? "px-4 py-2 text-sm" : "px-5 py-2.5 text-sm";
+    size === "lg" ? "px-5 py-3 text-sm sm:px-6 sm:text-base" : size === "sm" ? "px-4 py-2 text-sm" : "px-5 py-2.5 text-sm";
   const variantClass =
     variant === "primary"
       ? "bg-[#11140f] text-white hover:bg-[#2d3329]"
@@ -716,55 +658,60 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function FeatureCard({
-  id,
-  icon,
-  title,
-  body,
-  cta,
-}: {
-  id: string;
-  icon: ReactNode;
-  title: string;
-  body: string;
-  cta: string;
-}) {
+function ProductSection({ id, eyebrow, title, description, tone = "plain", children }: { id: string; eyebrow: string; title: string; description: string; tone?: "plain" | "tint"; children: ReactNode }) {
   return (
-    <article
-      id={id}
-      className="group h-full rounded-2xl border border-[#e4dfd0] bg-black/2 p-6 text-left transition-all duration-300 hover:-translate-y-1 hover:border-[#c9c3ae] hover:shadow-lg hover:shadow-black/5"
-    >
-      <div className="flex size-10 items-center justify-center rounded-lg border border-[#e4dfd0] bg-[#fbfaf6] text-[#345436] transition-colors duration-300 group-hover:bg-[#345436] group-hover:text-white">
-        {icon}
+    <section id={id} className={`scroll-mt-16 py-12 sm:py-20 lg:py-24 ${tone === "tint" ? "bg-[#fbfaf6]" : "bg-white"}`}>
+      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+        <Reveal className="mb-8 max-w-2xl text-left sm:mb-12">
+          <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#345436] sm:text-xs">{eyebrow}</p>
+          <h2 className="mt-3 text-[1.65rem] font-semibold leading-tight tracking-tight text-[#11140f] sm:mt-4 sm:text-4xl">{title}</h2>
+          <p className="mt-3 max-w-xl text-[15px] leading-6 text-[#565b50] sm:mt-4 sm:text-base sm:leading-7">{description}</p>
+        </Reveal>
+        {children}
       </div>
-      <h3 className="mt-5 text-xl font-semibold text-[#11140f]">{title}</h3>
-      <p className="mt-2.5 text-[15px] leading-6 text-[#565b50]">{body}</p>
-      <a
-        href={`#${id}`}
-        className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-[#345436] transition-colors group-hover:text-[#11140f]"
-      >
-        {cta}
-        <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
-      </a>
+    </section>
+  );
+}
+
+function ModeCard({ badge, tone, title, body, children }: { badge: string; tone: "gateway" | "sdk"; title: string; body: string; children: ReactNode }) {
+  return (
+    <article className="overflow-hidden rounded-xl border border-[#e4dfd0] bg-[#fbfaf6] px-4 pt-5 text-left sm:px-7 sm:pt-7">
+      <span className={`inline-block rounded px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wide ${tone === "gateway" ? "bg-[#e7efe3] text-[#345436]" : "bg-[#fff3d8] text-[#9b680d]"}`}>{badge}</span>
+      <h3 className="mt-4 text-lg font-semibold text-[#11140f] sm:text-xl">{title}</h3>
+      <p className="mb-5 mt-2 text-sm leading-6 text-[#565b50] sm:mb-6 sm:text-[14.5px]">{body}</p>
+      <div className="-mx-px overflow-x-auto whitespace-nowrap rounded-t-lg border border-b-0 border-[#e4dfd0] bg-white p-3 font-mono text-[10px] leading-5 text-[#20231e] sm:p-5 sm:text-xs sm:leading-6">{children}</div>
     </article>
   );
 }
 
-function RoadmapCard({ title, body, status }: { title: string; body: string; status: string }) {
-  const isActive = status.toLowerCase().includes("development");
+function DecisionCard({ type, label, body, rule }: { type: "allow" | "review" | "deny"; label: string; body: string; rule: string }) {
+  const color = type === "allow" ? "#23845a" : type === "deny" ? "#d94b4b" : "#a56f0e";
   return (
-    <article className="flex h-full flex-col items-start rounded-2xl border border-[#e4dfd0] bg-white p-6 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/5">
-      <span
-        className={
-          "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide " +
-          (isActive ? "bg-[#e7efe3] text-[#345436]" : "bg-[#f3f1e8] text-[#8e9486]")
-        }
-      >
-        <span className={"size-1.5 rounded-full " + (isActive ? "bg-[#345436] animate-pulse" : "bg-[#c9c5b3]")} />
-        {status}
-      </span>
-      <h3 className="mt-4 text-lg font-semibold leading-snug text-[#11140f]">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-[#565b50]">{body}</p>
+    <article className="rounded-xl border border-[#e4dfd0] border-t-2 bg-white p-5 text-left sm:p-6" style={{ borderTopColor: color }}>
+      <div className="flex items-center gap-2 font-mono text-xs font-semibold" style={{ color }}><span className="size-2 rounded-full" style={{ backgroundColor: color }} />{label}</div>
+      <p className="mt-4 text-sm leading-6 text-[#565b50]">{body}</p>
+      <p className="mt-4 border-t border-[#ece7d8] pt-4 font-mono text-xs text-[#8e9486]">{rule}</p>
     </article>
+  );
+}
+
+function AuditStream() {
+  return (
+    <div className="hero-anim overflow-hidden rounded-xl border border-[#d8d4c5] bg-white text-left shadow-[0_18px_45px_-20px_rgba(17,20,15,.35)]" style={{ animationDelay: "460ms" }}>
+      <div className="flex items-center justify-between border-b border-[#e4dfd0] bg-[#f5f3ec] px-3 py-2">
+        <div className="flex items-center gap-2"><span className="flex gap-1"><i className="size-1.5 rounded-full bg-[#c9c5b3]" /><i className="size-1.5 rounded-full bg-[#c9c5b3]" /><i className="size-1.5 rounded-full bg-[#c9c5b3]" /></span><span className="font-mono text-[8px] text-[#565b50] sm:text-[9px]">audit-log — all agents</span></div>
+        <span className="flex items-center gap-1 font-mono text-[8px] text-[#23845a] sm:text-[9px]"><i className="live-pulse size-1.5 rounded-full bg-[#23845a]" />live</span>
+      </div>
+      <div className="relative h-[112px] overflow-hidden after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-7 after:bg-linear-to-b after:from-transparent after:to-white sm:h-[132px]">
+        <div className="audit-track">
+          {[...auditRows, ...auditRows].map(([time, agent, call, state], index) => (
+            <div key={`${time}-${index}`} className="flex items-center gap-2 border-b border-[#eeeae0] px-3 py-1.5 font-mono text-[7px] sm:text-[8.5px]">
+              <span className="w-7 shrink-0 text-[#8e9486]">{time}</span><span className="hidden w-20 shrink-0 truncate text-[#565b50] sm:block">{agent}</span><span className="min-w-0 flex-1 truncate text-[#11140f]">{call}</span>
+              <span className={`rounded px-1.5 py-0.5 text-[6.5px] font-semibold sm:text-[7px] ${state === "allow" ? "bg-[#e5f5ed] text-[#23845a]" : state === "deny" ? "bg-[#fdeaea] text-[#d94b4b]" : "bg-[#fff3d8] text-[#9b680d]"}`}>{state === "review" ? "REVIEW" : state.toUpperCase()}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
