@@ -164,7 +164,7 @@ export default function Home() {
   const [contactOpen, setContactOpen] = useState(false);
 
   return (
-    <main className="min-h-screen bg-ink text-fg">
+    <main className="min-h-screen bg-ink text-fg relative">
       {/* Global keyframes + reveal utility classes. Respects prefers-reduced-motion. */}
       <style jsx global>{`
         @keyframes fadeUp {
@@ -269,7 +269,7 @@ export default function Home() {
       `}</style>
 
       {/* ================= HEADER ================= */}
-      <header className="sticky top-0 z-50 bg-ink/85 backdrop-blur-md">
+      <header className="absolute w-full top-0 z-50 bg-none backdrop-blur-md">
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:h-auto sm:px-6 sm:py-3 lg:px-8 lg:py-4">
           <a
             href="#top"
@@ -344,7 +344,7 @@ export default function Home() {
 
         {/* Mobile nav panel */}
         <div
-          className={`mobile-menu border-t border-line-soft lg:hidden ${menuOpen ? "is-open" : ""}`}
+          className={`bg-ink mobile-menu border-t border-line-soft lg:hidden ${menuOpen ? "is-open" : ""}`}
         >
           <div>
             <nav className="flex max-h-[calc(100vh-4rem)] flex-col gap-1 overflow-y-auto px-4 py-3 text-sm font-medium text-muted sm:px-6 sm:py-4">
@@ -365,20 +365,20 @@ export default function Home() {
               >
                 GitHub
               </a>
-              <Button
+              {/*<Button
                 href="/register"
                 size="sm"
                 className="mt-2 w-full justify-center"
               >
                 Get started
-              </Button>
+              </Button>*/}
             </nav>
           </div>
         </div>
       </header>
 
       {/* ================= HERO ================= */}
-      <section id="top" className="relative overflow-hidden">
+      <section id="top" className="mt-4 relative overflow-hidden">
         {/* soft radial glow */}
         <div
           aria-hidden
@@ -390,7 +390,7 @@ export default function Home() {
         />
 
         <div
-          className="hero-anim relative mx-auto flex w-full max-w-6xl justify-center px-4 pb-10 pt-8 sm:px-6 sm:pb-8 sm:pt-10 lg:max-w-272 lg:pb-10 lg:pt-14"
+          className="mt-16 hero-anim relative mx-auto flex w-full max-w-6xl justify-center px-4 pb-10 pt-8 sm:px-6 sm:pb-8 sm:pt-10 lg:max-w-272 lg:pb-10 lg:pt-14"
           style={{ animationDelay: "360ms" }}
         >
           {/* Shared positioning context for the text + image + pills, sized to the
