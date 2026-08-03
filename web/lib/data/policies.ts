@@ -1,0 +1,152 @@
+import type { Policy, PolicyEffect } from "@/lib/types";
+
+/**
+ * Policy rules per resource, in evaluation order. First match wins, which is
+ * why the narrow allows sit above the broad denies.
+ */
+export const POLICIES: Policy[] = [
+  // stripe
+  {
+    id: "p-stripe-1",
+    resourceId: "stripe",
+    order: 1,
+    effect: "require_approval",
+    subject: "agent:*",
+    permission: "refunds",
+    condition: "amount > $500",
+    enabled: true,
+  },
+  {
+    id: "p-stripe-2",
+    resourceId: "stripe",
+    order: 2,
+    effect: "allow",
+    subject: "agent:invoice-agent",
+    permission: "refunds",
+    rateLimit: "20 / hour",
+    enabled: true,
+  },
+  {
+    id: "p-stripe-3",
+    resourceId: "stripe",
+    order: 3,
+    effect: "allow",
+    subject: "agent:*",
+    permission: "read_customers",
+    enabled: true,
+  },
+  {
+    id: "p-stripe-4",
+    resourceId: "stripe",
+    order: 4,
+    effect: "deny",
+    subject: "agent:*",
+    permission: "delete_customer",
+    enabled: true,
+  },
+
+  // sendgrid
+  {
+    id: "p-sendgrid-1",
+    resourceId: "sendgrid",
+    order: 1,
+    effect: "allow",
+    subject: "agent:invoice-agent",
+    permission: "reminders.send",
+    rateLimit: "200 / hour",
+    enabled: true,
+  },
+  {
+    id: "p-sendgrid-2",
+    resourceId: "sendgrid",
+    order: 2,
+    effect: "allow",
+    subject: "agent:*",
+    permission: "templates.read",
+    enabled: true,
+  },
+
+  // slack
+  {
+    id: "p-slack-1",
+    resourceId: "slack",
+    order: 1,
+    effect: "allow",
+    subject: "agent:*",
+    permission: "chat.post",
+    condition: "channel in #finance-alerts, #ops",
+    rateLimit: "60 / minute",
+    enabled: true,
+  },
+  {
+    id: "p-slack-2",
+    resourceId: "slack",
+    order: 2,
+    effect: "deny",
+    subject: "agent:*",
+    permission: "users.read",
+    enabled: false,
+  },
+
+  // stripe-mcp
+  {
+    id: "p-stripe-mcp-1",
+    resourceId: "stripe-mcp",
+    order: 1,
+    effect: "allow",
+    subject: "agent:support-bot",
+    permission: "stripe_list_customers",
+    enabled: true,
+  },
+  {
+    id: "p-stripe-mcp-2",
+    resourceId: "stripe-mcp",
+    order: 2,
+    effect: "require_approval",
+    subject: "agent:support-bot",
+    permission: "stripe_create_refund",
+    condition: "amount > $100",
+    enabled: true,
+  },
+  {
+    id: "p-stripe-mcp-3",
+    resourceId: "stripe-mcp",
+    order: 3,
+    effect: "deny",
+    subject: "agent:*",
+    permission: "stripe_delete_customer",
+    enabled: true,
+  },
+  {
+    id: "p-stripe-mcp-4",
+    resourceId: "stripe-mcp",
+    order: 4,
+    effect: "deny",
+    subject: "agent:*",
+    permission: "stripe_create_payout",
+    enabled: true,
+  },
+
+  // postgres
+  {
+    id: "p-postgres-1",
+    resourceId: "postgres",
+    order: 1,
+    effect: "allow",
+    subject: "agent:invoice-agent",
+    permission: "invoices-readonly",
+    enabled: true,
+  },
+];
+
+export function getResourcePolicies(resourceId: string): Policy[] {
+  return POLICIES.filter((policy) => policy.resourceId === resourceId).sort(
+    (a, b) => a.order - b.order,
+  );
+}
+
+export const POLICY_EFFECT_LABEL: Record<PolicyEffect, string> = {
+  allow: "Allow",
+  deny: "Deny",
+  require_approval: "Require approval",
+};

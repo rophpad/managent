@@ -1,0 +1,123 @@
+import type { Agent } from "@/lib/types";
+
+export const AGENTS: Agent[] = [
+  {
+    id: "invoice-agent",
+    name: "invoice-agent",
+    owner: "finance-eng",
+    ownerEmail: "finance-eng@company.com",
+    description: "Reads unpaid invoices, sends reminder emails, flags overdue accounts.",
+    status: "active",
+    coverage: { rest: 70, mcp: null },
+    calls24h: 142,
+    denied24h: 1,
+    createdDaysAgo: 34,
+    lastActive: "2 min ago",
+    tokenPreview: "mg_live_...9f8a2b",
+    enforcementMode: "monitor",
+    failOpen: true,
+    scopes: [
+      { resourceId: "stripe", permission: "refunds", callsToday: 12 },
+      { resourceId: "sendgrid", permission: "reminders.send", callsToday: 130 },
+      { resourceId: "postgres", permission: "invoices-readonly", callsToday: 4 },
+    ],
+  },
+  {
+    id: "support-bot",
+    name: "support-bot",
+    owner: "cx-team",
+    ownerEmail: "cx-team@company.com",
+    description: "Triages inbound tickets, drafts replies, and closes resolved conversations.",
+    status: "active",
+    coverage: { rest: null, mcp: 85 },
+    calls24h: 88,
+    denied24h: 0,
+    createdDaysAgo: 21,
+    lastActive: "18 min ago",
+    tokenPreview: "mg_live_...4c1d70",
+    enforcementMode: "shadow",
+    failOpen: true,
+    scopes: [
+      { resourceId: "stripe-mcp", permission: "stripe_create_refund", callsToday: 6 },
+      { resourceId: "stripe-mcp", permission: "stripe_list_customers", callsToday: 82 },
+    ],
+  },
+  {
+    id: "code-reviewer",
+    name: "code-reviewer",
+    owner: "platform-eng",
+    ownerEmail: "platform-eng@company.com",
+    description: "Comments on open pull requests and flags risky diffs for a second look.",
+    status: "idle",
+    coverage: { rest: 40, mcp: null },
+    calls24h: 4,
+    denied24h: 0,
+    createdDaysAgo: 62,
+    lastActive: "6 hours ago",
+    tokenPreview: "mg_live_...b30e55",
+    enforcementMode: "monitor",
+    failOpen: true,
+    scopes: [{ resourceId: "stripe", permission: "read_customers", callsToday: 4 }],
+  },
+  {
+    id: "data-sync",
+    name: "data-sync",
+    owner: "data-eng",
+    ownerEmail: "data-eng@company.com",
+    description: "Mirrors finance tables into the warehouse on a nightly schedule.",
+    status: "revoked",
+    coverage: { rest: null, mcp: null },
+    calls24h: 0,
+    denied24h: 0,
+    createdDaysAgo: 88,
+    lastActive: "9 days ago",
+    tokenPreview: "mg_live_...7ae214",
+    enforcementMode: "monitor",
+    failOpen: false,
+    scopes: [],
+  },
+];
+
+export function getAgent(id: string): Agent | undefined {
+  return AGENTS.find((agent) => agent.id === id);
+}
+
+export function getAgentsUsingResource(resourceId: string): Agent[] {
+  return AGENTS.filter((agent) => agent.scopes.some((scope) => scope.resourceId === resourceId));
+}
+
+/** Resource ids the agent has at least one scope on. */
+export function getLinkedResourceIds(agent: Agent): string[] {
+  return [...new Set(agent.scopes.map((scope) => scope.resourceId))];
+}
+
+/**
+ * Headline numbers for the registry. Derived rather than stored so the metric
+ * row and the table below it can never drift apart.
+ */
+export function getRegistryMetrics(agents: Agent[] = AGENTS) {
+  const covered = agents
+    .map((agent) => agent.coverage.rest ?? agent.coverage.mcp)
+    .filter((value): value is number => value !== null);
+
+  return {
+    activeAgents: agents.filter((agent) => agent.status === "active").length,
+    calls24h: agents.reduce((total, agent) => total + agent.calls24h, 0),
+    denied24h: agents.reduce((total, agent) => total + agent.denied24h, 0),
+    averageCoverage: covered.length
+      ? Math.round(covered.reduce((total, value) => total + value, 0) / covered.length)
+      : null,
+  };
+}
+
+export const ENFORCEMENT_MODES = [
+  { value: "monitor", label: "Monitor" },
+  { value: "shadow", label: "Shadow" },
+  { value: "strict", label: "Strict" },
+] as const;
+
+export const AGENT_STATUS_LABEL = {
+  active: "Active",
+  idle: "Idle",
+  revoked: "Revoked",
+} as const;
