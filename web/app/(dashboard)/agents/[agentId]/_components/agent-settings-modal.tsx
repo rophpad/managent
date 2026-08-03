@@ -1,16 +1,18 @@
 "use client";
 
-import { Plus, Settings } from "lucide-react";
+import { Pencil, Settings, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { ResourcePicker } from "@/components/dashboard/resource-picker";
+import { ResourceIcon } from "@/components/dashboard/resource-icon";
 import { Button } from "@/components/ui/button";
 import { EnforcementSelector } from "@/components/ui/enforcement-selector";
 import { Hint } from "@/components/ui/field";
 import { Modal, ModalBody, ModalTabs } from "@/components/ui/modal";
 import { MutedText, ScopeRow } from "@/components/ui/rows";
+import { RiskTag } from "@/components/ui/scope-chip";
 import { Toggle } from "@/components/ui/toggle";
-import type { EnforcementMode, Resource } from "@/lib/types";
+import { cn } from "@/lib/cn";
+import type { AgentScope, EnforcementMode, Resource } from "@/lib/types";
 
 const TABS = [
   { value: "enforcement", label: "Enforcement mode" },
@@ -34,27 +36,42 @@ export function AgentSettingsModal({
   open,
   onClose,
   scopes,
-  linkableResources,
+  resources,
+  initialScopes,
   initialMode,
   initialFailOpen,
 }: {
   open: boolean;
   onClose: () => void;
   scopes: ScopeRowData[];
-  /** Resources this agent is not yet scoped against. */
-  linkableResources: Resource[];
+  resources: Resource[];
+  initialScopes: AgentScope[];
   initialMode: EnforcementMode;
   initialFailOpen: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("enforcement");
   const [mode, setMode] = useState<EnforcementMode>(initialMode);
   const [failOpen, setFailOpen] = useState(initialFailOpen);
-  const [linkPanelOpen, setLinkPanelOpen] = useState(false);
-  const [pendingLinks, setPendingLinks] = useState<ReadonlySet<string>>(new Set());
+  const [permissionsOpen, setPermissionsOpen] = useState(false);
+  const [granted, setGranted] = useState<ReadonlySet<string>>(
+    () => new Set(initialScopes.map((scope) => `${scope.resourceId}:${scope.permission}`)),
+  );
+  const [permissionDraft, setPermissionDraft] = useState<ReadonlySet<string>>(granted);
+
+  function togglePermission(resourceId: string, permission: string, checked: boolean) {
+    const key = `${resourceId}:${permission}`;
+    setPermissionDraft((current) => {
+      const next = new Set(current);
+      if (checked) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  }
 
   return (
+    <>
     <Modal
-      open={open}
+      open={open && !permissionsOpen}
       onClose={onClose}
       wide
       title="Agent settings"
@@ -111,46 +128,93 @@ export function AgentSettingsModal({
               ))
             )}
 
-            {linkPanelOpen ? (
-              <div className="mt-4 border-t border-line-soft pt-4">
-                <span className="mb-2 block text-[13px] font-medium">Link a resource</span>
-                {linkableResources.length === 0 ? (
-                  <MutedText>Every resource is already linked to this agent.</MutedText>
-                ) : (
-                  <ResourcePicker
-                    resources={linkableResources}
-                    selected={pendingLinks}
-                    onToggle={(id, checked) =>
-                      setPendingLinks((current) => {
-                        const next = new Set(current);
-                        if (checked) next.add(id);
-                        else next.delete(id);
-                        return next;
-                      })
-                    }
-                  />
-                )}
-                <Hint>
-                  Don&apos;t see a resource here?{" "}
-                  <Link href="/resources/new" className="text-brand hover:underline">
-                    Add one first →
-                  </Link>
-                </Hint>
-              </div>
-            ) : null}
-
             <Button
               size="sm"
               className="mt-3.5"
-              aria-expanded={linkPanelOpen}
-              onClick={() => setLinkPanelOpen((open) => !open)}
+              onClick={() => {
+                setPermissionDraft(new Set(granted));
+                setPermissionsOpen(true);
+              }}
             >
-              <Plus aria-hidden className="size-[15px]" />
-              Link a resource
+              <Pencil aria-hidden className="size-[15px]" />
+              Edit permissions
             </Button>
           </>
         )}
       </ModalBody>
     </Modal>
+
+    <Modal
+      open={permissionsOpen}
+      onClose={() => setPermissionsOpen(false)}
+      wide
+      title="Edit permissions"
+      icon={<ShieldCheck />}
+      footer={
+        <>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              setGranted(new Set(permissionDraft));
+              setPermissionsOpen(false);
+            }}
+          >
+            Save permissions
+          </Button>
+          <Button size="sm" onClick={() => setPermissionsOpen(false)}>
+            Cancel
+          </Button>
+        </>
+      }
+    >
+      <ModalBody>
+        <div className="mb-4 flex items-start justify-between gap-4 rounded-lg border border-line-soft bg-panel-2 px-3.5 py-3">
+          <div>
+            <span className="block text-[13px] font-medium">Agent access</span>
+            <Hint className="mt-0.5">Choose the exact tools and endpoints this agent may call. Policies are configured separately.</Hint>
+          </div>
+          <span className="shrink-0 rounded-full bg-brand/10 px-2.5 py-1 text-xs text-brand">{permissionDraft.size} selected</span>
+        </div>
+        {resources.map((resource, index) => (
+          <fieldset key={resource.id} className={cn("overflow-hidden rounded-lg border border-line-soft p-0", index > 0 ? "mt-3" : undefined)}>
+            <legend className="sr-only">{resource.name}</legend>
+            <div className="flex items-center justify-between gap-3 border-b border-line-soft bg-panel-2 px-3.5 py-2.5">
+              <span className="flex items-center gap-2 text-[13px] font-medium">
+                <ResourceIcon id={resource.id} kind={resource.kind} className="size-[15px] text-muted" />
+                {resource.name}
+                <span className="font-normal text-muted-2">{resource.kind === "mcp" ? "Tools" : resource.kind === "rest" ? "Endpoints" : "Roles"}</span>
+              </span>
+              <span className="text-[11.5px] text-muted-2">{resource.permissions.filter((permission) => permissionDraft.has(`${resource.id}:${permission.name}`)).length}/{resource.permissions.length}</span>
+            </div>
+            <div>
+              {resource.permissions.map((permission) => (
+                <label
+                  key={permission.name}
+                  className="flex cursor-pointer items-start gap-3 border-b border-line-soft px-3.5 py-3 transition-colors last:border-b-0 hover:bg-surface"
+                >
+                  <input
+                    type="checkbox"
+                    name={`${resource.id}:${permission.name}`}
+                    checked={permissionDraft.has(`${resource.id}:${permission.name}`)}
+                    onChange={(event) => togglePermission(resource.id, permission.name, event.target.checked)}
+                    className="mt-0.5 size-4 accent-brand"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-1.5 font-mono text-[12.5px]">
+                      {permission.match ?? permission.name}
+                      {permission.highRisk ? <RiskTag className="ml-0" /> : null}
+                    </span>
+                    {permission.match ? <span className="mt-0.5 block text-[11.5px] text-muted-2">{permission.name}</span> : null}
+                  </span>
+                  {permission.params?.length ? <span className="shrink-0 text-[11px] text-muted-2">{permission.params.length} inputs</span> : null}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        ))}
+      </ModalBody>
+    </Modal>
+    </>
   );
 }

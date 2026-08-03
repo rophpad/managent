@@ -18,6 +18,35 @@ export type DiscoverySource = "manifest" | "auto" | "manual";
 /** Provenance of a single permission, surfaced next to it in the resource form. */
 export type PermissionSource = "manual" | "spec" | "template" | "discovered" | "existing";
 
+/**
+ * Where a parameter rides on the wire.
+ *
+ * REST splits by OpenAPI's `in` plus the request body; MCP has a single
+ * `arguments` object described by each tool's `inputSchema`, so every MCP
+ * parameter is an `argument`.
+ */
+export type ParamLocation = "path" | "query" | "header" | "body" | "argument";
+
+export type ParamType = "string" | "number" | "integer" | "boolean" | "enum" | "array";
+
+/**
+ * One addressable input on a permission — an OpenAPI parameter or body field
+ * for REST, a JSON Schema property of a tool's `inputSchema` for MCP. Policy
+ * conditions bind to these.
+ */
+export interface PermissionParam {
+  /** Dotted path within its location, e.g. `metadata.region`. */
+  name: string;
+  location: ParamLocation;
+  type: ParamType;
+  description?: string;
+  /** Allowed values when `type` is `enum`. */
+  enumValues?: string[];
+  required?: boolean;
+  /** Shown as the value input's placeholder. */
+  example?: string;
+}
+
 export interface Permission {
   name: string;
   /**
@@ -27,6 +56,8 @@ export interface Permission {
   match?: string;
   highRisk?: boolean;
   source?: PermissionSource;
+  /** Inputs a policy condition can test. Absent for database roles. */
+  params?: PermissionParam[];
 }
 
 interface ResourceBase {
@@ -107,6 +138,61 @@ export interface AuditEntry {
  */
 export type PolicyEffect = "allow" | "deny" | "require_approval";
 
+export type ConditionOperator =
+  | "eq"
+  | "neq"
+  | "gt"
+  | "gte"
+  | "lt"
+  | "lte"
+  | "contains"
+  | "not_contains"
+  | "starts_with"
+  | "ends_with"
+  | "matches"
+  | "in"
+  | "not_in"
+  | "present"
+  | "absent"
+  | "is_true"
+  | "is_false";
+
+/** A single `field operator value` test. */
+export interface ConditionRule {
+  kind: "rule";
+  id: string;
+  /**
+   * Qualified field reference: `<location>.<param>` for call inputs
+   * (`body.amount`, `argument.charge`, `query.limit`) or `context.<name>` for
+   * request metadata that exists regardless of resource.
+   */
+  field: string;
+  operator: ConditionOperator;
+  /** Raw text; coerced against the field's type at evaluation. */
+  value?: string;
+}
+
+/**
+ * Boolean combination of tests. Groups nest, so arbitrarily shaped conditions
+ * are expressible without a special case per shape.
+ */
+export interface ConditionGroup {
+  kind: "group";
+  id: string;
+  match: "all" | "any";
+  children: ConditionNode[];
+}
+
+export type ConditionNode = ConditionRule | ConditionGroup;
+
+/**
+ * Conditions are authored either with the structured builder or, for anything
+ * the builder can't express, as a raw expression.
+ */
+export type PolicyCondition =
+  | { mode: "builder"; root: ConditionGroup }
+  | { mode: "expression"; source: string };
+
 /**
  * One rule in a resource's policy. Rules are evaluated top to bottom and the
  * first match wins, so `order` is meaningful rather than cosmetic.
@@ -122,7 +208,7 @@ export interface Policy {
   /** Permission on the resource, or `*` for all of them. */
   permission: string;
   /** Extra qualifier that must hold for the rule to match. */
-  condition?: string;
+  condition?: PolicyCondition;
   /** Throughput cap applied when the rule matches. */
   rateLimit?: string;
   enabled: boolean;

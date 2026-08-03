@@ -1,4 +1,19 @@
-import type { Policy, PolicyEffect } from "@/lib/types";
+import type {
+  ConditionOperator,
+  ConditionRule,
+  PolicyCondition,
+  PolicyEffect,
+  Policy,
+} from "@/lib/types";
+
+/** Terse fixture helpers — the shapes themselves are verbose to write by hand. */
+function test(id: string, field: string, operator: ConditionOperator, value?: string): ConditionRule {
+  return { kind: "rule", id, field, operator, value };
+}
+
+function when(id: string, ...children: ConditionRule[]): PolicyCondition {
+  return { mode: "builder", root: { kind: "group", id, match: "all", children } };
+}
 
 /**
  * Policy rules per resource, in evaluation order. First match wins, which is
@@ -13,7 +28,8 @@ export const POLICIES: Policy[] = [
     effect: "require_approval",
     subject: "agent:*",
     permission: "refunds",
-    condition: "amount > $500",
+    // Stripe amounts are in cents, so $500 is 50000.
+    condition: when("c-stripe-1", test("r-stripe-1", "body.amount", "gt", "50000")),
     enabled: true,
   },
   {
@@ -74,7 +90,10 @@ export const POLICIES: Policy[] = [
     effect: "allow",
     subject: "agent:*",
     permission: "chat.post",
-    condition: "channel in #finance-alerts, #ops",
+    condition: when(
+      "c-slack-1",
+      test("r-slack-1", "body.channel", "in", "#finance-alerts, #ops"),
+    ),
     rateLimit: "60 / minute",
     enabled: true,
   },
@@ -105,7 +124,7 @@ export const POLICIES: Policy[] = [
     effect: "require_approval",
     subject: "agent:support-bot",
     permission: "stripe_create_refund",
-    condition: "amount > $100",
+    condition: when("c-mcp-2", test("r-mcp-2", "argument.amount", "gt", "10000")),
     enabled: true,
   },
   {

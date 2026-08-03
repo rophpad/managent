@@ -13,11 +13,11 @@ import { AgentSettingsModal, type ScopeRowData } from "./agent-settings-modal";
 export function AgentHeader({
   agent,
   scopes,
-  linkableResources,
+  resources,
 }: {
   agent: Agent;
   scopes: ScopeRowData[];
-  linkableResources: Resource[];
+  resources: Resource[];
 }) {
   const [infoOpen, setInfoOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -73,7 +73,8 @@ export function AgentHeader({
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         scopes={scopes}
-        linkableResources={linkableResources}
+        resources={resources}
+        initialScopes={agent.scopes}
         initialMode={agent.enforcementMode}
         initialFailOpen={agent.failOpen}
       />

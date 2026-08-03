@@ -16,7 +16,7 @@ export default async function ResourcePoliciesPage({
   return (
     <PanelBlock>
       <SectionTitle>Policy rules</SectionTitle>
-      <PolicyList policies={getResourcePolicies(resource.id)} />
+      <PolicyList resource={resource} policies={getResourcePolicies(resource.id)} />
     </PanelBlock>
   );
 }

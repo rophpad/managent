@@ -6,7 +6,7 @@ import { DECISION_LABEL, DECISION_TONE, Badge } from "@/components/ui/badge";
 import { Metric, MetricRow, PanelBlock, SectionTitle } from "@/components/ui/card";
 import { formatCoverage } from "@/components/ui/coverage-bar";
 import { MutedText, ScopeRow } from "@/components/ui/rows";
-import { AGENTS, getAgent, getLinkedResourceIds } from "@/lib/data/agents";
+import { AGENTS, getAgent } from "@/lib/data/agents";
 import { getAgentActivity, toShortTime } from "@/lib/data/audit";
 import { getResource, RESOURCES, RESOURCE_KIND_TAG } from "@/lib/data/resources";
 import { AgentHeader } from "./_components/agent-header";
@@ -26,8 +26,6 @@ export default async function AgentDetailPage({ params }: Props) {
   const { agentId } = await params;
   const agent = getAgent(agentId);
   if (!agent) notFound();
-
-  const linkedIds = new Set(getLinkedResourceIds(agent));
 
   // Scope labels use the resource id (`postgres:invoices-readonly`) rather than
   // its display name, which is how scopes are written in policy and the SDK.
@@ -52,7 +50,7 @@ export default async function AgentDetailPage({ params }: Props) {
       <AgentHeader
         agent={agent}
         scopes={scopes}
-        linkableResources={RESOURCES.filter((resource) => !linkedIds.has(resource.id))}
+        resources={RESOURCES}
       />
 
       <MetricRow>

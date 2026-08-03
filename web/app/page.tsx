@@ -61,7 +61,7 @@ const navigationItems = [
   { label: "Product", href: "#products" },
   { label: "How it works", href: "#vision" },
   { label: "Platform", href: "#ecosystem" },
-  { label: "Blog", href: "#blog" },
+  { label: "Blog", href: "/blog" },
 ];
 
 const auditRows = [
@@ -122,6 +122,7 @@ const footerColumns = [
     title: "Company",
     links: [
       { label: "Docs", href: "/docs" },
+      { label: "Blog", href: "/blog" },
       { label: "Pricing", href: "#labs" },
       { label: "Changelog", href: "#products" },
     ],
@@ -321,7 +322,7 @@ export default function Home() {
               </svg>
             </a>
             <div className="hidden lg:block">
-              <Button href="/register" size="sm">
+              <Button href="/register" size="sm" className="w-max">
                 Get started
               </Button>
             </div>
@@ -430,7 +431,7 @@ export default function Home() {
                 className="hero-anim mt-5 flex w-full max-w-xs flex-col items-stretch justify-center gap-3 sm:mt-6 sm:w-auto sm:max-w-none sm:flex-row"
                 style={{ animationDelay: "270ms" }}
               >
-                <Button href="/register" size="md" className="w-full sm:w-auto">
+                <Button href="/register" size="md" className="mx-auto w-max sm:w-auto">
                   Get started free
                 </Button>
               </div>
@@ -562,11 +563,11 @@ export default function Home() {
               Start free with up to 3 agents. No infrastructure required to try
               it.
             </p>
-            <div className="relative mt-6 flex flex-col justify-center gap-3 sm:mt-8 sm:flex-row">
+            <div className="w-full mx-auto relative mt-6 flex flex-col items-center justify-center gap-3 sm:mt-8 sm:flex-row">
               <Button
                 href="/register"
                 size="md"
-                className="w-full sm:w-auto"
+                className="w-max sm:w-auto"
               >
                 Get started free
               </Button>
@@ -574,7 +575,7 @@ export default function Home() {
                 onClick={() => setContactOpen(true)}
                 variant="outline"
                 size="md"
-                className="w-full sm:w-auto"
+                className="w-max sm:w-auto"
               >
                 Talk with us
               </Button>
