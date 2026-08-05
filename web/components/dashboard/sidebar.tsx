@@ -3,95 +3,86 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { logoutAction } from "@/app/auth-actions";
-import { secondaryButtonClass } from "./primitives";
+import {
+  CURRENT_ORG,
+  NAV_ITEMS,
+  isNavItemActive,
+  navAriaCurrent,
+} from "@/components/dashboard/nav";
+import { cn } from "@/lib/cn";
 
-const navItems = [
-  { label: "Overview", href: "/overview" },
-  { label: "Agents", href: "/agents" },
-  { label: "MCPs", href: "/mcps" },
-  { label: "Policies", href: "/policies" },
-  { label: "Logs", href: "/logs" },
-  { label: "Settings", href: "/settings" },
-];
-
-function isActivePath(pathname: string, href: string) {
-  if (href === "/overview") {
-    return pathname === href;
-  }
-
-  return pathname.startsWith(href);
-}
-
-export function DashboardSidebar({
-  workspaceName,
-}: {
-  workspaceName: string;
-}) {
+export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-full shrink-0 border-b border-[#ececea] bg-[#f7f7f5] lg:min-h-screen lg:w-64 lg:border-b-0 lg:border-r">
-      <div className="flex h-full flex-col px-4 py-5 lg:sticky lg:top-0 lg:px-5 lg:py-8">
-        <div className=" flex items-center gap-3">
-          <div className=" px-3 min-w-0 space-y-2">
-            <Image
-              src="/logo.png"
-              alt="Managent logo"
-              width={100}
-              height={100}
-              style={{ height: "auto" }}
-            />
-            <p className="truncate text-xs text-[#8a8a86]">{workspaceName}</p>
-          </div>
-        </div>
+    <nav
+      aria-label="Primary"
+      className="hidden flex-col gap-0.5 border-r border-line-soft bg-panel-2 px-3.5 py-5 shell:flex "
+    >
+      <Link href="/agents" className="flex items-center gap-2 px-2.5 pb-5.5 pt-1">
+        <span
+          aria-hidden
+          className="size-4.5 shrink-0 rounded-[5px] bg-linear-to-br from-brand to-allow"
+        />
+        <span className="font-display text-base font-semibold">Managent</span>
+      </Link>
 
-        <nav className="mt-6 grid gap-1">
-          {navItems.map((item) => {
-            const active = isActivePath(pathname, item.href);
+      {/* <Link
+        href="/agents"
+        className="flex items-center gap-2 px-2.5 pb-5.5 pt-1"
+      >
+        <Image
+          src="/logo1.svg"
+          alt=""
+          width={100}
+          height={100}
+          className="h-auto w-21.5 brightness-0 invert sm:w-25"
+          priority
+        />
+      </Link> */}
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`rounded-md px-3 py-2 text-sm transition ${
-                  active
-                    ? "bg-white font-medium text-[#191917] shadow-[inset_0_0_0_1px_#e7e7e5]"
-                    : "text-[#5f5f5b] hover:bg-white hover:text-[#191917]"
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+      {NAV_ITEMS.map((item) => {
+        const active = isNavItemActive(item.href, pathname);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={navAriaCurrent(item.href, pathname)}
+            className={cn(
+              "flex items-center gap-2.5 rounded-lg px-2.5 py-2.25 text-[13.5px] transition-colors",
+              active
+                ? "bg-brand/9 text-brand"
+                : "text-muted hover:bg-panel hover:text-fg",
+            )}
+          >
+            <item.icon aria-hidden className="size-4.25 shrink-0" />
+            {item.label}
+          </Link>
+        );
+      })}
 
-        <div className="mt-6 lg:mt-auto">
-          <form action={logoutAction}>
-            <button className={`${secondaryButtonClass} w-full`}>Logout</button>
-          </form>
-        </div>
-
-        {/* <div className="mt-8 rounded-lg border border-[#e7e7e5] bg-white p-4 lg:mt-auto">
-          <p className="text-xs font-medium uppercase tracking-wide text-[#8a8a86]">
-            Workspace
-          </p>
-          <dl className="mt-3 grid gap-3 text-sm text-[#5f5f5b]">
-            <div className="flex items-center justify-between gap-3">
-              <dt>MCPs</dt>
-              <dd className="font-medium text-[#191917]">{stats.mcps}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <dt>Policies</dt>
-              <dd className="font-medium text-[#191917]">{stats.policies}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <dt>Logs</dt>
-              <dd className="font-medium text-[#191917]">{stats.auditLogs}</dd>
-            </div>
-          </dl>
-        </div> */}
+      <div className="mt-auto border-t border-line-soft pt-2.5">
+        <Link
+          href="/profile"
+          aria-current={pathname === "/profile" ? "page" : undefined}
+          className={cn(
+            "flex items-center gap-2.25 rounded-lg px-2.5 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
+            pathname === "/profile"
+              ? "bg-brand/9 text-brand"
+              : "text-muted hover:bg-panel hover:text-fg",
+          )}
+        >
+          <span
+            aria-hidden
+            className="flex size-6.5 shrink-0 items-center justify-center rounded-full bg-surface text-[11px] font-medium"
+          >
+            {CURRENT_ORG.initials}
+          </span>
+          <span className="min-w-0 truncate text-[12.5px]">
+            {CURRENT_ORG.name}
+          </span>
+        </Link>
       </div>
-    </aside>
+    </nav>
   );
 }
