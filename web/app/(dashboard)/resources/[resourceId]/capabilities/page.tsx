@@ -19,11 +19,7 @@ const PARAM_LOCATION_LABEL = {
   argument: "arg",
 } as const;
 
-const SOURCE_NOTE = {
-  rest: "Endpoints map to HTTP operations. Import an OpenAPI spec to generate them automatically, or add them by hand.",
-  mcp: "Tools are the names the server reported from its tools/list method. Re-run discovery from Settings to pick up new tools.",
-  db: "Database access is a native role scoped to specific tables, not a per-query permission.",
-} as const;
+const SOURCE_NOTE = "Tools are the names the server reported from its tools/list method. Re-run discovery from Settings to pick up new tools.";
 
 export default async function ResourceCapabilitiesPage({
   params,
@@ -106,7 +102,7 @@ export default async function ResourceCapabilitiesPage({
         <Link href={`/resources/${resource.id}/agents`} className="text-brand hover:underline">
           Agents
         </Link>
-        . {SOURCE_NOTE[resource.kind]}
+        . {SOURCE_NOTE}
       </Hint>
     </PanelBlock>
   );

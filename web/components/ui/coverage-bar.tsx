@@ -1,18 +1,14 @@
 import type { Agent } from "@/lib/types";
 
-/**
- * A single coverage figure with a track coloured by protocol: brand for REST,
- * allow-green for MCP. Agents with no governed calls render an em dash.
- */
+/** MCP coverage. Agents with no governed calls render an em dash. */
 export function CoverageBar({ coverage }: { coverage: Agent["coverage"] }) {
-  const isRest = coverage.rest !== null;
-  const percent = coverage.rest ?? coverage.mcp;
+  const percent = coverage.mcp;
 
   return (
     <div className="flex items-center gap-2">
       <div className="h-[5px] w-[60px] shrink-0 overflow-hidden rounded-full bg-line-soft">
         <div
-          className={`h-full rounded-full ${isRest ? "bg-brand" : "bg-allow"}`}
+          className="h-full rounded-full bg-allow"
           style={{ width: `${percent ?? 0}%` }}
         />
       </div>

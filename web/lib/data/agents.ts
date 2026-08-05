@@ -8,7 +8,7 @@ export const AGENTS: Agent[] = [
     ownerEmail: "finance-eng@company.com",
     description: "Reads unpaid invoices, sends reminder emails, flags overdue accounts.",
     status: "active",
-    coverage: { rest: 70, mcp: null },
+    coverage: { rest: null, mcp: 92 },
     calls24h: 142,
     denied24h: 1,
     createdDaysAgo: 34,
@@ -17,9 +17,9 @@ export const AGENTS: Agent[] = [
     enforcementMode: "monitor",
     failOpen: true,
     scopes: [
-      { resourceId: "stripe", permission: "refunds", callsToday: 12 },
-      { resourceId: "sendgrid", permission: "reminders.send", callsToday: 130 },
-      { resourceId: "postgres", permission: "invoices-readonly", callsToday: 4 },
+      { resourceId: "stripe-mcp", permission: "stripe_create_refund", callsToday: 12 },
+      { resourceId: "slack-mcp", permission: "slack_post_message", callsToday: 130 },
+      { resourceId: "linear-mcp", permission: "list_issues", callsToday: 4 },
     ],
   },
   {
@@ -49,7 +49,7 @@ export const AGENTS: Agent[] = [
     ownerEmail: "platform-eng@company.com",
     description: "Comments on open pull requests and flags risky diffs for a second look.",
     status: "idle",
-    coverage: { rest: 40, mcp: null },
+    coverage: { rest: null, mcp: 78 },
     calls24h: 4,
     denied24h: 0,
     createdDaysAgo: 62,
@@ -57,7 +57,7 @@ export const AGENTS: Agent[] = [
     tokenPreview: "mg_live_...b30e55",
     enforcementMode: "monitor",
     failOpen: true,
-    scopes: [{ resourceId: "stripe", permission: "read_customers", callsToday: 4 }],
+    scopes: [{ resourceId: "github-mcp", permission: "get_file_contents", callsToday: 4 }],
   },
   {
     id: "data-sync",
@@ -135,7 +135,7 @@ export function getAgentResourceCalls(agent: Agent, resourceId: string): number 
  */
 export function getRegistryMetrics(agents: Agent[] = AGENTS) {
   const covered = agents
-    .map((agent) => agent.coverage.rest ?? agent.coverage.mcp)
+    .map((agent) => agent.coverage.mcp)
     .filter((value): value is number => value !== null);
 
   return {

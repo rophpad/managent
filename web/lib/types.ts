@@ -250,9 +250,13 @@ export interface EffectivePolicy extends Policy {
   inherited: boolean;
 }
 
-/** A pre-built connector from the open-source registry. */
+/** A known MCP server configuration from the open-source registry. */
 export interface ConnectorTemplate {
   id: string;
   name: string;
-  permissions: string[];
+  transport: "stdio (local subprocess)" | "HTTP + SSE (remote server)";
+  command: string;
+  credentialName: string;
+  credentialPlaceholder: string;
+  tools: string[];
 }

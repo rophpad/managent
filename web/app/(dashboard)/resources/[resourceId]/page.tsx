@@ -7,11 +7,7 @@ import { MutedText, StatRow } from "@/components/ui/rows";
 import { getAgentsUsingResource, getGrantSummary } from "@/lib/data/agents";
 import { DISCOVERY_LABEL, getResource } from "@/lib/data/resources";
 
-const TYPE_DESCRIPTION = {
-  rest: "REST API",
-  mcp: "MCP server",
-  db: "Database",
-} as const;
+const TYPE_DESCRIPTION = "MCP server";
 
 export default async function ResourceInformationPage({
   params,
@@ -28,7 +24,7 @@ export default async function ResourceInformationPage({
     <>
       <PanelBlock>
         <SectionTitle>Connection</SectionTitle>
-        <StatRow label="Type">{TYPE_DESCRIPTION[resource.kind]}</StatRow>
+        <StatRow label="Type">{TYPE_DESCRIPTION}</StatRow>
 
         {resource.kind === "rest" ? (
           <>

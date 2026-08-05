@@ -7,6 +7,8 @@ export interface PillOption<T extends string> {
   value: T;
   label: string;
   icon?: ReactNode;
+  disabled?: boolean;
+  disabledLabel?: string;
 }
 
 export function FilterPills<T extends string>({
@@ -30,10 +32,13 @@ export function FilterPills<T extends string>({
           key={option.value}
           type="button"
           aria-pressed={option.value === value}
+          disabled={option.disabled}
+          title={option.disabled ? option.disabledLabel : undefined}
           onClick={() => onChange(option.value)}
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors",
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
+            "disabled:cursor-not-allowed disabled:opacity-45",
             option.value === value
               ? "border-brand bg-brand/9 text-brand"
               : "border-line text-muted hover:text-fg",

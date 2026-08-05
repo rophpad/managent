@@ -179,7 +179,7 @@ export function AgentSettingsModal({
         <div className="mb-4 flex items-start justify-between gap-4 rounded-lg border border-line-soft bg-panel-2 px-3.5 py-3">
           <div>
             <span className="block text-[13px] font-medium">Agent access</span>
-            <Hint className="mt-0.5">Choose the exact tools and endpoints this agent may call. This applies to this agent only; policies are set per resource, on each one&apos;s page.</Hint>
+            <Hint className="mt-0.5">Choose the exact MCP tools this agent may call. This applies to this agent only; policies are set per resource, on each one&apos;s page.</Hint>
           </div>
           <span className="shrink-0 rounded-full bg-brand/10 px-2.5 py-1 text-xs text-brand">{permissionDraft.size} selected</span>
         </div>

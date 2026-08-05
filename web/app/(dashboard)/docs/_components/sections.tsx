@@ -36,29 +36,6 @@ export function Quickstart() {
   );
 }
 
-export function GoverningRest() {
-  return (
-    <>
-      <DocHeading>Governing a REST API call</DocHeading>
-      <DocParagraph>
-        Wrap any function your agent calls — a vendor SDK method, a plain HTTP client call. Managent
-        checks it against the agent&apos;s declared scope before letting it run, and injects the real
-        credential only for allowed calls.
-      </DocParagraph>
-      <CodeBlock>
-        {'stripe.api_key = "managed-by-managent"  '}
-        <Comment># placeholder, never sent to Stripe</Comment>
-        {
-          '\n\nstripe_refund = mg.wrap(stripe.Refund.create, connector="stripe", scope="refunds")\nstripe_refund(charge="ch_1AbCdEf")'
-        }
-      </CodeBlock>
-      <DocParagraph>
-        Your code, environment variables, and deployment artifacts never contain the real Stripe key
-        at all.
-      </DocParagraph>
-    </>
-  );
-}
 
 export function GoverningMcp() {
   return (
@@ -84,26 +61,6 @@ export function GoverningMcp() {
   );
 }
 
-export function DatabaseCredentials() {
-  return (
-    <>
-      <DocHeading>Database credentials</DocHeading>
-      <DocParagraph>
-        Request a short-lived, natively-scoped database role instead of hardcoding a connection
-        string.
-      </DocParagraph>
-      <CodeBlock>
-        {
-          'creds = mg.get_db_credential(scope="invoices-readonly")\nconn = psycopg2.connect(creds.connection_string)'
-        }
-      </CodeBlock>
-      <DocParagraph>
-        Managent provisions the role and enforces access at the database level — it doesn&apos;t
-        parse or intercept SQL.
-      </DocParagraph>
-    </>
-  );
-}
 
 export function EnforcementModes() {
   return (
@@ -151,7 +108,7 @@ export function HandlingErrors() {
           </tr>
           <tr>
             <DocTd mono>TokenExpiredError</DocTd>
-            <DocTd>The agent&apos;s token or a database credential has expired.</DocTd>
+            <DocTd>The agent&apos;s token has expired.</DocTd>
           </tr>
         </tbody>
       </DocTable>
@@ -169,10 +126,8 @@ export function UsingThePlatform() {
     <>
       <DocHeading>Using the platform</DocHeading>
       <DocParagraph>
-        <strong>Resources</strong> — add REST APIs, MCP servers, or databases. A resource publishes
-        a catalog of what it exposes: endpoints for REST (imported from an OpenAPI spec, picked from
-        a community template, or added manually), tools for MCP (auto-discovered), roles for a
-        database. That catalog is global to the resource — it describes what <em>can</em> be called,
+        <strong>Resources</strong> — add MCP servers manually or from a known template. Each server publishes
+        a catalog of tools discovered automatically through <InlineCode>tools/list</InlineCode>. That catalog is global to the resource — it describes what <em>can</em> be called,
         not who may call it.
       </DocParagraph>
       <DocParagraph>
@@ -189,7 +144,7 @@ export function UsingThePlatform() {
         agent&apos;s own rules.
       </DocParagraph>
       <DocParagraph>
-        <strong>Agents</strong> — register agents, view coverage across REST and MCP, and manage
+        <strong>Agents</strong> — register agents, view MCP coverage, and manage
         enforcement mode and linked resources from each agent&apos;s detail page.
       </DocParagraph>
       <DocParagraph>
@@ -201,9 +156,9 @@ export function UsingThePlatform() {
         alerting.
       </DocParagraph>
       <DocParagraph>
-        Managent only governs calls and MCP tools you&apos;ve explicitly wrapped — there&apos;s no
+        Managent only governs MCP tools you&apos;ve explicitly wrapped — there&apos;s no
         mode that automatically covers everything. Each agent&apos;s coverage indicator shows how
-        much is currently governed, split by REST and MCP.
+        much of its MCP activity is currently governed.
       </DocParagraph>
     </>
   );

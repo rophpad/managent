@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { DocsViewer, type DocSection } from "./_components/docs-viewer";
-import {
-  DatabaseCredentials,
-  EnforcementModes,
-  GoverningMcp,
-  GoverningRest,
-  HandlingErrors,
+import {  EnforcementModes,
+  GoverningMcp,  HandlingErrors,
   Quickstart,
   UsingThePlatform,
 } from "./_components/sections";
@@ -15,9 +11,7 @@ export const metadata: Metadata = { title: "Documentation" };
 
 const SECTIONS: DocSection[] = [
   { id: "quickstart", label: "Quickstart", content: <Quickstart /> },
-  { id: "rest", label: "Governing a REST call", content: <GoverningRest /> },
   { id: "mcp", label: "Governing an MCP tool", content: <GoverningMcp /> },
-  { id: "db", label: "Database credentials", content: <DatabaseCredentials /> },
   { id: "enforcement", label: "Enforcement modes", content: <EnforcementModes /> },
   { id: "errors", label: "Handling errors", content: <HandlingErrors /> },
   { id: "platform", label: "Using the platform", content: <UsingThePlatform /> },

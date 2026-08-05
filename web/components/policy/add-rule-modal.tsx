@@ -213,7 +213,7 @@ export function AddRuleModal({
                 )) : <span className="text-[11.5px] text-muted-2">No declared inputs</span>}
               </div>
             </div>
-          ) : <Hint>No tools or endpoints are available for this resource.</Hint>}
+          ) : <Hint>No tools are available for this MCP server.</Hint>}
         </FieldGroup>
         ) : null}
 

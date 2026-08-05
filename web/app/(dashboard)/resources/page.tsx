@@ -21,7 +21,7 @@ export default function ResourcesPage() {
     <>
       <PageHeader
         title="Resources"
-        description="REST APIs and MCP servers your agents can be scoped against."
+        description="MCP servers your agents can be scoped against."
         actions={
           <ButtonLink href="/resources/new" variant="primary">
             <Plus aria-hidden className="size-[15px]" />

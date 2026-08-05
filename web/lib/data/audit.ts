@@ -9,17 +9,13 @@ import type { AuditEntry } from "@/lib/types";
  * what lets a log be narrowed to one agent's use of one resource.
  */
 export const AUDIT_ENTRIES: AuditEntry[] = [
-  { id: "a1", time: "14:12:03", agentId: "invoice-agent", resourceId: "sendgrid", permission: "reminders.send", action: "POST /v3/mail/send", outcome: "allow" },
-  { id: "a2", time: "14:09:47", agentId: "invoice-agent", resourceId: "postgres", permission: "invoices-readonly", action: "DELETE on invoices", outcome: "deny" },
-  { id: "a3", time: "14:04:12", agentId: "invoice-agent", resourceId: "sendgrid", permission: "reminders.send", action: "POST /v3/mail/send", outcome: "allow" },
-  { id: "a4", time: "14:02:11", agentId: "invoice-agent", resourceId: "postgres", permission: "invoices-readonly", action: "SELECT on invoices", outcome: "allow" },
-  { id: "a5", time: "13:58:06", agentId: "invoice-agent", resourceId: "stripe", permission: "refunds", action: "POST /v1/refunds", outcome: "allow" },
-  { id: "a6", time: "13:55:30", agentId: "support-bot", resourceId: "stripe-mcp", permission: "stripe_list_customers", action: "tools/call stripe_list_customers", outcome: "allow" },
-  { id: "a7", time: "13:41:19", agentId: "invoice-agent", resourceId: "sendgrid", permission: "reminders.send", action: "POST /v3/mail/send", outcome: "allow" },
-  { id: "a8", time: "13:40:02", agentId: "support-bot", resourceId: "stripe-mcp", permission: "stripe_create_refund", action: "tools/call stripe_create_refund", outcome: "allow" },
-  { id: "a9", time: "13:22:58", agentId: "support-bot", resourceId: "stripe-mcp", permission: "stripe_list_customers", action: "tools/call stripe_list_customers", outcome: "allow" },
-  { id: "a10", time: "12:47:05", agentId: "invoice-agent", resourceId: "stripe", permission: "refunds", action: "POST /v1/refunds", outcome: "allow" },
-  { id: "a11", time: "09:12:44", agentId: "code-reviewer", resourceId: "stripe", permission: "read_customers", action: "GET /v1/customers", outcome: "allow" },
+  { id: "a1", time: "14:12:03", agentId: "invoice-agent", resourceId: "slack-mcp", permission: "slack_post_message", action: "tools/call slack_post_message", outcome: "allow" },
+  { id: "a2", time: "14:09:47", agentId: "invoice-agent", resourceId: "linear-mcp", permission: "list_issues", action: "tools/call list_issues", outcome: "allow" },
+  { id: "a3", time: "14:04:12", agentId: "invoice-agent", resourceId: "stripe-mcp", permission: "stripe_create_refund", action: "tools/call stripe_create_refund", outcome: "allow" },
+  { id: "a4", time: "13:55:30", agentId: "support-bot", resourceId: "stripe-mcp", permission: "stripe_list_customers", action: "tools/call stripe_list_customers", outcome: "allow" },
+  { id: "a5", time: "13:40:02", agentId: "support-bot", resourceId: "stripe-mcp", permission: "stripe_create_refund", action: "tools/call stripe_create_refund", outcome: "deny" },
+  { id: "a6", time: "12:47:05", agentId: "invoice-agent", resourceId: "slack-mcp", permission: "slack_post_message", action: "tools/call slack_post_message", outcome: "allow" },
+  { id: "a7", time: "09:12:44", agentId: "code-reviewer", resourceId: "github-mcp", permission: "get_file_contents", action: "tools/call get_file_contents", outcome: "allow" },
 ];
 
 export function getAgentActivity(agentId: string, limit = 5): AuditEntry[] {

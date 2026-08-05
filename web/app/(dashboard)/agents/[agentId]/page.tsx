@@ -28,7 +28,6 @@ export default async function AgentDetailPage({
           value={agent.denied24h}
           tone={agent.denied24h > 0 ? "warn" : "default"}
         />
-        <Metric label="REST coverage" value={formatCoverage(agent.coverage.rest)} />
         <Metric label="MCP coverage" value={formatCoverage(agent.coverage.mcp)} />
       </MetricRow>
 

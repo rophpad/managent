@@ -30,7 +30,7 @@ export default async function ResourceFormPage({ searchParams }: Props) {
         description={
           editing
             ? "Update the connection, credential, or permissions for this resource."
-            : "Register a REST API, MCP server, or database so agents can be scoped against it."
+            : "Register an MCP server manually or start from a known configuration."
         }
       />
       {/* Keyed so switching between resources remounts the form with fresh state. */}
