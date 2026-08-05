@@ -1,16 +1,17 @@
 "use client";
 
 import { Plus, ScanSearch } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Hint } from "@/components/ui/field";
 import { Toggle } from "@/components/ui/toggle";
+import { cn } from "@/lib/cn";
 import { POLICY_EFFECT_LABEL } from "@/lib/data/policies";
 import { describeCondition, fieldsForPermission } from "@/lib/policy/conditions";
-import type { Policy, PolicyEffect, Resource } from "@/lib/types";
-import { cn } from "@/lib/cn";
+import type { EffectivePolicy, PolicyEffect, Resource } from "@/lib/types";
 import { AddRuleModal, type NewRule } from "@/components/policy/add-rule-modal";
 
 const EFFECT_TONE: Record<PolicyEffect, BadgeTone> = {
@@ -19,48 +20,59 @@ const EFFECT_TONE: Record<PolicyEffect, BadgeTone> = {
   require_approval: "warn",
 };
 
-export function PolicyList({
+/**
+ * The rules governing one agent on one resource, in evaluation order. Inherited
+ * defaults are shown in place rather than in a separate list — first match wins,
+ * so their position relative to the agent's own rules is what decides outcomes —
+ * but they're read-only here, because editing one would change every agent.
+ */
+export function AgentPolicyList({
+  agentId,
+  agentName,
   resource,
   policies,
 }: {
+  agentId: string;
+  agentName: string;
   resource: Resource;
-  policies: Policy[];
+  policies: EffectivePolicy[];
 }) {
   // Rules and their enabled state live here until there's an API to persist to.
-  const [rules, setRules] = useState<Policy[]>(policies);
+  const [rules, setRules] = useState<EffectivePolicy[]>(policies);
   const [addOpen, setAddOpen] = useState(false);
+
+  const ownCount = rules.filter((rule) => !rule.inherited).length;
 
   function addRule(rule: NewRule) {
     setRules((current) => [
       ...current,
       {
         ...rule,
-        id: `p-${resource.id}-new-${current.length + 1}`,
+        id: `p-${resource.id}-${agentId}-${current.length + 1}`,
         resourceId: resource.id,
         order: current.length + 1,
+        inherited: false,
       },
     ]);
   }
 
   /** Condition labels resolve against the targeted permission's own fields. */
-  function conditionText(policy: Policy): string {
+  function conditionText(policy: EffectivePolicy): string {
     const permission =
       resource.permissions.find((entry) => entry.name === policy.permission) ?? null;
     return describeCondition(policy.condition, fieldsForPermission(permission));
   }
 
   function setEnabled(id: string, enabled: boolean) {
-    setRules((current) =>
-      current.map((rule) => (rule.id === id ? { ...rule, enabled } : rule)),
-    );
+    setRules((current) => current.map((rule) => (rule.id === id ? { ...rule, enabled } : rule)));
   }
 
   return (
     <>
       {rules.length === 0 ? (
         <EmptyState icon={<ScanSearch />}>
-          No default rules yet — every call to this resource is governed only by the calling
-          agent&apos;s own permissions and rules.
+          No rules govern {agentName} on this resource — every call falls through to the
+          permissions granted above.
         </EmptyState>
       ) : (
         <ol className="list-none p-0">
@@ -85,6 +97,15 @@ export function PolicyList({
                     {POLICY_EFFECT_LABEL[policy.effect]}
                   </Badge>
                   <span className="font-mono text-[12.5px]">{policy.permission}</span>
+                  {policy.inherited ? (
+                    <Link
+                      href={`/resources/${resource.id}/policies`}
+                      className="rounded-full border border-line px-2 py-0.5 text-[10.5px] text-muted-2 transition-colors hover:text-fg"
+                      title={`Inherited from ${resource.name}'s defaults — applies to every agent. Edit it on the resource.`}
+                    >
+                      inherited
+                    </Link>
+                  ) : null}
                 </div>
 
                 {policy.condition || policy.rateLimit ? (
@@ -103,12 +124,16 @@ export function PolicyList({
                 ) : null}
               </div>
 
-              <Toggle
-                checked={policy.enabled}
-                onChange={(next) => setEnabled(policy.id, next)}
-                label={`Enable rule ${index + 1}: ${POLICY_EFFECT_LABEL[policy.effect]} ${policy.permission}`}
-                className="mt-0.5"
-              />
+              {policy.inherited ? (
+                <span className="mt-0.5 shrink-0 text-[11px] text-muted-2">resource default</span>
+              ) : (
+                <Toggle
+                  checked={policy.enabled}
+                  onChange={(next) => setEnabled(policy.id, next)}
+                  label={`Enable rule ${index + 1}: ${POLICY_EFFECT_LABEL[policy.effect]} ${policy.permission}`}
+                  className="mt-0.5"
+                />
+              )}
             </li>
           ))}
         </ol>
@@ -116,12 +141,17 @@ export function PolicyList({
 
       <Button size="sm" className="mt-4" onClick={() => setAddOpen(true)}>
         <Plus aria-hidden className="size-[15px]" />
-        Add default rule
+        Add rule for {agentName}
       </Button>
       <Hint>
-        Rules are evaluated top to bottom and the first match wins, so narrower rules belong above
-        broader ones. Disabled rules are skipped entirely. Every agent on this resource inherits
-        these, and sees them interleaved with its own rules in evaluation order.
+        {ownCount === 0
+          ? `${agentName} has no rules of its own here — only ${resource.name}'s defaults apply.`
+          : `${ownCount} ${ownCount === 1 ? "rule is" : "rules are"} specific to ${agentName}.`}{" "}
+        Rules are evaluated top to bottom and the first match wins. Inherited defaults are edited on{" "}
+        <Link href={`/resources/${resource.id}/policies`} className="text-brand hover:underline">
+          the resource
+        </Link>
+        , where they apply to every agent.
       </Hint>
 
       <AddRuleModal
@@ -130,6 +160,7 @@ export function PolicyList({
         onAdd={addRule}
         resource={resource}
         nextPosition={rules.length + 1}
+        subject={`agent:${agentId}`}
       />
     </>
   );

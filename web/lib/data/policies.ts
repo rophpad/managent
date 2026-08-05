@@ -1,6 +1,7 @@
 import type {
   ConditionOperator,
   ConditionRule,
+  EffectivePolicy,
   PolicyCondition,
   PolicyEffect,
   Policy,
@@ -162,6 +163,45 @@ export function getResourcePolicies(resourceId: string): Policy[] {
   return POLICIES.filter((policy) => policy.resourceId === resourceId).sort(
     (a, b) => a.order - b.order,
   );
+}
+
+/** `agent:*` — a default every agent on the resource inherits. */
+export function isResourceDefault(policy: Policy): boolean {
+  return policy.subject.endsWith("*");
+}
+
+/**
+ * Rules an agent owns outright, and rules it inherits, are both authored as
+ * `subject`; a trailing `*` is the only difference.
+ */
+export function policyAppliesToAgent(policy: Policy, agentId: string): boolean {
+  if (!isResourceDefault(policy)) return policy.subject === `agent:${agentId}`;
+  return `agent:${agentId}`.startsWith(policy.subject.slice(0, -1));
+}
+
+/** Rules that apply to every agent on the resource, authored on the resource itself. */
+export function getResourceDefaultPolicies(resourceId: string): Policy[] {
+  return getResourcePolicies(resourceId).filter(isResourceDefault);
+}
+
+/**
+ * The rule list as it actually governs one agent on one resource, in evaluation
+ * order. Inherited defaults keep their position in that order rather than being
+ * grouped separately — first match wins, so where a default sits relative to an
+ * agent's own rules is exactly what decides the outcome.
+ */
+export function getAgentResourcePolicies(
+  agentId: string,
+  resourceId: string,
+): EffectivePolicy[] {
+  return getResourcePolicies(resourceId)
+    .filter((policy) => policyAppliesToAgent(policy, agentId))
+    .map((policy) => ({ ...policy, inherited: isResourceDefault(policy) }));
+}
+
+/** Rule count for the agent/resource cells in the cross-reference tables. */
+export function countAgentResourcePolicies(agentId: string, resourceId: string): number {
+  return getAgentResourcePolicies(agentId, resourceId).length;
 }
 
 export const POLICY_EFFECT_LABEL: Record<PolicyEffect, string> = {

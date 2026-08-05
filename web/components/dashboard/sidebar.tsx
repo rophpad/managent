@@ -19,20 +19,18 @@ export function Sidebar() {
       aria-label="Primary"
       className="hidden flex-col gap-0.5 border-r border-line-soft bg-panel-2 px-3.5 py-5 shell:flex "
     >
-      {/*<Link href="/agents" className="flex items-center gap-2 px-2.5 pb-[22px] pt-1">
+      <Link href="/agents" className="flex items-center gap-2 px-2.5 pb-5.5 pt-1">
         <span
           aria-hidden
-          className="size-[18px] shrink-0 rounded-[5px] bg-gradient-to-br from-brand to-allow"
+          className="size-4.5 shrink-0 rounded-[5px] bg-linear-to-br from-brand to-allow"
         />
         <span className="font-display text-base font-semibold">Managent</span>
-      </Link>*/}
+      </Link>
 
-      <Link
+      {/* <Link
         href="/agents"
         className="flex items-center gap-2 px-2.5 pb-5.5 pt-1"
       >
-        {/* The wordmark is solid black artwork; brightness-0 + invert renders
-            it white on the dark surface without needing a second asset. */}
         <Image
           src="/logo1.svg"
           alt=""
@@ -41,7 +39,7 @@ export function Sidebar() {
           className="h-auto w-21.5 brightness-0 invert sm:w-25"
           priority
         />
-      </Link>
+      </Link> */}
 
       {NAV_ITEMS.map((item) => {
         const active = isNavItemActive(item.href, pathname);

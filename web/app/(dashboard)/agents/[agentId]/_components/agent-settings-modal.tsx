@@ -12,6 +12,7 @@ import { MutedText, ScopeRow } from "@/components/ui/rows";
 import { RiskTag } from "@/components/ui/scope-chip";
 import { Toggle } from "@/components/ui/toggle";
 import { cn } from "@/lib/cn";
+import { CATALOG_LABEL } from "@/lib/data/resources";
 import type { AgentScope, EnforcementMode, Resource } from "@/lib/types";
 
 const TABS = [
@@ -30,6 +31,8 @@ export interface ScopeRowData {
   label: string;
   tag: string;
   usage: string;
+  /** Per-(agent, resource) page, where this grant and its rules are managed. */
+  href: string;
 }
 
 export function AgentSettingsModal({
@@ -121,7 +124,11 @@ export function AgentSettingsModal({
               scopes.map((scope) => (
                 <ScopeRow
                   key={scope.label}
-                  name={scope.label}
+                  name={
+                    <Link href={scope.href} className="transition-colors hover:text-brand">
+                      {scope.label}
+                    </Link>
+                  }
                   tag={scope.tag}
                   trailing={<MutedText>{scope.usage}</MutedText>}
                 />
@@ -172,7 +179,7 @@ export function AgentSettingsModal({
         <div className="mb-4 flex items-start justify-between gap-4 rounded-lg border border-line-soft bg-panel-2 px-3.5 py-3">
           <div>
             <span className="block text-[13px] font-medium">Agent access</span>
-            <Hint className="mt-0.5">Choose the exact tools and endpoints this agent may call. Policies are configured separately.</Hint>
+            <Hint className="mt-0.5">Choose the exact tools and endpoints this agent may call. This applies to this agent only; policies are set per resource, on each one&apos;s page.</Hint>
           </div>
           <span className="shrink-0 rounded-full bg-brand/10 px-2.5 py-1 text-xs text-brand">{permissionDraft.size} selected</span>
         </div>
@@ -183,7 +190,7 @@ export function AgentSettingsModal({
               <span className="flex items-center gap-2 text-[13px] font-medium">
                 <ResourceIcon id={resource.id} kind={resource.kind} className="size-[15px] text-muted" />
                 {resource.name}
-                <span className="font-normal text-muted-2">{resource.kind === "mcp" ? "Tools" : resource.kind === "rest" ? "Endpoints" : "Roles"}</span>
+                <span className="font-normal text-muted-2">{CATALOG_LABEL[resource.kind]}</span>
               </span>
               <span className="text-[11.5px] text-muted-2">{resource.permissions.filter((permission) => permissionDraft.has(`${resource.id}:${permission.name}`)).length}/{resource.permissions.length}</span>
             </div>

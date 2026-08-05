@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { PanelBlock, SectionTitle } from "@/components/ui/card";
 import { Hint } from "@/components/ui/field";
 import { MutedText, StatRow } from "@/components/ui/rows";
-import { getAgentsUsingResource } from "@/lib/data/agents";
+import { getAgentsUsingResource, getGrantSummary } from "@/lib/data/agents";
 import { DISCOVERY_LABEL, getResource } from "@/lib/data/resources";
 
 const TYPE_DESCRIPTION = {
@@ -78,7 +78,17 @@ export default async function ResourceInformationPage({
       </PanelBlock>
 
       <PanelBlock>
-        <SectionTitle>Agents using it</SectionTitle>
+        <SectionTitle>
+          Agents using it
+          {agents.length > 0 ? (
+            <Link
+              href={`/resources/${resource.id}/agents`}
+              className="text-xs font-normal text-brand hover:underline"
+            >
+              Compare access →
+            </Link>
+          ) : null}
+        </SectionTitle>
         {agents.length === 0 ? (
           <MutedText>
             No agents are scoped against this resource yet. Link it from an agent&apos;s settings, or{" "}
@@ -88,13 +98,22 @@ export default async function ResourceInformationPage({
             .
           </MutedText>
         ) : (
-          agents.map((agent) => (
-            <StatRow key={agent.id} label={<span className="font-mono">{agent.name}</span>}>
-              <Link href={`/agents/${agent.id}`} className="text-brand hover:underline">
-                View agent →
-              </Link>
-            </StatRow>
-          ))
+          agents.map((agent) => {
+            const { granted, total } = getGrantSummary(agent, resource);
+            return (
+              <StatRow key={agent.id} label={<span className="font-mono">{agent.name}</span>}>
+                <span className="text-muted">
+                  {granted}/{total} granted
+                </span>
+                <Link
+                  href={`/agents/${agent.id}/resources/${resource.id}`}
+                  className="ml-3 text-brand hover:underline"
+                >
+                  Review →
+                </Link>
+              </StatRow>
+            );
+          })
         )}
       </PanelBlock>
     </>

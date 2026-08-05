@@ -1,58 +1,26 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Breadcrumb } from "@/components/dashboard/page-header";
 import { DECISION_LABEL, DECISION_TONE, Badge } from "@/components/ui/badge";
 import { Metric, MetricRow, PanelBlock, SectionTitle } from "@/components/ui/card";
 import { formatCoverage } from "@/components/ui/coverage-bar";
 import { MutedText, ScopeRow } from "@/components/ui/rows";
-import { AGENTS, getAgent } from "@/lib/data/agents";
+import { getAgent, getLinkedResourceIds } from "@/lib/data/agents";
 import { getAgentActivity, toShortTime } from "@/lib/data/audit";
-import { getResource, RESOURCES, RESOURCE_KIND_TAG } from "@/lib/data/resources";
-import { AgentHeader } from "./_components/agent-header";
 
-type Props = { params: Promise<{ agentId: string }> };
-
-export function generateStaticParams() {
-  return AGENTS.map((agent) => ({ agentId: agent.id }));
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { agentId } = await params;
-  return { title: getAgent(agentId)?.name ?? "Agent" };
-}
-
-export default async function AgentDetailPage({ params }: Props) {
+export default async function AgentDetailPage({
+  params,
+}: {
+  params: Promise<{ agentId: string }>;
+}) {
   const { agentId } = await params;
   const agent = getAgent(agentId);
   if (!agent) notFound();
 
-  // Scope labels use the resource id (`postgres:invoices-readonly`) rather than
-  // its display name, which is how scopes are written in policy and the SDK.
-  const scopes = agent.scopes.flatMap((scope) => {
-    const resource = getResource(scope.resourceId);
-    if (!resource) return [];
-    return [
-      {
-        label: `${resource.id}:${scope.permission}`,
-        tag: RESOURCE_KIND_TAG[resource.kind],
-        usage: `used ${scope.callsToday}x today`,
-      },
-    ];
-  });
-
   const activity = getAgentActivity(agent.id);
+  const resourceCount = getLinkedResourceIds(agent).length;
 
   return (
     <>
-      <Breadcrumb items={[{ label: "Agents", href: "/agents" }, { label: agent.name }]} />
-
-      <AgentHeader
-        agent={agent}
-        scopes={scopes}
-        resources={RESOURCES}
-      />
-
       <MetricRow>
         <Metric label="Calls, 24h" value={agent.calls24h} />
         <Metric
@@ -67,8 +35,11 @@ export default async function AgentDetailPage({ params }: Props) {
       <PanelBlock>
         <SectionTitle>
           Recent activity
-          <Link href="/audit-logs" className="text-xs font-normal text-brand hover:underline">
-            View full log →
+          <Link
+            href={`/agents/${agent.id}/activity`}
+            className="text-xs font-normal text-brand hover:underline"
+          >
+            View all →
           </Link>
         </SectionTitle>
 
@@ -79,12 +50,30 @@ export default async function AgentDetailPage({ params }: Props) {
             <ScopeRow
               key={entry.id}
               name={`${toShortTime(entry.time)} · ${entry.action}`}
+              tag={entry.resourceId}
               trailing={
                 <Badge tone={DECISION_TONE[entry.outcome]}>{DECISION_LABEL[entry.outcome]}</Badge>
               }
             />
           ))
         )}
+      </PanelBlock>
+
+      <PanelBlock>
+        <SectionTitle>
+          Access
+          <Link
+            href={`/agents/${agent.id}/resources`}
+            className="text-xs font-normal text-brand hover:underline"
+          >
+            Manage →
+          </Link>
+        </SectionTitle>
+        <MutedText>
+          {resourceCount === 0
+            ? "This agent is not scoped against any resource yet."
+            : `Scoped against ${resourceCount} resource${resourceCount === 1 ? "" : "s"}. Permissions and policies are set per resource for this agent — open one to review what it may call.`}
+        </MutedText>
       </PanelBlock>
     </>
   );

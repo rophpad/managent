@@ -47,6 +47,13 @@ export interface PermissionParam {
   example?: string;
 }
 
+/**
+ * One capability a resource exposes — an endpoint, an MCP tool, or a database
+ * role. This is a property of the resource itself: it describes what *can* be
+ * called, not who may call it. Granting it to an agent is a separate record
+ * ({@link AgentScope}), which is why the same capability can be granted to one
+ * agent and withheld from another.
+ */
 export interface Permission {
   name: string;
   /**
@@ -66,6 +73,10 @@ interface ResourceBase {
   /** Display name, which may differ from the id, e.g. `postgres:invoices`. */
   name: string;
   discoveredVia: DiscoverySource;
+  /**
+   * The full catalog of what this resource exposes. Global to the resource —
+   * every agent sees the same catalog, and each is granted its own subset.
+   */
   permissions: Permission[];
 }
 
@@ -90,9 +101,15 @@ export interface DbResource extends ResourceBase {
 
 export type Resource = RestResource | McpResource | DbResource;
 
-/** A permission on a resource that a specific agent has been granted. */
+/**
+ * A grant: one capability on one resource, given to one agent. Grants are the
+ * per-(agent, resource) half of the model — a resource's catalog is shared, but
+ * which entries an agent holds is decided per agent, so two agents on the same
+ * resource routinely have different permissions.
+ */
 export interface AgentScope {
   resourceId: string;
+  /** Name of a {@link Permission} in that resource's catalog. */
   permission: string;
   /** Usage over the last 24h, shown beside the scope in agent settings. */
   callsToday: number;
@@ -128,6 +145,10 @@ export interface AuditEntry {
   /** `HH:MM:SS`, local to the org. */
   time: string;
   agentId: string;
+  /** Resource the call was made against, so logs narrow to one agent-resource pair. */
+  resourceId: string;
+  /** Capability invoked, matching a {@link Permission} name on that resource. */
+  permission: string;
   action: string;
   outcome: Decision;
 }
@@ -194,8 +215,13 @@ export type PolicyCondition =
   | { mode: "expression"; source: string };
 
 /**
- * One rule in a resource's policy. Rules are evaluated top to bottom and the
- * first match wins, so `order` is meaningful rather than cosmetic.
+ * One rule governing calls to a resource. Rules are evaluated top to bottom and
+ * the first match wins, so `order` is meaningful rather than cosmetic.
+ *
+ * A rule is scoped by its `subject`: `agent:invoice-agent` governs that agent
+ * alone, while `agent:*` is a resource-wide default inherited by every agent.
+ * The effective rule list is therefore per (agent, resource) — see
+ * {@link EffectivePolicy}.
  */
 export interface Policy {
   id: string;
@@ -212,6 +238,16 @@ export interface Policy {
   /** Throughput cap applied when the rule matches. */
   rateLimit?: string;
   enabled: boolean;
+}
+
+/**
+ * A rule as it applies to one specific agent. Inherited rules come from the
+ * resource's defaults and are read-only in the per-agent view — they're edited
+ * where they're defined, on the resource — so it stays obvious which rules this
+ * agent actually owns.
+ */
+export interface EffectivePolicy extends Policy {
+  inherited: boolean;
 }
 
 /** A pre-built connector from the open-source registry. */

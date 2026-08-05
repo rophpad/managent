@@ -23,7 +23,7 @@ export function AuthShell({
   return (
     <main className="w-full grid min-h-dvh bg-ink text-fg ">
       <section className="w-full flex min-h-dvh flex-col px-5 py-6 sm:px-8 lg:px-12">
-        <Link
+        {/* <Link
           href="/"
           aria-label="Managent home"
           className="w-fit rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand"
@@ -36,6 +36,14 @@ export function AuthShell({
             className="h-auto w-25 brightness-0 invert"
             priority
           />
+        </Link> */}
+
+        <Link href="/" className="flex items-center gap-2 px-2.5 pb-5.5 pt-1">
+          <span
+            aria-hidden
+            className="size-4.5 shrink-0 rounded-[5px] bg-linear-to-br from-brand to-allow"
+          />
+          <span className="font-display text-base font-semibold">Managent</span>
         </Link>
 
         <div className="w-full flex items-center justify-center">

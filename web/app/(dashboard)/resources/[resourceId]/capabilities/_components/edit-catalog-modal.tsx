@@ -7,13 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Hint } from "@/components/ui/field";
 import { Modal, ModalBody } from "@/components/ui/modal";
 import { RiskTag } from "@/components/ui/scope-chip";
-import { RESOURCE_KIND_LABEL } from "@/lib/data/resources";
+import { CATALOG_LABEL, CATALOG_NOUN, RESOURCE_KIND_LABEL } from "@/lib/data/resources";
 import type { Resource } from "@/lib/types";
 
-const ITEM_LABEL = { rest: "endpoints", mcp: "tools", db: "roles" } as const;
-const REFRESH_LABEL = { rest: "Refresh endpoints", mcp: "Refresh tools", db: "Refresh roles" } as const;
 
-export function EditPermissionsModal({ resource }: { resource: Resource }) {
+export function EditCatalogModal({ resource }: { resource: Resource }) {
+  const label = CATALOG_LABEL[resource.kind];
+  const noun = CATALOG_NOUN[resource.kind];
   const initial = resource.permissions.map((permission) => permission.name);
   const [open, setOpen] = useState(false);
   const [enabled, setEnabled] = useState<ReadonlySet<string>>(() => new Set(initial));
@@ -44,14 +44,14 @@ export function EditPermissionsModal({ resource }: { resource: Resource }) {
     <>
       <Button size="sm" className="font-normal" onClick={openEditor}>
         <Pencil aria-hidden className="size-[15px]" />
-        Edit permissions
+        Edit {noun}s
       </Button>
 
       <Modal
         open={open}
         onClose={() => setOpen(false)}
         wide
-        title="Edit permissions"
+        title={`Edit ${label.toLowerCase()}`}
         icon={<ShieldCheck />}
         footer={
           <>
@@ -63,7 +63,7 @@ export function EditPermissionsModal({ resource }: { resource: Resource }) {
                 setOpen(false);
               }}
             >
-              Save permissions
+              Save {noun}s
             </Button>
             <Button size="sm" onClick={() => setOpen(false)}>Cancel</Button>
           </>
@@ -81,7 +81,7 @@ export function EditPermissionsModal({ resource }: { resource: Resource }) {
             <span className="flex shrink-0 items-center gap-2">
               <Button size="sm" onClick={refreshDiscovery} disabled={refreshing}>
                 <RefreshCw aria-hidden className={`size-[14px] ${refreshing ? "animate-spin" : ""}`} />
-                {refreshing ? "Discovering…" : REFRESH_LABEL[resource.kind]}
+                {refreshing ? "Discovering…" : `Refresh ${label.toLowerCase()}`}
               </Button>
               <span className="rounded-full bg-brand/10 px-2.5 py-1 text-xs text-brand">{draft.size}/{resource.permissions.length} enabled</span>
             </span>
@@ -89,7 +89,7 @@ export function EditPermissionsModal({ resource }: { resource: Resource }) {
 
           <div className="overflow-hidden rounded-lg border border-line-soft">
             <div className="border-b border-line-soft bg-panel-2 px-3.5 py-2.5 text-[12px] font-medium capitalize">
-              Available {ITEM_LABEL[resource.kind]}
+              Available {label.toLowerCase()}
             </div>
             {resource.permissions.map((permission) => (
               <label key={permission.name} className="flex cursor-pointer items-start gap-3 border-b border-line-soft px-3.5 py-3 transition-colors last:border-b-0 hover:bg-surface">
@@ -111,7 +111,7 @@ export function EditPermissionsModal({ resource }: { resource: Resource }) {
             ))}
           </div>
 
-          <Hint className="mt-3">This changes which {ITEM_LABEL[resource.kind]} are available as permissions. It does not change the resource connection or type.</Hint>
+          <Hint className="mt-3">This changes what {resource.name} exposes, for every agent. It does not grant anything — each agent&apos;s permissions are set on that agent.</Hint>
         </ModalBody>
       </Modal>
     </>

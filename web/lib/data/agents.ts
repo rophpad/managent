@@ -1,4 +1,4 @@
-import type { Agent } from "@/lib/types";
+import type { Agent, AgentScope, Resource } from "@/lib/types";
 
 export const AGENTS: Agent[] = [
   {
@@ -89,6 +89,44 @@ export function getAgentsUsingResource(resourceId: string): Agent[] {
 /** Resource ids the agent has at least one scope on. */
 export function getLinkedResourceIds(agent: Agent): string[] {
   return [...new Set(agent.scopes.map((scope) => scope.resourceId))];
+}
+
+/** The agent's grants on one resource — its slice of that resource's catalog. */
+export function getAgentScopesForResource(agent: Agent, resourceId: string): AgentScope[] {
+  return agent.scopes.filter((scope) => scope.resourceId === resourceId);
+}
+
+export function isPermissionGranted(
+  agent: Agent,
+  resourceId: string,
+  permission: string,
+): boolean {
+  return agent.scopes.some(
+    (scope) => scope.resourceId === resourceId && scope.permission === permission,
+  );
+}
+
+/**
+ * How much of a resource's catalog one agent holds. Rendered as `2/5` wherever
+ * an agent and a resource meet, so it's visible at a glance that the grant is
+ * per-agent rather than a property of the resource.
+ */
+export function getGrantSummary(
+  agent: Agent,
+  resource: Resource,
+): { granted: number; total: number } {
+  return {
+    granted: getAgentScopesForResource(agent, resource.id).length,
+    total: resource.permissions.length,
+  };
+}
+
+/** Calls this agent made against one resource in the last 24h. */
+export function getAgentResourceCalls(agent: Agent, resourceId: string): number {
+  return getAgentScopesForResource(agent, resourceId).reduce(
+    (total, scope) => total + scope.callsToday,
+    0,
+  );
 }
 
 /**

@@ -76,8 +76,9 @@ export function GoverningMcp() {
       </CodeBlock>
       <DocParagraph>
         Tool discovery is automatic — the first call to <InlineCode>wrap_mcp()</InlineCode> on a new
-        server calls its <InlineCode>tools/list</InlineCode> method and registers each tool as an
-        available permission for review in the dashboard.
+        server calls its <InlineCode>tools/list</InlineCode> method and adds each tool to the
+        server&apos;s catalog in the dashboard. Discovery makes a tool available to grant; it does
+        not grant it. Until you give an agent that tool, calling it is denied.
       </DocParagraph>
     </>
   );
@@ -168,13 +169,28 @@ export function UsingThePlatform() {
     <>
       <DocHeading>Using the platform</DocHeading>
       <DocParagraph>
-        <strong>Agents</strong> — register agents, view coverage across REST and MCP, and manage
-        enforcement mode and linked resources from each agent&apos;s detail page.
+        <strong>Resources</strong> — add REST APIs, MCP servers, or databases. A resource publishes
+        a catalog of what it exposes: endpoints for REST (imported from an OpenAPI spec, picked from
+        a community template, or added manually), tools for MCP (auto-discovered), roles for a
+        database. That catalog is global to the resource — it describes what <em>can</em> be called,
+        not who may call it.
       </DocParagraph>
       <DocParagraph>
-        <strong>Resources</strong> — add REST APIs, MCP servers, or databases. REST permissions can
-        be imported from an OpenAPI spec, picked from a community template, or added manually. MCP
-        permissions are auto-discovered.
+        <strong>Permissions are granted per agent, per resource.</strong> Each agent holds its own
+        subset of a resource&apos;s catalog, so two agents on the same resource routinely have
+        different access. Open an agent, choose a resource, and you get exactly that pair: the
+        permissions it has been granted, the policy rules that govern it, and its call log. Changing
+        one agent&apos;s access never affects another&apos;s.
+      </DocParagraph>
+      <DocParagraph>
+        <strong>Policies</strong> follow the same shape. Rules are written for one agent on one
+        resource. A resource can also carry default rules that every agent using it inherits — those
+        are edited on the resource, and show up read-only, in evaluation order, alongside an
+        agent&apos;s own rules.
+      </DocParagraph>
+      <DocParagraph>
+        <strong>Agents</strong> — register agents, view coverage across REST and MCP, and manage
+        enforcement mode and linked resources from each agent&apos;s detail page.
       </DocParagraph>
       <DocParagraph>
         <strong>Audit logs</strong> — every governed call across all agents, searchable by agent,

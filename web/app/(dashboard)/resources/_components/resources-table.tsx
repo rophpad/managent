@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { ResourceName, ROW_LINK_CLASS, Table, Td, Th } from "@/components/ui/table";
-import { DISCOVERY_LABEL, permissionCountLabel, RESOURCE_KIND_LABEL } from "@/lib/data/resources";
+import { catalogCountLabel, DISCOVERY_LABEL, RESOURCE_KIND_LABEL } from "@/lib/data/resources";
 import type { Resource } from "@/lib/types";
 
 export function ResourcesTable({
@@ -25,7 +25,7 @@ export function ResourcesTable({
           <tr>
             <Th>Resource</Th>
             <Th>Type</Th>
-            <Th>Permissions</Th>
+            <Th>Exposes</Th>
             <Th>Discovered via</Th>
             <Th>Agents using it</Th>
           </tr>
@@ -48,7 +48,7 @@ export function ResourcesTable({
                 </Link>
               </Td>
               <Td muted>{RESOURCE_KIND_LABEL[resource.kind]}</Td>
-              <Td muted>{permissionCountLabel(resource)}</Td>
+              <Td muted>{catalogCountLabel(resource)}</Td>
               <Td muted>
                 {resource.discoveredVia === "auto" ? (
                   <span className="inline-flex items-center gap-1.5">

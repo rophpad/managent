@@ -4,14 +4,13 @@ import { Breadcrumb } from "@/components/dashboard/page-header";
 import { ResourceIcon } from "@/components/dashboard/resource-icon";
 import { TabNav, type TabDef } from "@/components/dashboard/tab-nav";
 import { getAgentsUsingResource } from "@/lib/data/agents";
-import { permissionCountLabel, RESOURCE_KIND_LABEL, RESOURCES, getResource } from "@/lib/data/resources";
-
-const TABS: readonly TabDef[] = [
-  { segment: "", label: "Information" },
-  { segment: "permissions", label: "Permissions" },
-  { segment: "policies", label: "Policies" },
-  { segment: "settings", label: "Settings" },
-];
+import {
+  CATALOG_LABEL,
+  catalogCountLabel,
+  RESOURCE_KIND_LABEL,
+  RESOURCES,
+  getResource,
+} from "@/lib/data/resources";
 
 export function generateStaticParams() {
   return RESOURCES.map((resource) => ({ resourceId: resource.id }));
@@ -39,6 +38,17 @@ export default async function ResourceDetailLayout({
   const agents = getAgentsUsingResource(resource.id);
   const agentCount = `${agents.length} agent${agents.length === 1 ? "" : "s"}`;
 
+  // The catalog tab is named after what the resource actually exposes. "Permissions"
+  // is deliberately absent from this page: what a resource offers is global, but a
+  // permission is something one agent holds, and lives on that agent.
+  const tabs: readonly TabDef[] = [
+    { segment: "", label: "Information" },
+    { segment: "capabilities", label: CATALOG_LABEL[resource.kind] },
+    { segment: "agents", label: "Agents" },
+    { segment: "policies", label: "Default policies" },
+    { segment: "settings", label: "Settings" },
+  ];
+
   return (
     <>
       <Breadcrumb items={[{ label: "Resources", href: "/resources" }, { label: resource.name }]} />
@@ -49,14 +59,14 @@ export default async function ResourceDetailLayout({
           <h1 className="font-mono text-[22px] font-semibold">{resource.name}</h1>
         </div>
         <p className="mt-1 text-[13.5px] text-muted">
-          {RESOURCE_KIND_LABEL[resource.kind]} · {permissionCountLabel(resource)} · used by{" "}
+          {RESOURCE_KIND_LABEL[resource.kind]} · {catalogCountLabel(resource)} · used by{" "}
           {agentCount}
         </p>
       </div>
 
       <TabNav
         basePath={`/resources/${resource.id}`}
-        tabs={TABS}
+        tabs={tabs}
         label={`${resource.name} sections`}
       />
 

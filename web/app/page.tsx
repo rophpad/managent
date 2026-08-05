@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Menu, X } from "lucide-react";
 import { Modal, ModalBody } from "@/components/ui/modal";
@@ -272,13 +273,11 @@ export default function Home() {
       {/* ================= HEADER ================= */}
       <header className="absolute w-full top-0 z-50 bg-none backdrop-blur-md">
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:h-auto sm:px-6 sm:py-3 lg:px-8 lg:py-4">
-          <a
+          {/* <a
             href="#top"
             aria-label="Managent home"
             className="flex shrink-0 items-center gap-1 font-semibold leading-none"
           >
-            {/* The wordmark is solid black artwork; brightness-0 + invert renders
-                it white on the dark surface without needing a second asset. */}
             <Image
               src="/logo1.svg"
               alt=""
@@ -287,7 +286,15 @@ export default function Home() {
               className="h-auto w-21.5 brightness-0 invert sm:w-25"
               priority
             />
-          </a>
+          </a> */}
+
+          <Link href="#top" className="flex items-center gap-2 px-2.5 pb-5.5 pt-1">
+            <span
+              aria-hidden
+              className="size-4.5 shrink-0 rounded-[5px] bg-linear-to-br from-brand to-allow"
+            />
+            <span className="font-display text-base font-semibold">Managent</span>
+          </Link>
 
           <nav className="hidden items-center gap-7 text-sm font-medium text-muted lg:flex">
             {navigationItems.map((item) => (

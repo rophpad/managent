@@ -1,6 +1,7 @@
 "use client";
 
 import { ScanSearch } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { DECISION_LABEL, DECISION_TONE, Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -18,7 +19,14 @@ const OUTCOME_FILTERS = [
 
 type OutcomeFilter = (typeof OUTCOME_FILTERS)[number]["value"];
 
-export function AuditTable({ entries }: { entries: AuditEntry[] }) {
+export function AuditTable({
+  entries,
+  /** Dropped when the table is already scoped to one agent, e.g. on its detail page. */
+  showAgent = true,
+}: {
+  entries: AuditEntry[];
+  showAgent?: boolean;
+}) {
   const [query, setQuery] = useState("");
   const [outcome, setOutcome] = useState<OutcomeFilter>("all");
 
@@ -29,6 +37,8 @@ export function AuditTable({ entries }: { entries: AuditEntry[] }) {
       const matchesQuery =
         !needle ||
         entry.agentId.toLowerCase().includes(needle) ||
+        entry.resourceId.toLowerCase().includes(needle) ||
+        entry.permission.toLowerCase().includes(needle) ||
         entry.action.toLowerCase().includes(needle);
       return matchesOutcome && matchesQuery;
     });
@@ -54,11 +64,12 @@ export function AuditTable({ entries }: { entries: AuditEntry[] }) {
         {visible.length === 0 ? (
           <EmptyState icon={<ScanSearch />}>No calls match this filter.</EmptyState>
         ) : (
-          <Table minWidth="min-w-[520px]">
+          <Table minWidth={showAgent ? "min-w-[680px]" : "min-w-[560px]"}>
             <thead>
               <tr>
                 <Th className="w-[70px]">Time</Th>
-                <Th className="w-[140px]">Agent</Th>
+                {showAgent ? <Th className="w-[140px]">Agent</Th> : null}
+                <Th className="w-[130px]">Resource</Th>
                 <Th>Action</Th>
                 <Th className="w-[90px] text-right">Outcome</Th>
               </tr>
@@ -67,7 +78,17 @@ export function AuditTable({ entries }: { entries: AuditEntry[] }) {
               {visible.map((entry) => (
                 <tr key={entry.id} className="transition-colors hover:bg-surface">
                   <Td className="font-mono text-[11.5px] text-muted-2">{entry.time}</Td>
-                  <Td className="font-mono">{entry.agentId}</Td>
+                  {showAgent ? <Td className="font-mono">{entry.agentId}</Td> : null}
+                  <Td className="font-mono text-[12.5px]">
+                    {/* Links to the pair, not the resource: the interesting question
+                        from a log line is what this agent may do here. */}
+                    <Link
+                      href={`/agents/${entry.agentId}/resources/${entry.resourceId}`}
+                      className="text-muted transition-colors hover:text-brand"
+                    >
+                      {entry.resourceId}
+                    </Link>
+                  </Td>
                   <Td muted>{entry.action}</Td>
                   <Td className="text-right">
                     <Badge tone={DECISION_TONE[entry.outcome]}>

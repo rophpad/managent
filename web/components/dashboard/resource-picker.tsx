@@ -1,7 +1,7 @@
 "use client";
 
 import { ResourceIcon } from "@/components/dashboard/resource-icon";
-import { permissionCountLabel, RESOURCE_KIND_LABEL } from "@/lib/data/resources";
+import { catalogCountLabel, RESOURCE_KIND_LABEL } from "@/lib/data/resources";
 import type { Resource } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
@@ -42,7 +42,7 @@ export function ResourcePicker({
               <span className="min-w-0">
                 <span className="block truncate font-mono text-[12.5px]">{resource.name}</span>
                 <span className="block text-[11.5px] text-muted">
-                  {RESOURCE_KIND_LABEL[resource.kind]} · {permissionCountLabel(resource)}
+                  {RESOURCE_KIND_LABEL[resource.kind]} · {catalogCountLabel(resource)}
                 </span>
               </span>
             </span>

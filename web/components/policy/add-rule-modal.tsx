@@ -9,6 +9,7 @@ import { Field, FieldGroup, Hint, Input, Textarea } from "@/components/ui/field"
 import { Modal, ModalBody } from "@/components/ui/modal";
 import { cn } from "@/lib/cn";
 import { POLICY_EFFECT_LABEL } from "@/lib/data/policies";
+import { CATALOG_LABEL, CATALOG_NOUN } from "@/lib/data/resources";
 import { countRules, fieldsForPermission, newGroup } from "@/lib/policy/conditions";
 import type {
   ConditionGroup,
@@ -34,8 +35,6 @@ const EFFECT_HINT: Record<PolicyEffect, string> = {
   deny: "Matching calls are blocked before they reach the resource. The agent sees a normal error.",
 };
 
-const TARGET_PLURAL: Record<Resource["kind"], string> = { rest: "Endpoints", mcp: "Tools", db: "Roles" };
-
 export type NewRule = Omit<Policy, "id" | "resourceId" | "order">;
 
 export function AddRuleModal({
@@ -44,12 +43,19 @@ export function AddRuleModal({
   onAdd,
   resource,
   nextPosition,
+  subject = "agent:*",
 }: {
   open: boolean;
   onClose: () => void;
   onAdd: (rule: NewRule) => void;
   resource: Resource;
   nextPosition: number;
+  /**
+   * Who the rule governs. `agent:*` is a resource-wide default; authoring from
+   * an agent's own page passes `agent:<id>` so the rule binds to that agent
+   * alone rather than silently applying to every agent on the resource.
+   */
+  subject?: string;
 }) {
   const fieldId = useId();
   const [step, setStep] = useState<1 | 2>(1);
@@ -103,7 +109,7 @@ export function AddRuleModal({
   function submit() {
     onAdd({
       effect,
-      subject: "agent:*",
+      subject,
       permission: permissionName,
       condition: buildCondition(),
       rateLimit: rateLimit.trim() || undefined,
@@ -149,7 +155,7 @@ export function AddRuleModal({
           {[1, 2].map((number) => (
             <div key={number} className="flex min-w-0 flex-1 items-center gap-2">
               <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-medium", step >= number ? "bg-brand text-ink" : "bg-panel-2 text-muted")}>{number}</span>
-              <span className={cn("truncate text-xs", step === number ? "text-fg" : "text-muted-2")}>{number === 1 ? `Select ${resource.kind === "mcp" ? "tool" : resource.kind === "rest" ? "endpoint" : "role"}` : "Write condition"}</span>
+              <span className={cn("truncate text-xs", step === number ? "text-fg" : "text-muted-2")}>{number === 1 ? `Select ${CATALOG_NOUN[resource.kind]}` : "Write condition"}</span>
               {number === 1 ? <span className="h-px flex-1 bg-line-soft" /> : null}
             </div>
           ))}
@@ -183,8 +189,8 @@ export function AddRuleModal({
         ) : null}
 
         {step === 1 ? (
-        <FieldGroup label={TARGET_PLURAL[resource.kind]} hint={`Choose what this policy controls on ${resource.name}.`}>
-          <div role="radiogroup" aria-label={TARGET_PLURAL[resource.kind]} className="mt-2 grid gap-2">
+        <FieldGroup label={CATALOG_LABEL[resource.kind]} hint={`Choose what this policy controls on ${resource.name}.`}>
+          <div role="radiogroup" aria-label={CATALOG_LABEL[resource.kind]} className="mt-2 grid gap-2">
             {resource.permissions.map((entry) => (
               <label key={entry.name} className={cn("cursor-pointer rounded-lg border px-3 py-2.5 transition-colors", permissionName === entry.name ? "border-brand bg-brand/9" : "border-line hover:bg-surface")}>
                 <span className="flex items-center gap-2">

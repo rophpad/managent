@@ -317,9 +317,26 @@ export const DISCOVERY_LABEL = {
   manual: "Manual",
 } as const;
 
-/** Database resources expose roles, everything else exposes permissions. */
-export function permissionCountLabel(resource: Resource): string {
+/**
+ * What a resource's catalog entries are called in the interface. The catalog is
+ * global to the resource, so it's named after what it physically is — endpoints,
+ * tools, roles — and the word "permission" is reserved for what an agent has
+ * been granted from it.
+ */
+export const CATALOG_LABEL = {
+  rest: "Endpoints",
+  mcp: "Tools",
+  db: "Roles",
+} as const;
+
+export const CATALOG_NOUN = {
+  rest: "endpoint",
+  mcp: "tool",
+  db: "role",
+} as const;
+
+/** e.g. `3 endpoints`, `5 tools` — the size of the catalog, not of any grant. */
+export function catalogCountLabel(resource: Resource): string {
   const count = resource.permissions.length;
-  const noun = resource.kind === "db" ? "role" : "permission";
-  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+  return `${count} ${CATALOG_NOUN[resource.kind]}${count === 1 ? "" : "s"}`;
 }
