@@ -14,6 +14,8 @@ import { Toggle } from "@/components/ui/toggle";
 import { cn } from "@/lib/cn";
 import { CATALOG_LABEL } from "@/lib/data/resources";
 import type { AgentScope, EnforcementMode, Resource } from "@/lib/types";
+import type { Agent } from "@/lib/types";
+import { saveDashboardEntity } from "@/lib/client-api";
 
 const TABS = [
   { value: "enforcement", label: "Enforcement mode" },
@@ -36,6 +38,7 @@ export interface ScopeRowData {
 }
 
 export function AgentSettingsModal({
+  agent,
   open,
   onClose,
   scopes,
@@ -44,6 +47,7 @@ export function AgentSettingsModal({
   initialMode,
   initialFailOpen,
 }: {
+  agent: Agent;
   open: boolean;
   onClose: () => void;
   scopes: ScopeRowData[];
@@ -60,6 +64,24 @@ export function AgentSettingsModal({
     () => new Set(initialScopes.map((scope) => `${scope.resourceId}:${scope.permission}`)),
   );
   const [permissionDraft, setPermissionDraft] = useState<ReadonlySet<string>>(granted);
+
+  async function saveSettings() {
+    await saveDashboardEntity("agents", { ...agent, enforcementMode: mode, failOpen });
+    onClose();
+  }
+
+  async function savePermissions() {
+    const existing = new Map(agent.scopes.map((scope) => [`${scope.resourceId}:${scope.permission}`, scope]));
+    const nextScopes = [...permissionDraft].map((key) => {
+      const separator = key.indexOf(":");
+      const resourceId = key.slice(0, separator);
+      const permission = key.slice(separator + 1);
+      return existing.get(key) ?? { resourceId, permission, callsToday: 0 };
+    });
+    await saveDashboardEntity("agents", { ...agent, scopes: nextScopes });
+    setGranted(new Set(permissionDraft));
+    setPermissionsOpen(false);
+  }
 
   function togglePermission(resourceId: string, permission: string, checked: boolean) {
     const key = `${resourceId}:${permission}`;
@@ -81,7 +103,7 @@ export function AgentSettingsModal({
       icon={<Settings />}
       footer={
         <>
-          <Button variant="primary" size="sm" onClick={onClose}>
+          <Button variant="primary" size="sm" onClick={saveSettings}>
             Save changes
           </Button>
           <Button size="sm" onClick={onClose}>
@@ -162,10 +184,7 @@ export function AgentSettingsModal({
           <Button
             variant="primary"
             size="sm"
-            onClick={() => {
-              setGranted(new Set(permissionDraft));
-              setPermissionsOpen(false);
-            }}
+            onClick={savePermissions}
           >
             Save permissions
           </Button>

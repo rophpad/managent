@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
 import { LogOut, UserRound } from "lucide-react";
-import { CURRENT_ORG } from "@/components/dashboard/nav";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { ButtonLink } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { PanelBlock, SectionTitle } from "@/components/ui/card";
 import { Hint } from "@/components/ui/field";
+import { getCurrentUser } from "@/lib/backend";
+import { logoutAction } from "@/app/(auth)/actions";
 
 export const metadata: Metadata = { title: "Profile" };
 
-export default function ProfilePage() {
+export default async function ProfilePage() {
+  const user = await getCurrentUser();
+  const displayName = user.name || user.email;
+  const initials = displayName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
   return (
     <div className="max-w-160">
       <PageHeader
@@ -22,14 +26,14 @@ export default function ProfilePage() {
             aria-hidden
             className="flex size-12 shrink-0 items-center justify-center rounded-full border border-line bg-surface font-display text-sm font-semibold text-brand"
           >
-            {CURRENT_ORG.initials}
+            {initials}
           </span>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <UserRound aria-hidden className="size-4 text-muted" />
-              <h2 className="truncate text-[14px] font-medium">{CURRENT_ORG.name}</h2>
+              <h2 className="truncate text-[14px] font-medium">{displayName}</h2>
             </div>
-            <p className="mt-1 text-[12.5px] text-muted">Workspace administrator</p>
+            <p className="mt-1 text-[12.5px] text-muted">{user.email}</p>
           </div>
         </div>
       </PanelBlock>
@@ -40,10 +44,12 @@ export default function ProfilePage() {
           Log out of Managent on this device. You will need to authenticate again to access the
           dashboard.
         </Hint>
-        <ButtonLink href="/login" variant="danger" size="sm" className="mt-4">
-          <LogOut aria-hidden className="size-3.75" />
-          Log out
-        </ButtonLink>
+        <form action={logoutAction}>
+          <Button type="submit" variant="danger" size="sm" className="mt-4">
+            <LogOut aria-hidden className="size-3.75" />
+            Log out
+          </Button>
+        </form>
       </PanelBlock>
     </div>
   );

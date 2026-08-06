@@ -65,6 +65,10 @@ export function AddRuleModal({
   const [root, setRoot] = useState<ConditionGroup>(() => newGroup());
   const [expression, setExpression] = useState("");
   const [rateLimit, setRateLimit] = useState("");
+  const [showErrors, setShowErrors] = useState(false);
+  const rateLimitError = rateLimit.trim() && !/^\d+\s*\/\s*(second|minute|hour|day)s?$/i.test(rateLimit.trim())
+    ? "Use a limit such as 20 / hour or 5 / minute."
+    : null;
 
   const permission: Permission | null =
     resource.permissions.find((entry) => entry.name === permissionName) ?? null;
@@ -90,6 +94,7 @@ export function AddRuleModal({
     setRoot(newGroup());
     setExpression("");
     setRateLimit("");
+    setShowErrors(false);
   }
 
   function buildCondition(): PolicyCondition | undefined {
@@ -107,6 +112,8 @@ export function AddRuleModal({
   }
 
   function submit() {
+    setShowErrors(true);
+    if (rateLimitError) return;
     onAdd({
       effect,
       subject,
@@ -302,10 +309,12 @@ export function AddRuleModal({
           }
           htmlFor={`${fieldId}-rate`}
           className="mb-0"
+          error={showErrors ? rateLimitError : null}
         >
           <Input
             id={`${fieldId}-rate`}
             value={rateLimit}
+            aria-invalid={showErrors && Boolean(rateLimitError)}
             onChange={(event) => setRateLimit(event.target.value)}
             placeholder="20 / hour"
             autoComplete="off"

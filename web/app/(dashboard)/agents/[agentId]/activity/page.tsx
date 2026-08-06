@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { Hint } from "@/components/ui/field";
 import { AuditTable } from "@/app/(dashboard)/audit-logs/_components/audit-table";
-import { getAgent } from "@/lib/data/agents";
-import { AUDIT_ENTRIES } from "@/lib/data/audit";
+import { fetchAgent } from "@/lib/data/server";
+import { listAuditEntries } from "@/lib/data/server";
 
 export default async function AgentActivityPage({
   params,
@@ -10,13 +10,14 @@ export default async function AgentActivityPage({
   params: Promise<{ agentId: string }>;
 }) {
   const { agentId } = await params;
-  const agent = getAgent(agentId);
+  const agent = await fetchAgent(agentId);
   if (!agent) notFound();
+  const entries = await listAuditEntries();
 
   return (
     <>
       <AuditTable
-        entries={AUDIT_ENTRIES.filter((entry) => entry.agentId === agent.id)}
+        entries={entries.filter((entry) => entry.agentId === agent.id)}
         showAgent={false}
       />
       <Hint className="mt-3">

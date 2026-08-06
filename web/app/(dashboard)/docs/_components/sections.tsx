@@ -15,23 +15,63 @@ export function Quickstart() {
     <>
       <DocHeading>Quickstart</DocHeading>
       <DocParagraph>
-        Install the SDK and set your agent&apos;s token. There&apos;s no proxy, no certificate to
-        trust, no network configuration — Managent is a package you call directly in your
-        agent&apos;s code.
+        Register an agent, copy its one-time token, and grant it access to at least one resource.
+        For a local test, add the Hello MCP template and grant the <InlineCode>greet</InlineCode>{" "}
+        tool. Every client connects to the same Managent MCP gateway.
       </DocParagraph>
       <CodeBlock>
-        <Comment># install</Comment>
-        {"\npip install managent\n\n"}
-        <Comment># set your token</Comment>
-        {"\nexport MANAGENT_TOKEN=mg_live_invoice_agent_9f8a2b"}
+        <Comment># token shown after agent registration</Comment>
+        {"\nexport MANAGENT_TOKEN=mg_live_...\nexport MANAGENT_MCP_URL=http://127.0.0.1:8081/mcp"}
       </CodeBlock>
       <DocParagraph>
-        The SDK reads <InlineCode>MANAGENT_TOKEN</InlineCode> from the environment automatically, or
-        you can pass it explicitly when creating the client.
+        Keep each agent&apos;s token separate. Tokens identify the calling agent, so Codex,
+        Claude, and a LangChain worker can hold different grants even when they use the same gateway.
+      </DocParagraph>
+    </>
+  );
+}
+
+export function AgentIntegrations() {
+  return (
+    <>
+      <DocHeading>Connect agent frameworks</DocHeading>
+      <DocParagraph>
+        <strong>Codex CLI, app, and IDE extension.</strong> Add this to{" "}
+        <InlineCode>~/.codex/config.toml</InlineCode> or a trusted project&apos;s{" "}
+        <InlineCode>.codex/config.toml</InlineCode>. Codex reads the bearer token from the
+        environment instead of storing it in the file.
       </DocParagraph>
       <CodeBlock>
-        {'from managent import Managent\nmg = Managent(token="mg_live_invoice_agent_9f8a2b")'}
+        {'[mcp_servers.managent]\nurl = "http://127.0.0.1:8081/mcp"\nbearer_token_env_var = "MANAGENT_TOKEN"\nrequired = true'}
       </CodeBlock>
+      <DocParagraph>
+        Restart Codex, then use <InlineCode>/mcp</InlineCode> or{" "}
+        <InlineCode>codex mcp list</InlineCode> to confirm the connection.
+      </DocParagraph>
+
+      <DocParagraph>
+        <strong>Claude Code.</strong> Register Managent as a remote HTTP MCP server. The shell
+        expands the token when the server is added.
+      </DocParagraph>
+      <CodeBlock>
+        {'claude mcp add --transport http managent "$MANAGENT_MCP_URL" \\\n  --header "Authorization: Bearer $MANAGENT_TOKEN"'}
+      </CodeBlock>
+
+      <DocParagraph>
+        <strong>LangChain.</strong> Use the MCP adapters package and the streamable HTTP transport.
+      </DocParagraph>
+      <CodeBlock>
+        {
+          'import os\nfrom langchain_mcp_adapters.client import MultiServerMCPClient\n\nclient = MultiServerMCPClient({\n    "managent": {\n        "transport": "streamable_http",\n        "url": os.environ["MANAGENT_MCP_URL"],\n        "headers": {\n            "Authorization": f\'Bearer {os.environ["MANAGENT_TOKEN"]}\'\n        },\n    }\n})\ntools = await client.get_tools()'
+        }
+      </CodeBlock>
+
+      <DocParagraph>
+        <strong>Any MCP client.</strong> Use Streamable HTTP at{" "}
+        <InlineCode>http://127.0.0.1:8081/mcp</InlineCode> and send{" "}
+        <InlineCode>Authorization: Bearer &lt;agent token&gt;</InlineCode>. Use a different token
+        per autonomous agent so audit logs and policies retain the correct identity.
+      </DocParagraph>
     </>
   );
 }
@@ -42,20 +82,17 @@ export function GoverningMcp() {
     <>
       <DocHeading>Governing an MCP tool</DocHeading>
       <DocParagraph>
-        Wrap an MCP client session once with <InlineCode>wrap_mcp()</InlineCode> — this governs every
-        tool the server exposes, since all MCP tool calls flow through the same entrypoint. Works
-        identically for local (stdio) and remote (HTTP+SSE) servers.
+        Connect the agent framework to Managent&apos;s MCP endpoint instead of connecting directly
+        to each downstream server. Managent authenticates the agent token, evaluates grants and
+        policies, records the decision, then routes allowed calls to the resource.
       </DocParagraph>
       <CodeBlock>
-        {
-          'session = ClientSession(transport)\ngoverned = mg.wrap_mcp(session, connector="stripe-mcp")\n\nresult = await governed.call_tool(\n    name="stripe_create_refund",\n    arguments={"charge": "ch_1AbCdEf"}\n)'
-        }
+        {'POST /mcp\nAuthorization: Bearer $MANAGENT_TOKEN\n\n{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hello.greet","arguments":{"name":"Ada"}}}'}
       </CodeBlock>
       <DocParagraph>
-        Tool discovery is automatic — the first call to <InlineCode>wrap_mcp()</InlineCode> on a new
-        server calls its <InlineCode>tools/list</InlineCode> method and adds each tool to the
-        server&apos;s catalog in the dashboard. Discovery makes a tool available to grant; it does
-        not grant it. Until you give an agent that tool, calling it is denied.
+        Resource discovery calls <InlineCode>tools/list</InlineCode> and adds each tool to the
+        resource catalog. Discovery makes a tool available to grant; it does not grant it. Until
+        you give an agent that tool, calling it is denied.
       </DocParagraph>
     </>
   );

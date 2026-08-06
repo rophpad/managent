@@ -9,16 +9,20 @@ import { Hint } from "@/components/ui/field";
 import { MutedText } from "@/components/ui/rows";
 import { CATALOG_LABEL } from "@/lib/data/resources";
 import type { Resource } from "@/lib/types";
+import type { Agent } from "@/lib/types";
+import { saveDashboardEntity } from "@/lib/client-api";
 import { AgentResourcesTable, type AgentResourceRow } from "./agent-resources-table";
 import { AddResourceModal, type ResourceLink } from "./add-resource-modal";
 
 export function AgentResourcesView({
+  agent,
   agentId,
   agentName,
   initialRows,
   available,
   inheritedRules,
 }: {
+  agent: Agent;
   agentId: string;
   agentName: string;
   initialRows: AgentResourceRow[];
@@ -35,7 +39,7 @@ export function AgentResourcesView({
     () => new Set(initialRows.map((row) => row.resourceId)),
   );
 
-  function addLinks(links: ResourceLink[]) {
+  async function addLinks(links: ResourceLink[]) {
     const added = links.flatMap((link) => {
       const resource = available.find((entry) => entry.id === link.resourceId);
       if (!resource) return [];
@@ -58,6 +62,17 @@ export function AgentResourcesView({
 
     setRows((current) => [...current, ...added]);
     setLinked((current) => new Set([...current, ...added.map((row) => row.resourceId)]));
+    const scopes = [
+      ...agent.scopes,
+      ...links.flatMap((link) =>
+        link.permissions.map((permission) => ({
+          resourceId: link.resourceId,
+          permission,
+          callsToday: 0,
+        })),
+      ),
+    ];
+    await saveDashboardEntity("agents", { ...agent, scopes });
   }
 
   return (

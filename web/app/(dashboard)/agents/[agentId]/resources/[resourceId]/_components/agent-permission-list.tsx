@@ -6,6 +6,8 @@ import { Hint } from "@/components/ui/field";
 import { MutedText } from "@/components/ui/rows";
 import { RiskTag } from "@/components/ui/scope-chip";
 import { cn } from "@/lib/cn";
+import { saveDashboardEntity } from "@/lib/client-api";
+import type { Agent } from "@/lib/types";
 
 /** A catalog entry plus this agent's relationship to it. */
 export interface GrantRow {
@@ -20,10 +22,14 @@ export interface GrantRow {
 }
 
 export function AgentPermissionList({
+  agent,
+  resourceId,
   agentName,
   catalogNoun,
   rows,
 }: {
+  agent: Agent;
+  resourceId: string;
   agentName: string;
   /** `endpoint`, `tool` or `role` — what this resource's catalog entries are. */
   catalogNoun: string;
@@ -45,6 +51,21 @@ export function AgentPermissionList({
     });
   }
 
+  async function savePermissions() {
+    const retained = agent.scopes.filter((scope) => scope.resourceId !== resourceId);
+    const existing = new Map(
+      agent.scopes.filter((scope) => scope.resourceId === resourceId).map((scope) => [scope.permission, scope]),
+    );
+    const scopes = [
+      ...retained,
+      ...[...granted].map((permission) =>
+        existing.get(permission) ?? { resourceId, permission, callsToday: 0 },
+      ),
+    ];
+    await saveDashboardEntity("agents", { ...agent, scopes });
+    setSaved(new Set(granted));
+  }
+
   return (
     <>
       <div className="mb-3 flex items-center justify-between gap-4">
@@ -56,7 +77,7 @@ export function AgentPermissionList({
             <Button size="sm" onClick={() => setGranted(new Set(saved))}>
               Reset
             </Button>
-            <Button variant="primary" size="sm" onClick={() => setSaved(new Set(granted))}>
+            <Button variant="primary" size="sm" onClick={savePermissions}>
               Save permissions
             </Button>
           </div>
@@ -91,7 +112,7 @@ export function AgentPermissionList({
                 ) : null}
               </span>
               <span className="shrink-0 text-right text-[11px] text-muted-2">
-                {isGranted && row.callsToday > 0 ? (
+                {isGranted ? (
                   <span className="block">used {row.callsToday}x today</span>
                 ) : null}
                 {row.paramCount > 0 ? (

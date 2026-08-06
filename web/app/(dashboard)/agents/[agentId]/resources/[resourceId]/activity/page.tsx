@@ -5,9 +5,9 @@ import { PanelBlock, SectionTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Hint } from "@/components/ui/field";
 import { ScopeRow } from "@/components/ui/rows";
-import { getAgent } from "@/lib/data/agents";
-import { getAgentResourceActivity } from "@/lib/data/audit";
-import { getResource } from "@/lib/data/resources";
+import { fetchAgent } from "@/lib/data/server";
+import { fetchAgentResourceActivity } from "@/lib/data/server";
+import { fetchResource } from "@/lib/data/server";
 
 export default async function AgentResourceActivityPage({
   params,
@@ -15,11 +15,10 @@ export default async function AgentResourceActivityPage({
   params: Promise<{ agentId: string; resourceId: string }>;
 }) {
   const { agentId, resourceId } = await params;
-  const agent = getAgent(agentId);
-  const resource = getResource(resourceId);
+  const [agent, resource] = await Promise.all([fetchAgent(agentId), fetchResource(resourceId)]);
   if (!agent || !resource) notFound();
 
-  const entries = getAgentResourceActivity(agent.id, resource.id);
+  const entries = await fetchAgentResourceActivity(agent.id, resource.id);
 
   return (
     <PanelBlock>

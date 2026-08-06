@@ -1,21 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import type { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { loginAction } from "../actions";
 
-export function LoginForm() {
-  const router = useRouter();
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    router.push("/agents");
-  }
-
+export function LoginForm({ error }: { error?: string }) {
   return (
-    <form onSubmit={submit}>
+    <form action={loginAction}>
+      {error ? <p className="mb-4 text-[12.5px] text-deny">{error}</p> : null}
       <Field label="Work email" htmlFor="email">
         <Input id="email" name="email" type="email" autoComplete="email" placeholder="you@company.com" required />
       </Field>

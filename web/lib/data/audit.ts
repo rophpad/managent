@@ -18,6 +18,7 @@ export const AUDIT_ENTRIES: AuditEntry[] = [
   { id: "a7", time: "09:12:44", agentId: "code-reviewer", resourceId: "github-mcp", permission: "get_file_contents", action: "tools/call get_file_contents", outcome: "allow" },
 ];
 
+
 export function getAgentActivity(agentId: string, limit = 5): AuditEntry[] {
   return AUDIT_ENTRIES.filter((entry) => entry.agentId === agentId).slice(0, limit);
 }

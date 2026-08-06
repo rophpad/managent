@@ -4,8 +4,8 @@ import { DECISION_LABEL, DECISION_TONE, Badge } from "@/components/ui/badge";
 import { Metric, MetricRow, PanelBlock, SectionTitle } from "@/components/ui/card";
 import { formatCoverage } from "@/components/ui/coverage-bar";
 import { MutedText, ScopeRow } from "@/components/ui/rows";
-import { getAgent, getLinkedResourceIds } from "@/lib/data/agents";
-import { getAgentActivity, toShortTime } from "@/lib/data/audit";
+import { fetchAgent, getLinkedResourceIds } from "@/lib/data/server";
+import { fetchAgentActivity, toShortTime } from "@/lib/data/server";
 
 export default async function AgentDetailPage({
   params,
@@ -13,10 +13,10 @@ export default async function AgentDetailPage({
   params: Promise<{ agentId: string }>;
 }) {
   const { agentId } = await params;
-  const agent = getAgent(agentId);
+  const agent = await fetchAgent(agentId);
   if (!agent) notFound();
 
-  const activity = getAgentActivity(agent.id);
+  const activity = await fetchAgentActivity(agent.id);
   const resourceCount = getLinkedResourceIds(agent).length;
 
   return (

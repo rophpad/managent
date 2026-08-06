@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { PanelBlock, SectionTitle } from "@/components/ui/card";
 import { Hint } from "@/components/ui/field";
-import { getResourceDefaultPolicies } from "@/lib/data/policies";
-import { getResource } from "@/lib/data/resources";
+import { fetchResourceDefaultPolicies } from "@/lib/data/server";
+import { fetchResource } from "@/lib/data/server";
 import { PolicyList } from "./_components/policy-list";
 
 export default async function ResourcePoliciesPage({
@@ -11,7 +11,7 @@ export default async function ResourcePoliciesPage({
   params: Promise<{ resourceId: string }>;
 }) {
   const { resourceId } = await params;
-  const resource = getResource(resourceId);
+  const resource = await fetchResource(resourceId);
   if (!resource) notFound();
 
   return (
@@ -21,7 +21,7 @@ export default async function ResourcePoliciesPage({
         Rules here apply to every agent using {resource.name}. An agent can have rules of its own on
         top of these — those are set on the agent, under Resources.
       </Hint>
-      <PolicyList resource={resource} policies={getResourceDefaultPolicies(resource.id)} />
+      <PolicyList resource={resource} policies={await fetchResourceDefaultPolicies(resource.id)} />
     </PanelBlock>
   );
 }

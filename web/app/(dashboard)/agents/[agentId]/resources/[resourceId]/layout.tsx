@@ -3,8 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ResourceIcon } from "@/components/dashboard/resource-icon";
 import { TabNav, type TabDef } from "@/components/dashboard/tab-nav";
-import { AGENTS, getAgent, getGrantSummary, getLinkedResourceIds } from "@/lib/data/agents";
-import { CATALOG_LABEL, RESOURCE_KIND_LABEL, getResource } from "@/lib/data/resources";
+import { fetchAgent, getGrantSummary } from "@/lib/data/server";
+import { CATALOG_LABEL, fetchResource, RESOURCE_KIND_LABEL } from "@/lib/data/server";
 
 const TABS: readonly TabDef[] = [
   { segment: "", label: "Permissions" },
@@ -13,20 +13,13 @@ const TABS: readonly TabDef[] = [
 ];
 
 /** Every (agent, resource) pair that exists — generated bottom-up, from the child. */
-export function generateStaticParams() {
-  return AGENTS.flatMap((agent) =>
-    getLinkedResourceIds(agent).map((resourceId) => ({ agentId: agent.id, resourceId })),
-  );
-}
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ agentId: string; resourceId: string }>;
 }): Promise<Metadata> {
   const { agentId, resourceId } = await params;
-  const agent = getAgent(agentId);
-  const resource = getResource(resourceId);
+  const [agent, resource] = await Promise.all([fetchAgent(agentId), fetchResource(resourceId)]);
   if (!agent || !resource) return { title: "Access" };
   return { title: `${agent.name} · ${resource.name}` };
 }
@@ -36,8 +29,7 @@ export default async function AgentResourceLayout({
   children,
 }: LayoutProps<"/agents/[agentId]/resources/[resourceId]">) {
   const { agentId, resourceId } = await params;
-  const agent = getAgent(agentId);
-  const resource = getResource(resourceId);
+  const [agent, resource] = await Promise.all([fetchAgent(agentId), fetchResource(resourceId)]);
   if (!agent || !resource) notFound();
 
   const { granted, total } = getGrantSummary(agent, resource);

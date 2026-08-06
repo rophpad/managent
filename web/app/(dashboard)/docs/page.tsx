@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { DocsViewer, type DocSection } from "./_components/docs-viewer";
-import {  EnforcementModes,
+import { AgentIntegrations, EnforcementModes,
   GoverningMcp,  HandlingErrors,
   Quickstart,
   UsingThePlatform,
@@ -11,6 +11,7 @@ export const metadata: Metadata = { title: "Documentation" };
 
 const SECTIONS: DocSection[] = [
   { id: "quickstart", label: "Quickstart", content: <Quickstart /> },
+  { id: "agents", label: "Codex, Claude & LangChain", content: <AgentIntegrations /> },
   { id: "mcp", label: "Governing an MCP tool", content: <GoverningMcp /> },
   { id: "enforcement", label: "Enforcement modes", content: <EnforcementModes /> },
   { id: "errors", label: "Handling errors", content: <HandlingErrors /> },

@@ -82,6 +82,7 @@ export function getAgent(id: string): Agent | undefined {
   return AGENTS.find((agent) => agent.id === id);
 }
 
+
 export function getAgentsUsingResource(resourceId: string): Agent[] {
   return AGENTS.filter((agent) => agent.scopes.some((scope) => scope.resourceId === resourceId));
 }

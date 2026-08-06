@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ButtonLink } from "@/components/ui/button";
 import { PanelBlock, SectionTitle } from "@/components/ui/card";
 import { Hint } from "@/components/ui/field";
-import { getResource } from "@/lib/data/resources";
+import { fetchResource } from "@/lib/data/server";
 import { ResourceSettings } from "./_components/resource-settings";
 
 export default async function ResourceSettingsPage({
@@ -12,7 +12,7 @@ export default async function ResourceSettingsPage({
   params: Promise<{ resourceId: string }>;
 }) {
   const { resourceId } = await params;
-  const resource = getResource(resourceId);
+  const resource = await fetchResource(resourceId);
   if (!resource) notFound();
 
   return (

@@ -605,6 +605,7 @@ export default function Home() {
               <div className="grid gap-5">
                 <Field label="Work email">
                   <input
+                    aria-label="Work email"
                     type="email"
                     name="email"
                     placeholder="you@company.com"
@@ -616,6 +617,7 @@ export default function Home() {
 
                 <Field label="Framework">
                   <select
+                    aria-label="Framework"
                     name="framework"
                     defaultValue=""
                     className={inputClass}
@@ -634,6 +636,8 @@ export default function Home() {
 
                 <Field label="What are you building?">
                   <textarea
+                    aria-label="What are you building?"
+                    minLength={10}
                     name="building"
                     rows={3}
                     placeholder="Agent workflows, internal copilots, customer support, automation pipelines..."
@@ -644,6 +648,8 @@ export default function Home() {
 
                 <Field label="What's your biggest challenge?">
                   <textarea
+                    aria-label="What is your biggest challenge?"
+                    minLength={10}
                     name="challenge"
                     rows={3}
                     placeholder="Reliability, evaluation, orchestration, security, cost control..."

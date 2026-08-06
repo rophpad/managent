@@ -3,13 +3,14 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ButtonLink } from "@/components/ui/button";
 import { Metric, MetricRow } from "@/components/ui/card";
-import { AGENTS, getRegistryMetrics } from "@/lib/data/agents";
+import { getRegistryMetrics, listAgentsWithUsage } from "@/lib/data/server";
 import { AgentsTable } from "./_components/agents-table";
 
 export const metadata: Metadata = { title: "Agents" };
 
-export default function AgentsPage() {
-  const metrics = getRegistryMetrics(AGENTS);
+export default async function AgentsPage() {
+  const agents = await listAgentsWithUsage();
+  const metrics = getRegistryMetrics(agents);
 
   return (
     <>
@@ -39,7 +40,7 @@ export default function AgentsPage() {
         />
       </MetricRow>
 
-      <AgentsTable agents={AGENTS} />
+      <AgentsTable agents={agents} />
     </>
   );
 }

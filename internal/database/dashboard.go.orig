@@ -1,0 +1,83 @@
+package database
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
+
+	"github.com/jackc/pgx/v5"
+)
+
+var dashboardKinds = map[string]bool{
+	"agent": true, "resource": true, "policy": true, "audit-entry": true,
+}
+
+func validDashboardKind(kind string) error {
+	if !dashboardKinds[kind] {
+		return fmt.Errorf("unsupported dashboard entity kind %q", kind)
+	}
+	return nil
+}
+
+func (s *Store) ListDashboardEntities(ctx context.Context, workspaceID int64, kind string) ([]json.RawMessage, error) {
+	if err := validDashboardKind(kind); err != nil {
+		return nil, err
+	}
+	rows, err := s.pool.Query(ctx, `select document from dashboard_entities where workspace_id=$1 and kind=$2 order by created_at, id`, workspaceID, kind)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]json.RawMessage, 0)
+	for rows.Next() {
+		var item json.RawMessage
+		if err := rows.Scan(&item); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *Store) GetDashboardEntity(ctx context.Context, workspaceID int64, kind, id string) (json.RawMessage, error) {
+	if err := validDashboardKind(kind); err != nil {
+		return nil, err
+	}
+	var item json.RawMessage
+	err := s.pool.QueryRow(ctx, `select document from dashboard_entities where workspace_id=$1 and kind=$2 and id=$3`, workspaceID, kind, id).Scan(&item)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	return item, err
+}
+
+func (s *Store) PutDashboardEntity(ctx context.Context, workspaceID int64, kind, id string, document json.RawMessage) (json.RawMessage, error) {
+	if err := validDashboardKind(kind); err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(id) == "" {
+		return nil, errors.New("id is required")
+	}
+	if !json.Valid(document) {
+		return nil, errors.New("document must be valid JSON")
+	}
+	_, err := s.pool.Exec(ctx, `
+        insert into dashboard_entities (workspace_id, kind, id, document)
+        values ($1,$2,$3,$4)
+        on conflict (workspace_id,kind,id) do update set document=excluded.document, updated_at=now()
+    `, workspaceID, kind, id, document)
+	if err != nil {
+		return nil, err
+	}
+	return s.GetDashboardEntity(ctx, workspaceID, kind, id)
+}
+
+func (s *Store) DeleteDashboardEntity(ctx context.Context, workspaceID int64, kind, id string) (bool, error) {
+	if err := validDashboardKind(kind); err != nil {
+		return false, err
+	}
+	result, err := s.pool.Exec(ctx, `delete from dashboard_entities where workspace_id=$1 and kind=$2 and id=$3`, workspaceID, kind, id)
+	return result.RowsAffected() > 0, err
+}

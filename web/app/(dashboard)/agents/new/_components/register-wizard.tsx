@@ -20,19 +20,14 @@ import { RiskTag, ScopeChip, ScopeChipGroup } from "@/components/ui/scope-chip";
 import { TokenReveal } from "@/components/ui/token-reveal";
 import { WizardSteps } from "@/components/ui/wizard-steps";
 import type { Resource } from "@/lib/types";
+import type { Agent } from "@/lib/types";
+import { saveDashboardEntity } from "@/lib/client-api";
 
 const STEPS = [
   { label: "Basic info" },
   { label: "Resources", optional: true },
   { label: "Permissions", optional: true },
 ] as const;
-
-/** Placeholder for the create-agent API call. */
-function issueAgentToken(agentName: string): string {
-  const slug = agentName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_") || "agent";
-  const suffix = Math.random().toString(16).slice(2, 8);
-  return `mg_live_${slug}_${suffix}`;
-}
 
 export function RegisterWizard({ resources }: { resources: Resource[] }) {
   const fieldId = useId();
@@ -43,6 +38,22 @@ export function RegisterWizard({ resources }: { resources: Resource[] }) {
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
   const [granted, setGranted] = useState<Record<string, ReadonlySet<string>>>({});
   const [token, setToken] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showBasicErrors, setShowBasicErrors] = useState(false);
+  const basicErrors = {
+    name: name.trim().length < 2 ? "Use at least 2 characters for the agent name." : null,
+    ownerEmail: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerEmail.trim())
+      ? null
+      : "Enter a valid owner email address.",
+    description: description.trim().length < 10
+      ? "Describe the agent in at least 10 characters."
+      : null,
+  };
+  const basicInfoValid =
+    name.trim().length >= 2 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerEmail.trim()) &&
+    description.trim().length >= 10;
 
   const selectedResources = useMemo(
     () => resources.filter((resource) => selectedIds.has(resource.id)),
@@ -67,12 +78,89 @@ export function RegisterWizard({ resources }: { resources: Resource[] }) {
     });
   }
 
-  function createAgent({ withoutResources = false } = {}) {
+  async function createAgent({ withoutResources = false } = {}) {
+    if (!basicInfoValid) {
+      setShowBasicErrors(true);
+      setError("Correct the highlighted fields before creating the agent.");
+      setStep(1);
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+    const agentResponse = await fetch("/api/agents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: name.trim(),
+        owner: ownerEmail.trim(),
+        tags: ["dashboard"],
+      }),
+    });
+    const created = await agentResponse.json() as {
+      agent?: { id: string };
+      rawToken?: string;
+      error?: string;
+    };
+    if (!agentResponse.ok || !created.rawToken) {
+      throw new Error(created.error ?? "The gateway did not issue an agent token");
+    }
+    const rawToken = created.rawToken;
+    const selected = withoutResources ? new Set<string>() : selectedIds;
+    const scopes = resources.flatMap((resource) =>
+      selected.has(resource.id)
+        ? [...(granted[resource.id] ?? [])].map((permission) => ({
+            resourceId: resource.id,
+            permission,
+            callsToday: 0,
+          }))
+        : [],
+    );
+    const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const agent: Agent = {
+      id,
+      gatewayAgentId: created.agent?.id,
+      name: name.trim(),
+      owner: ownerEmail.split("@")[0] || ownerEmail,
+      ownerEmail,
+      description,
+      status: "active",
+      coverage: { rest: null, mcp: null },
+      calls24h: 0,
+      denied24h: 0,
+      createdDaysAgo: 0,
+      lastActive: "Never",
+      tokenPreview: `${rawToken.slice(0, 8)}...${rawToken.slice(-6)}`,
+      enforcementMode: "monitor",
+      failOpen: true,
+      scopes,
+    };
+    await saveDashboardEntity("agents", agent, true);
     if (withoutResources) {
       setSelectedIds(new Set());
       setGranted({});
     }
-    setToken(issueAgentToken(name));
+    setToken(rawToken);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to create the agent");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (token) {
+    const createdAgentId = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return (
+      <FormCard>
+        <TokenReveal token={token} />
+        <FormActions>
+          <ButtonLink href={"/agents/" + createdAgentId} variant="primary">
+            View agent
+          </ButtonLink>
+          <ButtonLink href="/agents">Back to agents</ButtonLink>
+        </FormActions>
+      </FormCard>
+    );
   }
 
   return (
@@ -81,31 +169,48 @@ export function RegisterWizard({ resources }: { resources: Resource[] }) {
 
       {step === 1 ? (
         <div>
-          <Field label="Agent name" htmlFor={`${fieldId}-name`}>
+          <Field label="Agent name" htmlFor={`${fieldId}-name`} error={showBasicErrors ? basicErrors.name : null}>
             <Input
               id={`${fieldId}-name`}
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              aria-invalid={showBasicErrors && Boolean(basicErrors.name)}
+              onChange={(event) => {
+                setName(event.target.value);
+                setError(null);
+              }}
               placeholder="e.g. invoice-agent"
               autoComplete="off"
+              required
+              minLength={2}
             />
           </Field>
-          <Field label="Owner email" htmlFor={`${fieldId}-owner`}>
+          <Field label="Owner email" htmlFor={`${fieldId}-owner`} error={showBasicErrors ? basicErrors.ownerEmail : null}>
             <Input
               id={`${fieldId}-owner`}
               type="email"
               value={ownerEmail}
-              onChange={(event) => setOwnerEmail(event.target.value)}
+              aria-invalid={showBasicErrors && Boolean(basicErrors.ownerEmail)}
+              onChange={(event) => {
+                setOwnerEmail(event.target.value);
+                setError(null);
+              }}
               placeholder="you@company.com"
+              required
             />
           </Field>
-          <Field label="Description" htmlFor={`${fieldId}-desc`} className="mb-0">
+          <Field label="Description" htmlFor={`${fieldId}-desc`} className="mb-0" error={showBasicErrors ? basicErrors.description : null}>
             <Textarea
               id={`${fieldId}-desc`}
               rows={2}
               value={description}
-              onChange={(event) => setDescription(event.target.value)}
+              aria-invalid={showBasicErrors && Boolean(basicErrors.description)}
+              onChange={(event) => {
+                setDescription(event.target.value);
+                setError(null);
+              }}
               placeholder="What does this agent do?"
+              required
+              minLength={10}
             />
           </Field>
         </div>
@@ -191,11 +296,11 @@ export function RegisterWizard({ resources }: { resources: Resource[] }) {
 
       {step === 1 ? (
         <FormActions>
-          <Button variant="primary" onClick={() => setStep(2)}>
+          <Button variant="primary" onClick={() => { setShowBasicErrors(true); if (basicInfoValid) setStep(2); }} disabled={saving}>
             Continue
             <ArrowRight aria-hidden className="size-[15px]" />
           </Button>
-          <Button onClick={() => createAgent({ withoutResources: true })}>
+          <Button onClick={() => createAgent({ withoutResources: true })} disabled={saving}>
             Skip resources &amp; create agent
           </Button>
           <ButtonLink href="/agents" className="ml-auto">
@@ -214,7 +319,9 @@ export function RegisterWizard({ resources }: { resources: Resource[] }) {
             Continue
             <ArrowRight aria-hidden className="size-[15px]" />
           </Button>
-          <Button onClick={() => createAgent()}>Skip permissions &amp; create agent</Button>
+          <Button onClick={() => createAgent()} disabled={saving}>
+            {saving ? "Creating…" : "Skip permissions & create agent"}
+          </Button>
         </FormActions>
       ) : null}
 
@@ -224,14 +331,14 @@ export function RegisterWizard({ resources }: { resources: Resource[] }) {
             <ArrowLeft aria-hidden className="size-[15px]" />
             Back
           </Button>
-          <Button variant="primary" onClick={() => createAgent()}>
+          <Button variant="primary" onClick={() => createAgent()} disabled={saving}>
             <Check aria-hidden className="size-[15px]" />
-            Create agent
+            {saving ? "Creating…" : "Create agent"}
           </Button>
         </FormActions>
       ) : null}
 
-      {token ? <TokenReveal token={token} /> : null}
+      {error ? <p role="alert" className="mt-3 text-[12.5px] text-deny">{error}</p> : null}
     </FormCard>
   );
 }

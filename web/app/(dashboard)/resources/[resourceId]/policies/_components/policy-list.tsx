@@ -12,6 +12,7 @@ import { describeCondition, fieldsForPermission } from "@/lib/policy/conditions"
 import type { Policy, PolicyEffect, Resource } from "@/lib/types";
 import { cn } from "@/lib/cn";
 import { AddRuleModal, type NewRule } from "@/components/policy/add-rule-modal";
+import { saveDashboardEntity } from "@/lib/client-api";
 
 const EFFECT_TONE: Record<PolicyEffect, BadgeTone> = {
   allow: "allow",
@@ -30,16 +31,15 @@ export function PolicyList({
   const [rules, setRules] = useState<Policy[]>(policies);
   const [addOpen, setAddOpen] = useState(false);
 
-  function addRule(rule: NewRule) {
-    setRules((current) => [
-      ...current,
-      {
-        ...rule,
-        id: `p-${resource.id}-new-${current.length + 1}`,
-        resourceId: resource.id,
-        order: current.length + 1,
-      },
-    ]);
+  async function addRule(rule: NewRule) {
+    const policy: Policy = {
+      ...rule,
+      id: `p-${resource.id}-${crypto.randomUUID()}`,
+      resourceId: resource.id,
+      order: rules.length + 1,
+    };
+    await saveDashboardEntity("policies", policy, true);
+    setRules((current) => [...current, policy]);
   }
 
   /** Condition labels resolve against the targeted permission's own fields. */
@@ -49,7 +49,10 @@ export function PolicyList({
     return describeCondition(policy.condition, fieldsForPermission(permission));
   }
 
-  function setEnabled(id: string, enabled: boolean) {
+  async function setEnabled(id: string, enabled: boolean) {
+    const policy = rules.find((rule) => rule.id === id);
+    if (!policy) return;
+    await saveDashboardEntity("policies", { ...policy, enabled });
     setRules((current) =>
       current.map((rule) => (rule.id === id ? { ...rule, enabled } : rule)),
     );

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { Breadcrumb, PageHeader } from "@/components/dashboard/page-header";
-import { getResource } from "@/lib/data/resources";
+import { fetchResource } from "@/lib/data/server";
 import { ResourceForm } from "./_components/resource-form";
 
 type Props = { searchParams: Promise<{ edit?: string }> };
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const { edit } = await searchParams;
-  const resource = edit ? getResource(edit) : undefined;
+  const resource = edit ? await fetchResource(edit) : undefined;
   return { title: resource ? `Edit ${resource.name}` : "Add resource" };
 }
 
@@ -15,7 +15,7 @@ export default async function ResourceFormPage({ searchParams }: Props) {
   // Edit mode lives in the URL rather than in component state, so the form is
   // linkable from the resource detail modal and survives a refresh.
   const { edit } = await searchParams;
-  const editing = edit ? getResource(edit) : undefined;
+  const editing = edit ? await fetchResource(edit) : undefined;
 
   return (
     <>

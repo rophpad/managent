@@ -2,18 +2,19 @@ import { Plus } from "lucide-react";
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ButtonLink } from "@/components/ui/button";
-import { getAgentsUsingResource } from "@/lib/data/agents";
-import { RESOURCES } from "@/lib/data/resources";
+import { listAgents } from "@/lib/data/server";
+import { listResources } from "@/lib/data/server";
 import { ResourcesTable } from "./_components/resources-table";
 
 export const metadata: Metadata = { title: "Resources" };
 
-export default function ResourcesPage() {
+export default async function ResourcesPage() {
+  const [resources, agents] = await Promise.all([listResources(), listAgents()]);
   // Derived from the agents' scopes, so the count can't drift from reality.
   const agentsByResource = Object.fromEntries(
-    RESOURCES.map((resource) => [
+    resources.map((resource) => [
       resource.id,
-      getAgentsUsingResource(resource.id).map((agent) => agent.name),
+      agents.filter((agent) => agent.scopes.some((scope) => scope.resourceId === resource.id)).map((agent) => agent.name),
     ]),
   );
 
@@ -29,7 +30,7 @@ export default function ResourcesPage() {
           </ButtonLink>
         }
       />
-      <ResourcesTable resources={RESOURCES} agentsByResource={agentsByResource} />
+      <ResourcesTable resources={resources} agentsByResource={agentsByResource} />
     </>
   );
 }

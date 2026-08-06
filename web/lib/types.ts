@@ -118,6 +118,8 @@ export interface AgentScope {
 export interface Agent {
   /** URL-safe identifier; also the agent's name in practice. */
   id: string;
+  /** Numeric control-plane identity used by gateway audit records. */
+  gatewayAgentId?: string;
   name: string;
   /** Owning team. */
   owner: string;
@@ -142,6 +144,8 @@ export interface Agent {
 
 export interface AuditEntry {
   id: string;
+  /** Original timestamp, retained for live 24-hour and calendar-day rollups. */
+  occurredAt?: string;
   /** `HH:MM:SS`, local to the org. */
   time: string;
   agentId: string;

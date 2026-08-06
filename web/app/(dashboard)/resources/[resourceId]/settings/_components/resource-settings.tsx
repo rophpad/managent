@@ -7,8 +7,11 @@ import { PanelBlock, SectionTitle } from "@/components/ui/card";
 import { Hint } from "@/components/ui/field";
 import { Toggle } from "@/components/ui/toggle";
 import type { Resource } from "@/lib/types";
+import { deleteDashboardEntity } from "@/lib/client-api";
+import { useRouter } from "next/navigation";
 
 export function ResourceSettings({ resource }: { resource: Resource }) {
+  const router = useRouter();
   const [autoDiscover, setAutoDiscover] = useState(resource.discoveredVia === "auto");
   const [blockOnHighRisk, setBlockOnHighRisk] = useState(true);
   const [rediscovering, setRediscovering] = useState(false);
@@ -84,7 +87,16 @@ export function ResourceSettings({ resource }: { resource: Resource }) {
           Every agent scoped against it loses access immediately. Calls that relied on it will start
           failing — this can&apos;t be undone.
         </Hint>
-        <Button size="sm" variant="danger" className="mt-3.5">
+        <Button
+          size="sm"
+          variant="danger"
+          className="mt-3.5"
+          onClick={async () => {
+            await deleteDashboardEntity("resources", resource.id);
+            router.push("/resources");
+            router.refresh();
+          }}
+        >
           <Trash2 aria-hidden className="size-[15px]" />
           Remove {resource.name}
         </Button>

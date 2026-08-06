@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { PanelBlock, SectionTitle } from "@/components/ui/card";
-import { getAgent } from "@/lib/data/agents";
-import { getAgentResourcePolicies } from "@/lib/data/policies";
-import { getResource } from "@/lib/data/resources";
+import { fetchAgent } from "@/lib/data/server";
+import { fetchAgentResourcePolicies } from "@/lib/data/server";
+import { fetchResource } from "@/lib/data/server";
 import { AgentPolicyList } from "../_components/agent-policy-list";
 
 export default async function AgentResourcePoliciesPage({
@@ -11,8 +11,7 @@ export default async function AgentResourcePoliciesPage({
   params: Promise<{ agentId: string; resourceId: string }>;
 }) {
   const { agentId, resourceId } = await params;
-  const agent = getAgent(agentId);
-  const resource = getResource(resourceId);
+  const [agent, resource] = await Promise.all([fetchAgent(agentId), fetchResource(resourceId)]);
   if (!agent || !resource) notFound();
 
   return (
@@ -22,7 +21,7 @@ export default async function AgentResourcePoliciesPage({
         agentId={agent.id}
         agentName={agent.name}
         resource={resource}
-        policies={getAgentResourcePolicies(agent.id, resource.id)}
+        policies={await fetchAgentResourcePolicies(agent.id, resource.id)}
       />
     </PanelBlock>
   );

@@ -1,0 +1,41 @@
+{
+  "gateway": {
+    "host": "0.0.0.0",
+    "port": 8081,
+    "endpoint": "/mcp"
+  },
+  "log": {
+    "level": "info",
+    "format": "json"
+  },
+  "database": {
+    "schema_path": "/app/database/schema.sql",
+    "workspace_name": "Default Workspace",
+    "auto_migrate": true,
+    "seed_from_config": true
+  },
+  "admin": {},
+  "security": {},
+  "auth": {
+    "api_keys": []
+  },
+  "mcps": [
+    {
+      "id": "hello",
+      "name": "hello",
+      "namespace": "hello",
+      "transport": "stdio",
+      "command": "/app/bin/hello-mcp",
+      "args": [],
+      "enabled": true
+    }
+  ],
+  "policies": [
+    {
+      "name": "allow-hello-greet",
+      "tool": "hello.greet",
+      "action": "allow"
+    }
+  ],
+  "credential_injection": []
+}

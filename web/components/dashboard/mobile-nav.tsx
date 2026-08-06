@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
-  CURRENT_ORG,
   NAV_ITEMS,
   isNavItemActive,
   navAriaCurrent,
@@ -16,8 +15,10 @@ import { cn } from "@/lib/cn";
  * design left no navigation at all. This is the same nav laid out horizontally
  * so the dashboard stays usable on a phone.
  */
-export function MobileNav() {
+export function MobileNav({ user }: { user: { name: string; email: string } }) {
   const pathname = usePathname();
+  const displayName = user.name || user.email;
+  const initials = displayName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
 
   return (
     <div className="sticky top-0 z-50 border-b border-line-soft bg-panel-2 shell:hidden">
@@ -47,9 +48,9 @@ export function MobileNav() {
             aria-hidden
             className="flex size-6.5 items-center justify-center rounded-full bg-surface text-[11px] font-medium"
           >
-            {CURRENT_ORG.initials}
+            {initials}
           </span>
-          {CURRENT_ORG.name}
+          {displayName}
         </span>
       </div>
 

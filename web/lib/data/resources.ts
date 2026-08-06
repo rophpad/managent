@@ -25,15 +25,21 @@ export const RESOURCES: Resource[] = [
 
 /** Known MCP server configurations. Tools are confirmed through tools/list. */
 export const CONNECTOR_TEMPLATES: ConnectorTemplate[] = [
-  { id: "stripe", name: "Stripe", transport: "stdio (local subprocess)", command: "npx -y @stripe/mcp --tools=all", credentialName: "STRIPE_SECRET_KEY", credentialPlaceholder: "sk_live_...", tools: ["customers_list", "payment_intents_list", "refunds_create"] },
-  { id: "github", name: "GitHub", transport: "stdio (local subprocess)", command: "docker run -i --rm -e GITHUB_PERSONAL_ACCESS_TOKEN ghcr.io/github/github-mcp-server", credentialName: "GITHUB_PERSONAL_ACCESS_TOKEN", credentialPlaceholder: "github_pat_...", tools: ["get_file_contents", "list_issues", "create_pull_request"] },
-  { id: "linear", name: "Linear", transport: "stdio (local subprocess)", command: "npx -y mcp-remote https://mcp.linear.app/sse", credentialName: "LINEAR_API_KEY", credentialPlaceholder: "lin_api_...", tools: ["list_issues", "get_issue", "create_issue"] },
-  { id: "slack", name: "Slack", transport: "stdio (local subprocess)", command: "npx -y @modelcontextprotocol/server-slack", credentialName: "SLACK_BOT_TOKEN", credentialPlaceholder: "xoxb-...", tools: ["slack_list_channels", "slack_post_message", "slack_get_thread_replies"] },
+  {
+    id: "hello",
+    name: "Hello MCP",
+    transport: "stdio (local subprocess)",
+    command: "/app/bin/hello-mcp",
+    credentialName: "",
+    credentialPlaceholder: "",
+    tools: ["greet", "check_injected_credential"],
+  },
 ];
 
 export function getResource(id: string): Resource | undefined {
   return RESOURCES.find((resource) => resource.id === id);
 }
+
 
 export const RESOURCE_KIND_LABEL = {
   rest: "REST",

@@ -2,8 +2,8 @@ import { Plug } from "lucide-react";
 import { notFound } from "next/navigation";
 import { PanelBlock, SectionTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { getAgent, getAgentScopesForResource } from "@/lib/data/agents";
-import { CATALOG_NOUN, getResource } from "@/lib/data/resources";
+import { fetchAgent, getAgentScopesForResource } from "@/lib/data/server";
+import { CATALOG_NOUN, fetchResource } from "@/lib/data/server";
 import { AgentPermissionList, type GrantRow } from "./_components/agent-permission-list";
 
 export default async function AgentResourcePermissionsPage({
@@ -12,8 +12,7 @@ export default async function AgentResourcePermissionsPage({
   params: Promise<{ agentId: string; resourceId: string }>;
 }) {
   const { agentId, resourceId } = await params;
-  const agent = getAgent(agentId);
-  const resource = getResource(resourceId);
+  const [agent, resource] = await Promise.all([fetchAgent(agentId), fetchResource(resourceId)]);
   if (!agent || !resource) notFound();
 
   const scopes = getAgentScopesForResource(agent, resource.id);
@@ -40,6 +39,8 @@ export default async function AgentResourcePermissionsPage({
         </EmptyState>
       ) : (
         <AgentPermissionList
+          agent={agent}
+          resourceId={resource.id}
           agentName={agent.name}
           catalogNoun={CATALOG_NOUN[resource.kind]}
           rows={rows}

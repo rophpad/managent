@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { PanelBlock, SectionTitle } from "@/components/ui/card";
 import { Hint } from "@/components/ui/field";
 import { MutedText, StatRow } from "@/components/ui/rows";
-import { getAgentsUsingResource, getGrantSummary } from "@/lib/data/agents";
-import { DISCOVERY_LABEL, getResource } from "@/lib/data/resources";
+import { getGrantSummary, listAgents } from "@/lib/data/server";
+import { DISCOVERY_LABEL, fetchResource } from "@/lib/data/server";
 
 const TYPE_DESCRIPTION = "MCP server";
 
@@ -15,10 +15,12 @@ export default async function ResourceInformationPage({
   params: Promise<{ resourceId: string }>;
 }) {
   const { resourceId } = await params;
-  const resource = getResource(resourceId);
+  const resource = await fetchResource(resourceId);
   if (!resource) notFound();
 
-  const agents = getAgentsUsingResource(resource.id);
+  const agents = (await listAgents()).filter((agent) =>
+    agent.scopes.some((scope) => scope.resourceId === resource.id),
+  );
 
   return (
     <>

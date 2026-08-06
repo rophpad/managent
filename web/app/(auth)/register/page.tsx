@@ -3,10 +3,16 @@ import Link from "next/link";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Field, Hint, Input } from "@/components/ui/field";
+import { registerAction } from "../actions";
 
 export const metadata: Metadata = { title: "Create account — Managent" };
 
-export default function RegisterPage() {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
   return (
     <AuthShell
       title="Create your account"
@@ -20,7 +26,8 @@ export default function RegisterPage() {
         </>
       }
     >
-      <form>
+      <form action={registerAction}>
+        {error ? <p className="mb-4 text-[12.5px] text-deny">{error}</p> : null}
         <Field label="Full name" htmlFor="name">
           <Input
             id="name"

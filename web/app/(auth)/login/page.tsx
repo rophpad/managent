@@ -5,7 +5,12 @@ import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Log in — Managent" };
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
   return (
     <AuthShell
       title="Welcome back"
@@ -19,7 +24,7 @@ export default function LoginPage() {
         </>
       }
     >
-      <LoginForm />
+      <LoginForm error={error} />
     </AuthShell>
   );
 }

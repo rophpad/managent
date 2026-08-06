@@ -4,15 +4,16 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
-  CURRENT_ORG,
   NAV_ITEMS,
   isNavItemActive,
   navAriaCurrent,
 } from "@/components/dashboard/nav";
 import { cn } from "@/lib/cn";
 
-export function Sidebar() {
+export function Sidebar({ user }: { user: { name: string; email: string } }) {
   const pathname = usePathname();
+  const displayName = user.name || user.email;
+  const initials = displayName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
 
   return (
     <nav
@@ -76,10 +77,10 @@ export function Sidebar() {
             aria-hidden
             className="flex size-6.5 shrink-0 items-center justify-center rounded-full bg-surface text-[11px] font-medium"
           >
-            {CURRENT_ORG.initials}
+            {initials}
           </span>
           <span className="min-w-0 truncate text-[12.5px]">
-            {CURRENT_ORG.name}
+            {displayName}
           </span>
         </Link>
       </div>

@@ -9,12 +9,14 @@ export function Field({
   label,
   htmlFor,
   hint,
+  error,
   children,
   className,
 }: {
   label: ReactNode;
   htmlFor?: string;
   hint?: ReactNode;
+  error?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
@@ -24,7 +26,7 @@ export function Field({
         {label}
       </label>
       {children}
-      {hint ? <Hint>{hint}</Hint> : null}
+      {error ? <FieldError>{error}</FieldError> : hint ? <Hint>{hint}</Hint> : null}
     </div>
   );
 }
@@ -33,11 +35,13 @@ export function Field({
 export function FieldGroup({
   label,
   hint,
+  error,
   children,
   className,
 }: {
   label: ReactNode;
   hint?: ReactNode;
+  error?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
@@ -45,7 +49,7 @@ export function FieldGroup({
     <fieldset className={cn("mb-4.5 border-none p-0", className)}>
       <legend className="mb-[7px] block text-[13px] font-medium">{label}</legend>
       {children}
-      {hint ? <Hint>{hint}</Hint> : null}
+      {error ? <FieldError>{error}</FieldError> : hint ? <Hint>{hint}</Hint> : null}
     </fieldset>
   );
 }
@@ -54,16 +58,20 @@ export function Hint({ children, className }: { children: ReactNode; className?:
   return <p className={cn("mt-[5px] text-xs text-muted-2", className)}>{children}</p>;
 }
 
+export function FieldError({ children, className }: { children: ReactNode; className?: string }) {
+  return <p role="alert" className={cn("mt-[5px] text-xs text-deny", className)}>{children}</p>;
+}
+
 export function Input({ className, ...props }: ComponentProps<"input">) {
-  return <input className={cn(CONTROL, className)} {...props} />;
+  return <input className={cn(CONTROL, "aria-invalid:border-deny aria-invalid:focus:border-deny", className)} {...props} />;
 }
 
 export function Select({ className, ...props }: ComponentProps<"select">) {
-  return <select className={cn(CONTROL, className)} {...props} />;
+  return <select className={cn(CONTROL, "aria-invalid:border-deny aria-invalid:focus:border-deny", className)} {...props} />;
 }
 
 export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
-  return <textarea className={cn(CONTROL, "resize-y", className)} {...props} />;
+  return <textarea className={cn(CONTROL, "resize-y aria-invalid:border-deny aria-invalid:focus:border-deny", className)} {...props} />;
 }
 
 /** Divider above a form's submit row. */

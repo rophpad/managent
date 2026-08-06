@@ -70,6 +70,7 @@ export function AuditTable({
                 <Th className="w-[70px]">Time</Th>
                 {showAgent ? <Th className="w-[140px]">Agent</Th> : null}
                 <Th className="w-[130px]">Resource</Th>
+                <Th>Tool</Th>
                 <Th>Action</Th>
                 <Th className="w-[90px] text-right">Outcome</Th>
               </tr>
@@ -89,6 +90,7 @@ export function AuditTable({
                       {entry.resourceId}
                     </Link>
                   </Td>
+                  <Td className="font-mono text-[12.5px]">{entry.permission}</Td>
                   <Td muted>{entry.action}</Td>
                   <Td className="text-right">
                     <Badge tone={DECISION_TONE[entry.outcome]}>

@@ -6,8 +6,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Hint } from "@/components/ui/field";
 import { MutedText, ScopeRow } from "@/components/ui/rows";
 import { RiskTag } from "@/components/ui/scope-chip";
-import { getAgentsUsingResource, isPermissionGranted } from "@/lib/data/agents";
-import { CATALOG_LABEL, CATALOG_NOUN, getResource } from "@/lib/data/resources";
+import { isPermissionGranted, listAgents } from "@/lib/data/server";
+import { CATALOG_LABEL, CATALOG_NOUN, fetchResource } from "@/lib/data/server";
 import { EditCatalogModal } from "./_components/edit-catalog-modal";
 
 /** Short prefix so a body field and a query param of the same name stay distinct. */
@@ -27,12 +27,14 @@ export default async function ResourceCapabilitiesPage({
   params: Promise<{ resourceId: string }>;
 }) {
   const { resourceId } = await params;
-  const resource = getResource(resourceId);
+  const resource = await fetchResource(resourceId);
   if (!resource) notFound();
 
   const label = CATALOG_LABEL[resource.kind];
   const noun = CATALOG_NOUN[resource.kind];
-  const agents = getAgentsUsingResource(resource.id);
+  const agents = (await listAgents()).filter((agent) =>
+    agent.scopes.some((scope) => scope.resourceId === resource.id),
+  );
   const highRiskCount = resource.permissions.filter((permission) => permission.highRisk).length;
 
   return (

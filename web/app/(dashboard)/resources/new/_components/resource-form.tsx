@@ -21,6 +21,7 @@ import { ScopeChip, ScopeChipGroup } from "@/components/ui/scope-chip";
 import { ScopeRow } from "@/components/ui/rows";
 import { SuccessNote } from "@/components/ui/token-reveal";
 import { cn } from "@/lib/cn";
+import { saveDashboardEntity } from "@/lib/client-api";
 import { CONNECTOR_TEMPLATES } from "@/lib/data/resources";
 import type { Permission, Resource } from "@/lib/types";
 
@@ -32,34 +33,42 @@ const TYPE_OPTIONS = [
   { value: "template", label: "MCP templates", icon: <Layers aria-hidden className="size-[13px]" /> },
 ] as const;
 
-/* ---------------------------------------------------------------------------
-   Backend stand-ins. Each returns what the real endpoint will return, so
-   swapping in `fetch` is a one-function change with no component edits.
-   --------------------------------------------------------------------------- */
+type MCPTool = {
+  name: string;
+  description?: string;
+  inputSchema?: Record<string, unknown>;
+  schema?: Record<string, unknown>;
+};
 
-const DISCOVERY_DELAY_MS = 700;
-
-const SAMPLE_MCP_TOOLS: Permission[] = [
-  { name: "stripe_create_refund", source: "discovered" },
-  { name: "stripe_list_customers", source: "discovered" },
-  { name: "stripe_get_charge", source: "discovered" },
-  { name: "stripe_delete_customer", source: "discovered", highRisk: true },
-  { name: "stripe_create_payout", source: "discovered", highRisk: true },
-];
-
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function permissionFromTool(tool: MCPTool): Permission {
+  const schema = tool.inputSchema ?? tool.schema ?? {};
+  const properties = (schema.properties ?? {}) as Record<string, Record<string, unknown>>;
+  const required = new Set(Array.isArray(schema.required) ? schema.required : []);
+  return {
+    name: tool.name,
+    source: "discovered",
+    params: Object.entries(properties).map(([paramName, definition]) => ({
+      name: paramName,
+      location: "argument",
+      type: definition.enum
+        ? "enum"
+        : definition.type === "integer" || definition.type === "number" ||
+            definition.type === "boolean" || definition.type === "array"
+          ? definition.type
+          : "string",
+      description: typeof definition.description === "string" ? definition.description : undefined,
+      enumValues: Array.isArray(definition.enum) ? definition.enum.map(String) : undefined,
+      required: required.has(paramName),
+    })),
+  };
 }
 
-/** TODO: replace with the MCP `tools/list` call once the backend exists. */
-async function discoverMcpTools(): Promise<Permission[]> {
-  await delay(DISCOVERY_DELAY_MS);
-  return SAMPLE_MCP_TOOLS;
+async function responseJSON<T>(response: Response): Promise<T> {
+  const payload = await response.json() as T & { error?: string; message?: string };
+  if (!response.ok) throw new Error(payload.error ?? "The MCP request failed");
+  if (payload.error) throw new Error(payload.error);
+  return payload;
 }
-
-
-/* ------------------------------------------------------------------------- */
 
 
 export function ResourceForm({ editing }: { editing?: Resource }) {
@@ -69,12 +78,17 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
   const [type, setType] = useState<FormType>("mcp");
   const [name, setName] = useState(editing?.name ?? "");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
 
   // MCP
   const [transport, setTransport] = useState(
     editing?.kind === "mcp" ? editing.transport : "stdio (local subprocess)",
   );
   const [command, setCommand] = useState(editing?.kind === "mcp" ? editing.command : "");
+  const [credentialName, setCredentialName] = useState("");
+  const [credentialValue, setCredentialValue] = useState("");
   const [discovering, setDiscovering] = useState(false);
   const [tools, setTools] = useState<Permission[]>(
     editing?.kind === "mcp" ? editing.permissions : [],
@@ -86,14 +100,150 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
   // Template
   const [templateId, setTemplateId] = useState<string | null>(null);
   const template = CONNECTOR_TEMPLATES.find((entry) => entry.id === templateId) ?? null;
-
+  const hasCredentialName = credentialName.trim().length > 0;
+  const hasCredentialValue = credentialValue.length > 0;
+  const credentialIsValid = hasCredentialName === hasCredentialValue;
+  const fieldErrors = {
+    name: name.trim().length < 2 ? "Use at least 2 characters for the resource name." : null,
+    command: type === "mcp" && !command.trim()
+      ? transport.startsWith("HTTP")
+        ? "Enter the MCP server URL."
+        : "Enter the command used to start the MCP server."
+      : null,
+    credential: !credentialIsValid
+      ? "Enter both the credential name and value, or leave both empty."
+      : null,
+    template: type === "template" && !template ? "Choose an MCP template." : null,
+    tools: tools.length === 0
+      ? "Discover the MCP tools before saving."
+      : enabledTools.size === 0
+        ? "Enable at least one discovered tool."
+        : null,
+  };
 
   async function handleDiscoverTools() {
+    setShowErrors(true);
+    if (fieldErrors.name) {
+      setError("Correct the highlighted fields before discovering tools.");
+      return;
+    }
+    if (!command.trim()) {
+      setError("Command or server URL is required before discovery");
+      return;
+    }
+    if (fieldErrors.credential) {
+      setError("Correct the highlighted fields before saving the resource.");
+      return;
+    }
     setDiscovering(true);
-    const discovered = await discoverMcpTools();
-    setTools(discovered);
-    setEnabledTools(new Set(discovered.filter((tool) => !tool.highRisk).map((tool) => tool.name)));
-    setDiscovering(false);
+    setError(null);
+    try {
+      const remote = transport.startsWith("HTTP");
+      const result = await responseJSON<{
+        status: string;
+        message?: string;
+        tools?: MCPTool[];
+      }>(await fetch("/api/mcps/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim() || "mcp-preview",
+          namespace: "preview",
+          transport: remote ? "sse" : "stdio",
+          command: remote ? undefined : command.trim(),
+          url: remote ? command.trim() : undefined,
+          secretEnv: !remote && hasCredentialValue
+            ? { [credentialName.trim()]: credentialValue }
+            : undefined,
+          secretHeaders: remote && hasCredentialValue
+            ? { [credentialName.trim()]: credentialValue }
+            : undefined,
+          enabled: true,
+        }),
+      }));
+      if (result.status !== "connected") throw new Error(result.message ?? "Unable to connect");
+      const discovered = (result.tools ?? []).map(permissionFromTool);
+      if (discovered.length === 0) throw new Error("The MCP server returned no tools");
+      setTools(discovered);
+      setEnabledTools(new Set(discovered.map((tool) => tool.name)));
+    } catch (cause) {
+      setTools([]);
+      setEnabledTools(new Set());
+      setError(cause instanceof Error ? cause.message : "Unable to discover MCP tools");
+    } finally {
+      setDiscovering(false);
+    }
+  }
+
+  async function selectTemplate(id: string) {
+    const selected = CONNECTOR_TEMPLATES.find((entry) => entry.id === id);
+    if (!selected) return;
+    setTemplateId(id);
+    setName(id + "-mcp");
+    setDiscovering(true);
+    setError(null);
+    try {
+      const result = await responseJSON<{ items: Array<{
+        name: string;
+        namespace: string;
+        status: string;
+        lastError?: string;
+        tools?: MCPTool[];
+      }> }>(await fetch("/api/mcps"));
+      const server = result.items.find((item) => item.namespace === id || item.name === id);
+      if (!server) throw new Error(`${selected.name} is not installed in the gateway`);
+      if (server.status !== "connected") throw new Error(server.lastError || `${selected.name} is not connected`);
+      const discovered = (server.tools ?? []).map(permissionFromTool);
+      if (discovered.length === 0) throw new Error(`${selected.name} returned no tools`);
+      setTools(discovered);
+      setEnabledTools(new Set(discovered.map((tool) => tool.name)));
+    } catch (cause) {
+      setTools([]);
+      setEnabledTools(new Set());
+      setError(cause instanceof Error ? cause.message : "Unable to load the MCP template");
+    } finally {
+      setDiscovering(false);
+    }
+  }
+
+  async function saveResource() {
+    setShowErrors(true);
+    setError(null);
+    if (fieldErrors.name) {
+      setError("Correct the highlighted fields before saving the resource.");
+      return;
+    }
+    if (fieldErrors.command || fieldErrors.template) {
+      setError("Correct the highlighted fields before saving the resource.");
+      return;
+    }
+    if (fieldErrors.credential) {
+      setError("Correct the highlighted fields before saving the resource.");
+      return;
+    }
+    if (fieldErrors.tools) {
+      setError(fieldErrors.tools);
+      return;
+    }
+    setSaving(true);
+    try {
+      const id = editing?.id ?? name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const resource: Resource = {
+        id,
+        name: name.trim(),
+        kind: "mcp",
+        discoveredVia: type === "template" ? "manifest" : "auto",
+        transport: template?.transport ?? transport,
+        command: template?.command ?? command,
+        permissions: tools.filter((tool) => enabledTools.has(tool.name)),
+      };
+      await saveDashboardEntity("resources", resource, !isEditing);
+      setSaved(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to save the resource");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -108,13 +258,19 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
         />
       </FieldGroup>
 
-      <Field label="Resource name" htmlFor={`${fieldId}-name`}>
+      <Field label="Resource name" htmlFor={`${fieldId}-name`} error={showErrors ? fieldErrors.name : null}>
         <Input
           id={`${fieldId}-name`}
-          value={name}
-          onChange={(event) => setName(event.target.value)}
+              value={name}
+          aria-invalid={showErrors && Boolean(fieldErrors.name)}
+          onChange={(event) => {
+            setName(event.target.value);
+            setTools([]);
+            setError(null);
+          }}
           placeholder="e.g. stripe-mcp, github-mcp"
           autoComplete="off"
+          required
         />
       </Field>
 
@@ -125,18 +281,69 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
             <Select
               id={`${fieldId}-transport`}
               value={transport}
-              onChange={(event) => setTransport(event.target.value)}
+              onChange={(event) => {
+                setTransport(event.target.value);
+                setTools([]);
+                setError(null);
+              }}
             >
               <option>stdio (local subprocess)</option>
               <option>HTTP + SSE (remote server)</option>
             </Select>
           </Field>
-          <Field label="Command" htmlFor={`${fieldId}-cmd`}>
+          <Field label="Command" htmlFor={`${fieldId}-cmd`} error={showErrors ? fieldErrors.command : null}>
             <Input
               id={`${fieldId}-cmd`}
               value={command}
-              onChange={(event) => setCommand(event.target.value)}
+              aria-invalid={showErrors && Boolean(fieldErrors.command)}
+              onChange={(event) => {
+                setCommand(event.target.value);
+                setTools([]);
+                setError(null);
+              }}
               placeholder="npx -y @stripe/mcp-server"
+              required
+            />
+          </Field>
+
+          <Field
+            label="Credential name (optional)"
+            htmlFor={`${fieldId}-credential-name`}
+            error={showErrors ? fieldErrors.credential : null}
+            hint={transport.startsWith("HTTP")
+              ? "Header name, for example Authorization."
+              : "Environment variable name, for example API_TOKEN."}
+          >
+            <Input
+              id={`${fieldId}-credential-name`}
+              value={credentialName}
+              aria-invalid={showErrors && Boolean(fieldErrors.credential)}
+              onChange={(event) => {
+                setCredentialName(event.target.value);
+                setTools([]);
+              }}
+              placeholder={transport.startsWith("HTTP") ? "Authorization" : "API_TOKEN"}
+              autoComplete="off"
+            />
+          </Field>
+
+          <Field
+            label="Credential value (optional)"
+            htmlFor={`${fieldId}-credential-value`}
+            error={showErrors ? fieldErrors.credential : null}
+            hint="Used for the connection test and never stored in the dashboard resource."
+          >
+            <Input
+              id={`${fieldId}-credential-value`}
+              type="password"
+              value={credentialValue}
+              aria-invalid={showErrors && Boolean(fieldErrors.credential)}
+              onChange={(event) => {
+                setCredentialValue(event.target.value);
+                setTools([]);
+              }}
+              placeholder="Enter the secret value"
+              autoComplete="new-password"
             />
           </Field>
 
@@ -197,6 +404,7 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
       {type === "template" ? (
         <>
           <FieldGroup
+            error={showErrors ? fieldErrors.template : null}
             label={
               <>
                 Choose a known MCP server{" "}
@@ -214,10 +422,7 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
                     key={entry.id}
                     type="button"
                     aria-pressed={selected}
-                    onClick={() => {
-                      setTemplateId(entry.id);
-                      setName(entry.id + "-mcp");
-                    }}
+                    onClick={() => selectTemplate(entry.id)}
                     className={cn(
                       "flex flex-col items-center gap-1.5 rounded-lg border px-2.5 py-4 text-center transition-colors",
                       selected
@@ -231,7 +436,7 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
                     />
                     <span className="text-[12.5px] font-medium">{entry.name}</span>
                     <span className="text-[11px] text-muted">
-                      {entry.tools.length} known tools
+                      {entry.tools.length} tools
                     </span>
                   </button>
                 );
@@ -241,7 +446,7 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
 
           {template ? (
             <>
-              <Field
+              {template.credentialName ? <Field
                 label={
                   <>
                     Credential · <span className="font-mono">{template.credentialName}</span>
@@ -256,7 +461,7 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
                   placeholder={template.credentialPlaceholder}
                   autoComplete="off"
                 />
-              </Field>
+              </Field> : null}
 
               <Field label="Transport" htmlFor={fieldId + "-template-transport"}>
                 <Input id={fieldId + "-template-transport"} value={template.transport} readOnly />
@@ -266,8 +471,9 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
               </Field>
               <FieldGroup label="Known tools">
                 <PanelBlock className="mb-0 px-4 py-3.5">
-                  {template.tools.map((tool) => (
-                    <ScopeRow key={tool} name={tool} tag="verified by tools/list" />
+                  {discovering ? <Hint className="mt-0">Connecting and calling tools/list…</Hint> : null}
+                  {tools.map((tool) => (
+                    <ScopeRow key={tool.name} name={tool.name} tag="verified by tools/list" />
                   ))}
                 </PanelBlock>
                 <Hint>The final tool list is discovered from the server before access is granted.</Hint>
@@ -278,12 +484,16 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
       ) : null}
 
       <FormActions>
-        <Button variant="primary" onClick={() => setSaved(true)}>
+        <Button variant="primary" onClick={saveResource} disabled={saving || discovering}>
           <Check aria-hidden className="size-[15px]" />
-          {isEditing ? "Save changes" : "Save resource"}
+          {saving ? "Saving…" : isEditing ? "Save changes" : "Save resource"}
         </Button>
         <ButtonLink href="/resources">Cancel</ButtonLink>
       </FormActions>
+
+      {showErrors && fieldErrors.tools && tools.length > 0 ? <p role="alert" className="mt-3 text-[12.5px] text-deny">{fieldErrors.tools}</p> : null}
+
+      {error ? <p role="alert" className="mt-3 text-[12.5px] text-deny">{error}</p> : null}
 
       {saved ? (
         <SuccessNote title={isEditing ? "Changes saved" : "Resource saved"}>

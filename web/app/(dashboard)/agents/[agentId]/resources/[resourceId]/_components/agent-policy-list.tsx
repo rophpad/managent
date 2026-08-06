@@ -13,6 +13,8 @@ import { POLICY_EFFECT_LABEL } from "@/lib/data/policies";
 import { describeCondition, fieldsForPermission } from "@/lib/policy/conditions";
 import type { EffectivePolicy, PolicyEffect, Resource } from "@/lib/types";
 import { AddRuleModal, type NewRule } from "@/components/policy/add-rule-modal";
+import { saveDashboardEntity } from "@/lib/client-api";
+import type { Policy } from "@/lib/types";
 
 const EFFECT_TONE: Record<PolicyEffect, BadgeTone> = {
   allow: "allow",
@@ -43,17 +45,15 @@ export function AgentPolicyList({
 
   const ownCount = rules.filter((rule) => !rule.inherited).length;
 
-  function addRule(rule: NewRule) {
-    setRules((current) => [
-      ...current,
-      {
-        ...rule,
-        id: `p-${resource.id}-${agentId}-${current.length + 1}`,
-        resourceId: resource.id,
-        order: current.length + 1,
-        inherited: false,
-      },
-    ]);
+  async function addRule(rule: NewRule) {
+    const policy: Policy = {
+      ...rule,
+      id: `p-${resource.id}-${agentId}-${crypto.randomUUID()}`,
+      resourceId: resource.id,
+      order: rules.length + 1,
+    };
+    await saveDashboardEntity("policies", policy, true);
+    setRules((current) => [...current, { ...policy, inherited: false }]);
   }
 
   /** Condition labels resolve against the targeted permission's own fields. */
@@ -63,7 +63,12 @@ export function AgentPolicyList({
     return describeCondition(policy.condition, fieldsForPermission(permission));
   }
 
-  function setEnabled(id: string, enabled: boolean) {
+  async function setEnabled(id: string, enabled: boolean) {
+    const policy = rules.find((rule) => rule.id === id && !rule.inherited);
+    if (!policy) return;
+    const { inherited, ...stored } = policy;
+    void inherited;
+    await saveDashboardEntity("policies", { ...stored, enabled });
     setRules((current) => current.map((rule) => (rule.id === id ? { ...rule, enabled } : rule)));
   }
 

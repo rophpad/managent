@@ -7,12 +7,12 @@ import { Hint } from "@/components/ui/field";
 import {
   AGENT_STATUS_LABEL,
   getAgentResourceCalls,
-  getAgentsUsingResource,
   getGrantSummary,
-} from "@/lib/data/agents";
-import { countAgentResourceDenials } from "@/lib/data/audit";
-import { countAgentResourcePolicies } from "@/lib/data/policies";
-import { CATALOG_NOUN, getResource } from "@/lib/data/resources";
+  listAgents,
+} from "@/lib/data/server";
+import { listAuditEntries } from "@/lib/data/server";
+import { listPolicies, policyAppliesToAgent } from "@/lib/data/server";
+import { CATALOG_NOUN, fetchResource } from "@/lib/data/server";
 import { ResourceAgentsTable, type ResourceAgentRow } from "./_components/resource-agents-table";
 
 export default async function ResourceAgentsPage({
@@ -21,10 +21,17 @@ export default async function ResourceAgentsPage({
   params: Promise<{ resourceId: string }>;
 }) {
   const { resourceId } = await params;
-  const resource = getResource(resourceId);
+  const resource = await fetchResource(resourceId);
   if (!resource) notFound();
+  const [agents, policies, auditEntries] = await Promise.all([
+    listAgents(),
+    listPolicies(),
+    listAuditEntries(),
+  ]);
 
-  const rows: ResourceAgentRow[] = getAgentsUsingResource(resource.id).map((agent) => {
+  const rows: ResourceAgentRow[] = agents.filter((agent) =>
+    agent.scopes.some((scope) => scope.resourceId === resource.id),
+  ).map((agent) => {
     const { granted, total } = getGrantSummary(agent, resource);
     return {
       agentId: agent.id,
@@ -34,9 +41,13 @@ export default async function ResourceAgentsPage({
       statusLabel: AGENT_STATUS_LABEL[agent.status],
       granted,
       total,
-      rules: countAgentResourcePolicies(agent.id, resource.id),
+      rules: policies.filter((policy) =>
+        policy.resourceId === resource.id && policyAppliesToAgent(policy, agent.id)
+      ).length,
       calls: getAgentResourceCalls(agent, resource.id),
-      denials: countAgentResourceDenials(agent.id, resource.id),
+      denials: auditEntries.filter((entry) =>
+        entry.agentId === agent.id && entry.resourceId === resource.id && entry.outcome === "deny"
+      ).length,
     };
   });
 

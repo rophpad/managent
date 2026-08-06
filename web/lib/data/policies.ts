@@ -35,6 +35,7 @@ export function getResourcePolicies(resourceId: string): Policy[] {
   );
 }
 
+
 /** `agent:*` — a default every agent on the resource inherits. */
 export function isResourceDefault(policy: Policy): boolean {
   return policy.subject.endsWith("*");
