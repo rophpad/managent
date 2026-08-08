@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { PanelBlock, SectionTitle } from "@/components/ui/card";
 import { Hint } from "@/components/ui/field";
 import { MutedText, StatRow } from "@/components/ui/rows";
-import { getGrantSummary, listAgents } from "@/lib/data/server";
+import { getGrantSummary, getLinkedResourceIds, listAgents } from "@/lib/data/server";
 import { DISCOVERY_LABEL, fetchResource } from "@/lib/data/server";
 
 const TYPE_DESCRIPTION = "MCP server";
@@ -19,7 +19,7 @@ export default async function ResourceInformationPage({
   if (!resource) notFound();
 
   const agents = (await listAgents()).filter((agent) =>
-    agent.scopes.some((scope) => scope.resourceId === resource.id),
+    getLinkedResourceIds(agent).includes(resource.id),
   );
 
   return (
@@ -39,10 +39,28 @@ export default async function ResourceInformationPage({
 
         {resource.kind === "mcp" ? (
           <>
-            <StatRow label="Transport">{resource.transport}</StatRow>
-            <StatRow label="Command">
-              <span className="font-mono">{resource.command}</span>
+            <StatRow label="Transport">
+              {resource.transport === "http"
+                ? "Streamable HTTP"
+                : resource.transport === "sse"
+                  ? "SSE (legacy)"
+                  : resource.transport === "stdio"
+                    ? "stdio"
+                    : resource.transport}
             </StatRow>
+            <StatRow label={resource.transport === "stdio" ? "Executable" : "Server URL"}>
+              <span className="font-mono">{resource.url ?? resource.command}</span>
+            </StatRow>
+            {resource.transport === "stdio" && resource.args?.length ? (
+              <StatRow label="Arguments">
+                <span className="font-mono">{resource.args.join(" ")}</span>
+              </StatRow>
+            ) : null}
+            {resource.transport === "stdio" && resource.workingDirectory ? (
+              <StatRow label="Working directory">
+                <span className="font-mono">{resource.workingDirectory}</span>
+              </StatRow>
+            ) : null}
           </>
         ) : null}
 

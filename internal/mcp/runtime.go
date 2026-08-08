@@ -37,6 +37,7 @@ type Config struct {
 	CredentialRef    string
 	Command          string
 	Args             []string
+	WorkingDirectory string
 	URL              string
 	Headers          map[string]string
 	Env              map[string]string
@@ -225,7 +226,7 @@ func (c *managedMCP) CallTool(ctx context.Context, req protocol.ToolCallParams) 
 func (c *managedMCP) newClient(ctx context.Context) (client.Client, error) {
 	switch c.cfg.Transport {
 	case TransportStdio:
-		cl := client.NewStdio(c.cfg.Command, c.cfg.Args, mergeStringMaps(c.cfg.Env, c.cfg.SecretEnv), c.logger)
+		cl := client.NewStdio(c.cfg.Command, c.cfg.Args, c.cfg.WorkingDirectory, mergeStringMaps(c.cfg.Env, c.cfg.SecretEnv), c.logger)
 		if err := cl.Initialize(ctx); err != nil {
 			return nil, fmt.Errorf("mcp %s: initialize stdio client: %w", c.cfg.Name, err)
 		}
@@ -272,10 +273,10 @@ func (c *managedMCP) persistState(ctx context.Context) {
 }
 
 type Manager struct {
-	mu         sync.RWMutex
-	mcps map[string]MCP
-	logger     *slog.Logger
-	store      RuntimeStore
+	mu     sync.RWMutex
+	mcps   map[string]MCP
+	logger *slog.Logger
+	store  RuntimeStore
 }
 
 func NewManager(logger *slog.Logger, store RuntimeStore) *Manager {

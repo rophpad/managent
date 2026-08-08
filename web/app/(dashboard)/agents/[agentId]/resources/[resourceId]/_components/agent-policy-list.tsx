@@ -1,10 +1,10 @@
 "use client";
 
-import { Plus, ScanSearch } from "lucide-react";
+import { Plus, ScanSearch, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, IconButton } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Hint } from "@/components/ui/field";
 import { Toggle } from "@/components/ui/toggle";
@@ -13,7 +13,7 @@ import { POLICY_EFFECT_LABEL } from "@/lib/data/policies";
 import { describeCondition, fieldsForPermission } from "@/lib/policy/conditions";
 import type { EffectivePolicy, PolicyEffect, Resource } from "@/lib/types";
 import { AddRuleModal, type NewRule } from "@/components/policy/add-rule-modal";
-import { saveDashboardEntity } from "@/lib/client-api";
+import { deleteDashboardEntity, saveDashboardEntity } from "@/lib/client-api";
 import type { Policy } from "@/lib/types";
 
 const EFFECT_TONE: Record<PolicyEffect, BadgeTone> = {
@@ -72,12 +72,21 @@ export function AgentPolicyList({
     setRules((current) => current.map((rule) => (rule.id === id ? { ...rule, enabled } : rule)));
   }
 
+  async function removePolicy(policy: EffectivePolicy) {
+    if (policy.inherited) return;
+    if (!window.confirm(`Remove the ${POLICY_EFFECT_LABEL[policy.effect]} policy for ${policy.permission}?`)) {
+      return;
+    }
+    await deleteDashboardEntity("policies", policy.id);
+    setRules((current) => current.filter((rule) => rule.id !== policy.id));
+  }
+
   return (
     <>
       {rules.length === 0 ? (
         <EmptyState icon={<ScanSearch />}>
           No rules govern {agentName} on this resource — every call falls through to the
-          permissions granted above.
+          tool deny-list above.
         </EmptyState>
       ) : (
         <ol className="list-none p-0">
@@ -132,12 +141,20 @@ export function AgentPolicyList({
               {policy.inherited ? (
                 <span className="mt-0.5 shrink-0 text-[11px] text-muted-2">resource default</span>
               ) : (
-                <Toggle
-                  checked={policy.enabled}
-                  onChange={(next) => setEnabled(policy.id, next)}
-                  label={`Enable rule ${index + 1}: ${POLICY_EFFECT_LABEL[policy.effect]} ${policy.permission}`}
-                  className="mt-0.5"
-                />
+                <div className="mt-0.5 flex shrink-0 items-center gap-2">
+                  <Toggle
+                    checked={policy.enabled}
+                    onChange={(next) => setEnabled(policy.id, next)}
+                    label={`Enable rule ${index + 1}: ${POLICY_EFFECT_LABEL[policy.effect]} ${policy.permission}`}
+                  />
+                  <IconButton
+                    label={`Remove policy ${index + 1}: ${POLICY_EFFECT_LABEL[policy.effect]} ${policy.permission}`}
+                    onClick={() => removePolicy(policy)}
+                    className="text-danger hover:text-danger"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </IconButton>
+                </div>
               )}
             </li>
           ))}
@@ -145,7 +162,7 @@ export function AgentPolicyList({
       )}
 
       <Button size="sm" className="mt-4" onClick={() => setAddOpen(true)}>
-        <Plus aria-hidden className="size-[15px]" />
+        <Plus aria-hidden className="size-3.75" />
         Add rule for {agentName}
       </Button>
       <Hint>

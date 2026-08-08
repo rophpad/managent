@@ -58,18 +58,19 @@ type APIKeyConfig struct {
 }
 
 type MCPConfig struct {
-	ID            string            `json:"id"`
-	Name          string            `json:"name"`
-	Namespace     string            `json:"namespace"`
-	Transport     string            `json:"transport"`
-	Command       string            `json:"command,omitempty"`
-	Args          []string          `json:"args,omitempty"`
-	URL           string            `json:"url,omitempty"`
-	Headers       map[string]string `json:"headers,omitempty"`
-	Env           map[string]string `json:"env,omitempty"`
-	SecretEnv     map[string]string `json:"secret_env,omitempty"`
-	SecretHeaders map[string]string `json:"secret_headers,omitempty"`
-	Enabled       *bool             `json:"enabled,omitempty"`
+	ID               string            `json:"id"`
+	Name             string            `json:"name"`
+	Namespace        string            `json:"namespace"`
+	Transport        string            `json:"transport"`
+	Command          string            `json:"command,omitempty"`
+	Args             []string          `json:"args,omitempty"`
+	WorkingDirectory string            `json:"working_directory,omitempty"`
+	URL              string            `json:"url,omitempty"`
+	Headers          map[string]string `json:"headers,omitempty"`
+	Env              map[string]string `json:"env,omitempty"`
+	SecretEnv        map[string]string `json:"secret_env,omitempty"`
+	SecretHeaders    map[string]string `json:"secret_headers,omitempty"`
+	Enabled          *bool             `json:"enabled,omitempty"`
 }
 
 type PolicyConfig struct {

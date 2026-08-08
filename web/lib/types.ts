@@ -88,8 +88,15 @@ export interface RestResource extends ResourceBase {
 
 export interface McpResource extends ResourceBase {
   kind: "mcp";
-  transport: string;
+  transport: "stdio" | "http" | "sse" | string;
+  /** Executable for stdio resources; retained for backward compatibility. */
   command: string;
+  /** Remote endpoint for HTTP/SSE resources. */
+  url?: string;
+  args?: string[];
+  workingDirectory?: string;
+  env?: Record<string, string>;
+  mcpId?: string;
 }
 
 export interface DbResource extends ResourceBase {
@@ -139,6 +146,13 @@ export interface Agent {
   tokenPreview: string;
   enforcementMode: EnforcementMode;
   failOpen: boolean;
+  /** `denylist` allows every tool on linked resources except explicit denials. */
+  permissionMode?: "allowlist" | "denylist";
+  /** Resources available to this agent independently of per-tool decisions. */
+  linkedResources?: string[];
+  /** Explicit tool denials used when `permissionMode` is `denylist`. */
+  deniedPermissions?: AgentScope[];
+  /** Legacy per-tool grants retained for allow-list records and usage data. */
   scopes: AgentScope[];
 }
 
@@ -254,13 +268,38 @@ export interface EffectivePolicy extends Policy {
   inherited: boolean;
 }
 
-/** A known MCP server configuration from the open-source registry. */
-export interface ConnectorTemplate {
-  id: string;
+/** A configurable input exposed by an MCP marketplace template. */
+export interface MarketplaceField {
   name: string;
-  transport: "stdio (local subprocess)" | "HTTP + SSE (remote server)";
-  command: string;
-  credentialName: string;
-  credentialPlaceholder: string;
-  tools: string[];
+  label: string;
+  description?: string;
+  placeholder?: string;
+  required: boolean;
+  secret: boolean;
+  target: "url" | "header" | "env";
+  key?: string;
+  template?: string;
+}
+
+export interface MarketplaceTransportOption {
+  id: string;
+  label: string;
+  description?: string;
+  transport: "stdio" | "http" | "sse";
+  recommended: boolean;
+  command?: string;
+  args?: string[];
+  url?: string;
+  fields: MarketplaceField[];
+}
+
+/** An MCP server configuration supplied by the backend marketplace catalog. */
+export interface MarketplaceTemplate {
+  slug: string;
+  name: string;
+  provider: string;
+  description: string;
+  defaultMCPName: string;
+  defaultNamespace: string;
+  transportOptions: MarketplaceTransportOption[];
 }

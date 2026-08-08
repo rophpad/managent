@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/dashboard/page-header";
 import { ResourceIcon } from "@/components/dashboard/resource-icon";
 import { TabNav, type TabDef } from "@/components/dashboard/tab-nav";
-import { listAgents } from "@/lib/data/server";
+import { getLinkedResourceIds, listAgents } from "@/lib/data/server";
 import {
   CATALOG_LABEL,
   catalogCountLabel,
@@ -31,7 +31,7 @@ export default async function ResourceDetailLayout({
   if (!resource) notFound();
 
   const agents = (await listAgents()).filter((agent) =>
-    agent.scopes.some((scope) => scope.resourceId === resource.id),
+    getLinkedResourceIds(agent).includes(resource.id),
   );
   const agentCount = `${agents.length} agent${agents.length === 1 ? "" : "s"}`;
 

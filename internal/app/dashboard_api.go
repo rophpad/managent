@@ -104,6 +104,14 @@ func (r *Runtime) handleDashboardEntities(w http.ResponseWriter, req *http.Reque
 			writeJSON(w, http.StatusNotFound, map[string]any{"error": "not found"})
 			return
 		}
+		if kind == "policy" {
+			rules, loadErr := r.db.LoadPolicyRules(req.Context(), r.workspace.ID)
+			if loadErr != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]any{"error": loadErr.Error()})
+				return
+			}
+			r.policies.ReplaceRules(rules)
+		}
 		w.WriteHeader(http.StatusNoContent)
 	default:
 		w.Header().Set("Allow", "GET, POST, PUT, DELETE")

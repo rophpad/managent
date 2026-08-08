@@ -87,8 +87,9 @@ export function getAgentsUsingResource(resourceId: string): Agent[] {
   return AGENTS.filter((agent) => agent.scopes.some((scope) => scope.resourceId === resourceId));
 }
 
-/** Resource ids the agent has at least one scope on. */
+/** Resources explicitly linked to the agent, with legacy scope inference as fallback. */
 export function getLinkedResourceIds(agent: Agent): string[] {
+  if (agent.permissionMode === "denylist") return agent.linkedResources ?? [];
   return [...new Set(agent.scopes.map((scope) => scope.resourceId))];
 }
 
@@ -102,9 +103,17 @@ export function isPermissionGranted(
   resourceId: string,
   permission: string,
 ): boolean {
-  return agent.scopes.some(
-    (scope) => scope.resourceId === resourceId && scope.permission === permission,
-  );
+  if (agent.permissionMode === "denylist") {
+    return getLinkedResourceIds(agent).includes(resourceId) &&
+      !(agent.deniedPermissions ?? []).some(
+        (entry) => entry.resourceId === resourceId &&
+          (entry.permission === "*" || entry.permission === permission),
+      );
+  }
+  // Legacy records used scopes as per-tool grants. Treat any resource represented
+  // there as linked with all tools allowed; the next permission save converts it
+  // to deny-list mode and persists only unchecked tools.
+  return agent.scopes.some((scope) => scope.resourceId === resourceId);
 }
 
 /**
@@ -117,7 +126,9 @@ export function getGrantSummary(
   resource: Resource,
 ): { granted: number; total: number } {
   return {
-    granted: getAgentScopesForResource(agent, resource.id).length,
+    granted: resource.permissions.filter((permission) =>
+      isPermissionGranted(agent, resource.id, permission.name)
+    ).length,
     total: resource.permissions.length,
   };
 }

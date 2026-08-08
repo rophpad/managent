@@ -1,9 +1,9 @@
 "use client";
 
-import { Plus, ScanSearch } from "lucide-react";
+import { Plus, ScanSearch, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, IconButton } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Hint } from "@/components/ui/field";
 import { Toggle } from "@/components/ui/toggle";
@@ -12,7 +12,7 @@ import { describeCondition, fieldsForPermission } from "@/lib/policy/conditions"
 import type { Policy, PolicyEffect, Resource } from "@/lib/types";
 import { cn } from "@/lib/cn";
 import { AddRuleModal, type NewRule } from "@/components/policy/add-rule-modal";
-import { saveDashboardEntity } from "@/lib/client-api";
+import { deleteDashboardEntity, saveDashboardEntity } from "@/lib/client-api";
 
 const EFFECT_TONE: Record<PolicyEffect, BadgeTone> = {
   allow: "allow",
@@ -56,6 +56,14 @@ export function PolicyList({
     setRules((current) =>
       current.map((rule) => (rule.id === id ? { ...rule, enabled } : rule)),
     );
+  }
+
+  async function removePolicy(policy: Policy) {
+    if (!window.confirm(`Remove the ${POLICY_EFFECT_LABEL[policy.effect]} policy for ${policy.permission}?`)) {
+      return;
+    }
+    await deleteDashboardEntity("policies", policy.id);
+    setRules((current) => current.filter((rule) => rule.id !== policy.id));
   }
 
   return (
@@ -106,19 +114,27 @@ export function PolicyList({
                 ) : null}
               </div>
 
-              <Toggle
-                checked={policy.enabled}
-                onChange={(next) => setEnabled(policy.id, next)}
-                label={`Enable rule ${index + 1}: ${POLICY_EFFECT_LABEL[policy.effect]} ${policy.permission}`}
-                className="mt-0.5"
-              />
+              <div className="mt-0.5 flex shrink-0 items-center gap-2">
+                <Toggle
+                  checked={policy.enabled}
+                  onChange={(next) => setEnabled(policy.id, next)}
+                  label={`Enable rule ${index + 1}: ${POLICY_EFFECT_LABEL[policy.effect]} ${policy.permission}`}
+                />
+                <IconButton
+                  label={`Remove policy ${index + 1}: ${POLICY_EFFECT_LABEL[policy.effect]} ${policy.permission}`}
+                  onClick={() => removePolicy(policy)}
+                  className="text-danger hover:text-danger"
+                >
+                  <Trash2 className="size-3.5" />
+                </IconButton>
+              </div>
             </li>
           ))}
         </ol>
       )}
 
       <Button size="sm" className="mt-4" onClick={() => setAddOpen(true)}>
-        <Plus aria-hidden className="size-[15px]" />
+        <Plus aria-hidden className="size-3.75" />
         Add default rule
       </Button>
       <Hint>

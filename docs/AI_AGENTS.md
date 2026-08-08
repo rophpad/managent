@@ -10,7 +10,7 @@ Managent exposes one authenticated MCP endpoint for every agent framework:
 
 1. Add a resource. The bundled **Hello MCP** template is suitable for testing.
 2. Register an agent and copy the one-time token immediately.
-3. Link the resource to that agent and grant one or more tools.
+3. Link the resource to that agent. All tools start checked and allowed; uncheck only tools the agent must be denied.
 4. Store the token separately for that workload:
 
 ```bash
@@ -70,7 +70,7 @@ token header. Clients that only support SSE can use `/mcp/sse`.
 
 ## Test with Hello MCP
 
-After granting the `greet` tool, send:
+After linking the Hello resource and leaving `greet` checked in the permissions list, send:
 
 ```json
 {
@@ -85,4 +85,6 @@ After granting the `greet` tool, send:
 ```
 
 If the call is denied, confirm the agent token is active, the Hello resource is
-linked to that agent, and `greet` is granted by its policy.
+linked to that agent, and `greet` remains checked in the permissions list.
+Policies optionally refine allowed calls with conditions, denial, approval, or
+rate limits; a matching policy is not required.

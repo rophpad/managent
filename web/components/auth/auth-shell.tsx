@@ -1,13 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Check, ShieldCheck } from "lucide-react";
-
-const assurances = [
-  "Policy checks before every tool call",
-  "Human approval for sensitive actions",
-  "A searchable audit trail by default",
-];
 
 export function AuthShell({
   title,
@@ -23,20 +15,6 @@ export function AuthShell({
   return (
     <main className="w-full grid min-h-dvh bg-ink text-fg ">
       <section className="w-full flex min-h-dvh flex-col px-5 py-6 sm:px-8 lg:px-12">
-        {/* <Link
-          href="/"
-          aria-label="Managent home"
-          className="w-fit rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand"
-        >
-          <Image
-            src="/logo1.svg"
-            alt="Managent"
-            width={100}
-            height={100}
-            className="h-auto w-25 brightness-0 invert"
-            priority
-          />
-        </Link> */}
 
         <Link href="/" className="flex items-center gap-2 px-2.5 pb-5.5 pt-1">
           <span
@@ -65,7 +43,6 @@ export function AuthShell({
             <p className="mt-6 text-center text-[13px] text-muted">{footer}</p>
           </div>
         </div>
-
 
         <p className="text-center text-[11px] text-muted-2 lg:text-left">
           Protected by Managent policy enforcement

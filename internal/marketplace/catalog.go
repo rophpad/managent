@@ -70,7 +70,7 @@ func Catalog() []Listing {
 					Recommended: true,
 					URL:         "https://api.githubcopilot.com/mcp/",
 					Headers: map[string]string{
-						"Accept": "application/json",
+						"Accept": "application/json, text/event-stream",
 					},
 					Fields: []Field{
 						{Name: "token", Label: "Personal access token", Placeholder: "ghp_xxx", Required: true, Secret: true, Target: TargetHeader, Key: "Authorization", Template: "Bearer {{value}}"},
@@ -87,6 +87,25 @@ func Catalog() []Listing {
 					Fields: []Field{
 						{Name: "token", Label: "Personal access token", Placeholder: "ghp_xxx", Required: true, Secret: true, Target: TargetEnv, Key: "GITHUB_PERSONAL_ACCESS_TOKEN"},
 					},
+				},
+			},
+		},
+		{
+			Slug:             "hello-mcp",
+			Name:             "Hello MCP",
+			Provider:         "Bundled Managent demo server",
+			Description:      "A local demo MCP server bundled with the Managent gateway for testing tool discovery and policy enforcement.",
+			DefaultMCPName:   "hello",
+			DefaultNamespace: "hello",
+			TransportOptions: []TransportOption{
+				{
+					ID:          "local-stdio",
+					Label:       "Local stdio",
+					Description: "Runs the Hello MCP binary bundled in the gateway image.",
+					Transport:   string(mcp.TransportStdio),
+					Recommended: true,
+					Command:     "/app/bin/hello-mcp",
+					Fields:      []Field{},
 				},
 			},
 		},

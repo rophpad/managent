@@ -76,7 +76,7 @@ type ToolsListResult struct {
 
 type ToolCallParams struct {
 	Name      string         `json:"name"`
-	Arguments map[string]any `json:"arguments,omitempty"`
+	Arguments map[string]any `json:"arguments"`
 }
 
 type ToolCallResult struct {

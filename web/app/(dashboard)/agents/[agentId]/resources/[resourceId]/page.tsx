@@ -2,7 +2,7 @@ import { Plug } from "lucide-react";
 import { notFound } from "next/navigation";
 import { PanelBlock, SectionTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { fetchAgent, getAgentScopesForResource } from "@/lib/data/server";
+import { fetchAgent, getAgentScopesForResource, isPermissionGranted } from "@/lib/data/server";
 import { CATALOG_NOUN, fetchResource } from "@/lib/data/server";
 import { AgentPermissionList, type GrantRow } from "./_components/agent-permission-list";
 
@@ -24,7 +24,7 @@ export default async function AgentResourcePermissionsPage({
       match: permission.match,
       highRisk: permission.highRisk,
       paramCount: permission.params?.length ?? 0,
-      granted: scope !== undefined,
+      granted: isPermissionGranted(agent, resource.id, permission.name),
       callsToday: scope?.callsToday ?? 0,
     };
   });

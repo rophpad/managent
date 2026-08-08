@@ -1,4 +1,4 @@
-import type { ConnectorTemplate, Resource } from "@/lib/types";
+import type { Resource } from "@/lib/types";
 
 /**
  * Registered resources. Permission counts shown across the app are derived from
@@ -23,18 +23,6 @@ export const RESOURCES: Resource[] = [
   ] },
 ];
 
-/** Known MCP server configurations. Tools are confirmed through tools/list. */
-export const CONNECTOR_TEMPLATES: ConnectorTemplate[] = [
-  {
-    id: "hello",
-    name: "Hello MCP",
-    transport: "stdio (local subprocess)",
-    command: "/app/bin/hello-mcp",
-    credentialName: "",
-    credentialPlaceholder: "",
-    tools: ["greet", "check_injected_credential"],
-  },
-];
 
 export function getResource(id: string): Resource | undefined {
   return RESOURCES.find((resource) => resource.id === id);

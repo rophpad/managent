@@ -22,6 +22,15 @@ import (
 	"github.com/rophpad/managent/internal/secrets"
 )
 
+var ErrMCPNamespaceConflict = fmt.Errorf("mcp namespace is already in use")
+
+func validateMCPNamespace(namespace string) error {
+	if strings.TrimSpace(namespace) == "" {
+		return fmt.Errorf("mcp namespace is required")
+	}
+	return nil
+}
+
 type Store struct {
 	pool   *pgxpool.Pool
 	cipher *secrets.Cipher
@@ -85,6 +94,7 @@ type MCPRecord struct {
 	CredentialRef    string            `json:"credentialRef,omitempty"`
 	Command          string            `json:"command,omitempty"`
 	Args             []string          `json:"args,omitempty"`
+	WorkingDirectory string            `json:"workingDirectory,omitempty"`
 	URL              string            `json:"url,omitempty"`
 	Headers          map[string]string `json:"headers,omitempty"`
 	Env              map[string]string `json:"env,omitempty"`
@@ -317,8 +327,11 @@ func (s *Store) seedPolicies(ctx context.Context, workspace Workspace, rules []c
 
 func (s *Store) seedMCPs(ctx context.Context, workspace Workspace, mcps []config.MCPConfig) error {
 	for _, cfgMCP := range mcps {
+		if err := validateMCPNamespace(cfgMCP.Namespace); err != nil {
+			return fmt.Errorf("seed mcp %q: %w", cfgMCP.Name, err)
+		}
 		var exists bool
-		if err := s.pool.QueryRow(ctx, `select exists(select 1 from mcps where workspace_id = $1 and name = $2)`, workspace.ID, cfgMCP.Name).Scan(&exists); err != nil {
+		if err := s.pool.QueryRow(ctx, `select exists(select 1 from mcps where workspace_id = $1 and (name = $2 or configuration->>'namespace' = $3))`, workspace.ID, cfgMCP.Name, cfgMCP.Namespace).Scan(&exists); err != nil {
 			return err
 		}
 		if exists {
@@ -329,6 +342,7 @@ func (s *Store) seedMCPs(ctx context.Context, workspace Workspace, mcps []config
 			"namespace":        cfgMCP.Namespace,
 			"command":          cfgMCP.Command,
 			"args":             cfgMCP.Args,
+			"workingDirectory": cfgMCP.WorkingDirectory,
 			"url":              cfgMCP.URL,
 			"headers":          cfgMCP.Headers,
 			"env":              cfgMCP.Env,
@@ -455,6 +469,7 @@ func (s *Store) ListMCPConfigs(ctx context.Context, workspaceID int64) ([]mcp.Co
 			Namespace        string            `json:"namespace"`
 			Command          string            `json:"command"`
 			Args             []string          `json:"args"`
+			WorkingDirectory string            `json:"workingDirectory"`
 			URL              string            `json:"url"`
 			Headers          map[string]string `json:"headers"`
 			Env              map[string]string `json:"env"`
@@ -475,7 +490,7 @@ func (s *Store) ListMCPConfigs(ctx context.Context, workspaceID int64) ([]mcp.Co
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, mcp.Config{ID: strconv.FormatInt(id, 10), AgentID: agentID, Name: name, Namespace: cfg.Namespace, Transport: mcp.Transport(transport), Endpoint: endpoint, CredentialRef: credentialRef, Command: cfg.Command, Args: cfg.Args, URL: cfg.URL, Headers: cfg.Headers, Env: cfg.Env, Method: cfg.Method, URLTemplate: cfg.URLTemplate, CredentialTarget: cfg.CredentialTarget, CredentialName: cfg.CredentialName, InputSchema: cfg.InputSchema, OutputSchema: cfg.OutputSchema, SecretEnv: secretEnv, SecretHeaders: secretHeaders, Enabled: cfg.Enabled})
+		out = append(out, mcp.Config{ID: strconv.FormatInt(id, 10), AgentID: agentID, Name: name, Namespace: cfg.Namespace, Transport: mcp.Transport(transport), Endpoint: endpoint, CredentialRef: credentialRef, Command: cfg.Command, Args: cfg.Args, WorkingDirectory: cfg.WorkingDirectory, URL: cfg.URL, Headers: cfg.Headers, Env: cfg.Env, Method: cfg.Method, URLTemplate: cfg.URLTemplate, CredentialTarget: cfg.CredentialTarget, CredentialName: cfg.CredentialName, InputSchema: cfg.InputSchema, OutputSchema: cfg.OutputSchema, SecretEnv: secretEnv, SecretHeaders: secretHeaders, Enabled: cfg.Enabled})
 	}
 	return out, rows.Err()
 }
@@ -527,6 +542,7 @@ func decodeMCPRecord(id, wsID int64, agentID, name, transport, endpoint, credent
 	headers, _ := toStringMap(configMap["headers"])
 	namespace, _ := configMap["namespace"].(string)
 	command, _ := configMap["command"].(string)
+	workingDirectory, _ := configMap["workingDirectory"].(string)
 	url, _ := configMap["url"].(string)
 	method, _ := configMap["method"].(string)
 	urlTemplate, _ := configMap["urlTemplate"].(string)
@@ -535,16 +551,29 @@ func decodeMCPRecord(id, wsID int64, agentID, name, transport, endpoint, credent
 	inputSchema, _ := configMap["inputSchema"].(map[string]any)
 	outputSchema, _ := configMap["outputSchema"].(map[string]any)
 	enabled, _ := configMap["enabled"].(bool)
-	return MCPRecord{ID: strconv.FormatInt(id, 10), WorkspaceID: strconv.FormatInt(wsID, 10), AgentID: agentID, Name: name, Namespace: namespace, Transport: transport, Endpoint: endpoint, CredentialRef: credentialRef, Command: command, Args: args, URL: url, Headers: headers, Env: env, Method: method, URLTemplate: urlTemplate, CredentialTarget: credentialTarget, CredentialName: credentialName, InputSchema: inputSchema, OutputSchema: outputSchema, Enabled: enabled, Status: status, LastError: lastError, CreatedAt: createdAt, UpdatedAt: updatedAt, RawConfig: configMap}, nil
+	return MCPRecord{ID: strconv.FormatInt(id, 10), WorkspaceID: strconv.FormatInt(wsID, 10), AgentID: agentID, Name: name, Namespace: namespace, Transport: transport, Endpoint: endpoint, CredentialRef: credentialRef, Command: command, Args: args, WorkingDirectory: workingDirectory, URL: url, Headers: headers, Env: env, Method: method, URLTemplate: urlTemplate, CredentialTarget: credentialTarget, CredentialName: credentialName, InputSchema: inputSchema, OutputSchema: outputSchema, Enabled: enabled, Status: status, LastError: lastError, CreatedAt: createdAt, UpdatedAt: updatedAt, RawConfig: configMap}, nil
 }
 
 func (s *Store) CreateMCP(ctx context.Context, workspaceID int64, cfg mcp.Config) (MCPRecord, error) {
-	configJSON, err := json.Marshal(map[string]any{"namespace": cfg.Namespace, "command": cfg.Command, "args": cfg.Args, "url": cfg.URL, "headers": cfg.Headers, "env": cfg.Env, "enabled": cfg.Enabled, "method": cfg.Method, "urlTemplate": cfg.URLTemplate, "credentialTarget": cfg.CredentialTarget, "credentialName": cfg.CredentialName, "inputSchema": cfg.InputSchema, "outputSchema": cfg.OutputSchema})
+	if err := validateMCPNamespace(cfg.Namespace); err != nil {
+		return MCPRecord{}, err
+	}
+	configJSON, err := json.Marshal(map[string]any{"namespace": cfg.Namespace, "command": cfg.Command, "args": cfg.Args, "workingDirectory": cfg.WorkingDirectory, "url": cfg.URL, "headers": cfg.Headers, "env": cfg.Env, "enabled": cfg.Enabled, "method": cfg.Method, "urlTemplate": cfg.URLTemplate, "credentialTarget": cfg.CredentialTarget, "credentialName": cfg.CredentialName, "inputSchema": cfg.InputSchema, "outputSchema": cfg.OutputSchema})
 	if err != nil {
 		return MCPRecord{}, err
 	}
 	var record MCPRecord
 	err = withTx(ctx, s.pool, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `select pg_advisory_xact_lock(hashtextextended($1, 0))`, fmt.Sprintf("%d:%s", workspaceID, cfg.Namespace)); err != nil {
+			return err
+		}
+		var exists bool
+		if err := tx.QueryRow(ctx, `select exists(select 1 from mcps where workspace_id = $1 and configuration->>'namespace' = $2)`, workspaceID, cfg.Namespace).Scan(&exists); err != nil {
+			return err
+		}
+		if exists {
+			return fmt.Errorf("%w: %s", ErrMCPNamespaceConflict, cfg.Namespace)
+		}
 		var id int64
 		var createdAt, updatedAt time.Time
 		if err := tx.QueryRow(ctx, `insert into mcps (workspace_id, agent_id, name, transport, endpoint, credential_ref, configuration, status, updated_at) values ($1, nullif($2, '')::bigint, $3, $4, $5, $6, $7, $8, now()) returning id, created_at, updated_at`, workspaceID, cfg.AgentID, cfg.Name, string(cfg.Transport), mcpEndpoint(cfg), cfg.CredentialRef, configJSON, "disconnected").Scan(&id, &createdAt, &updatedAt); err != nil {
@@ -553,7 +582,7 @@ func (s *Store) CreateMCP(ctx context.Context, workspaceID int64, cfg mcp.Config
 		if err := s.replaceMCPSecretsTx(ctx, tx, id, cfg.SecretEnv, cfg.SecretHeaders); err != nil {
 			return err
 		}
-		record = MCPRecord{ID: strconv.FormatInt(id, 10), WorkspaceID: strconv.FormatInt(workspaceID, 10), AgentID: cfg.AgentID, Name: cfg.Name, Namespace: cfg.Namespace, Transport: string(cfg.Transport), Endpoint: mcpEndpoint(cfg), CredentialRef: cfg.CredentialRef, Command: cfg.Command, Args: cfg.Args, URL: cfg.URL, Headers: cfg.Headers, Env: cfg.Env, Method: cfg.Method, URLTemplate: cfg.URLTemplate, CredentialTarget: cfg.CredentialTarget, CredentialName: cfg.CredentialName, InputSchema: cfg.InputSchema, OutputSchema: cfg.OutputSchema, SecretEnvKeys: sortedKeys(cfg.SecretEnv), SecretHeaderKeys: sortedKeys(cfg.SecretHeaders), Enabled: cfg.Enabled, Status: "disconnected", CreatedAt: createdAt, UpdatedAt: updatedAt}
+		record = MCPRecord{ID: strconv.FormatInt(id, 10), WorkspaceID: strconv.FormatInt(workspaceID, 10), AgentID: cfg.AgentID, Name: cfg.Name, Namespace: cfg.Namespace, Transport: string(cfg.Transport), Endpoint: mcpEndpoint(cfg), CredentialRef: cfg.CredentialRef, Command: cfg.Command, Args: cfg.Args, WorkingDirectory: cfg.WorkingDirectory, URL: cfg.URL, Headers: cfg.Headers, Env: cfg.Env, Method: cfg.Method, URLTemplate: cfg.URLTemplate, CredentialTarget: cfg.CredentialTarget, CredentialName: cfg.CredentialName, InputSchema: cfg.InputSchema, OutputSchema: cfg.OutputSchema, SecretEnvKeys: sortedKeys(cfg.SecretEnv), SecretHeaderKeys: sortedKeys(cfg.SecretHeaders), Enabled: cfg.Enabled, Status: "disconnected", CreatedAt: createdAt, UpdatedAt: updatedAt}
 		return nil
 	})
 	return record, err
@@ -573,6 +602,7 @@ func (s *Store) GetMCPConfig(ctx context.Context, workspaceID int64, id string) 
 		Namespace        string            `json:"namespace"`
 		Command          string            `json:"command"`
 		Args             []string          `json:"args"`
+		WorkingDirectory string            `json:"workingDirectory"`
 		URL              string            `json:"url"`
 		Headers          map[string]string `json:"headers"`
 		Env              map[string]string `json:"env"`
@@ -593,20 +623,33 @@ func (s *Store) GetMCPConfig(ctx context.Context, workspaceID int64, id string) 
 	if err != nil {
 		return mcp.Config{}, err
 	}
-	return mcp.Config{ID: id, AgentID: agentID, Name: name, Namespace: cfg.Namespace, Transport: mcp.Transport(transport), Endpoint: endpoint, CredentialRef: credentialRef, Command: cfg.Command, Args: cfg.Args, URL: cfg.URL, Headers: cfg.Headers, Env: cfg.Env, Method: cfg.Method, URLTemplate: cfg.URLTemplate, CredentialTarget: cfg.CredentialTarget, CredentialName: cfg.CredentialName, InputSchema: cfg.InputSchema, OutputSchema: cfg.OutputSchema, SecretEnv: secretEnv, SecretHeaders: secretHeaders, Enabled: cfg.Enabled}, nil
+	return mcp.Config{ID: id, AgentID: agentID, Name: name, Namespace: cfg.Namespace, Transport: mcp.Transport(transport), Endpoint: endpoint, CredentialRef: credentialRef, Command: cfg.Command, Args: cfg.Args, WorkingDirectory: cfg.WorkingDirectory, URL: cfg.URL, Headers: cfg.Headers, Env: cfg.Env, Method: cfg.Method, URLTemplate: cfg.URLTemplate, CredentialTarget: cfg.CredentialTarget, CredentialName: cfg.CredentialName, InputSchema: cfg.InputSchema, OutputSchema: cfg.OutputSchema, SecretEnv: secretEnv, SecretHeaders: secretHeaders, Enabled: cfg.Enabled}, nil
 }
 
 func (s *Store) UpdateMCP(ctx context.Context, workspaceID int64, cfg mcp.Config) (MCPRecord, error) {
+	if err := validateMCPNamespace(cfg.Namespace); err != nil {
+		return MCPRecord{}, err
+	}
 	mcpID, err := strconv.ParseInt(cfg.ID, 10, 64)
 	if err != nil {
 		return MCPRecord{}, err
 	}
-	configJSON, err := json.Marshal(map[string]any{"namespace": cfg.Namespace, "command": cfg.Command, "args": cfg.Args, "url": cfg.URL, "headers": cfg.Headers, "env": cfg.Env, "enabled": cfg.Enabled, "method": cfg.Method, "urlTemplate": cfg.URLTemplate, "credentialTarget": cfg.CredentialTarget, "credentialName": cfg.CredentialName, "inputSchema": cfg.InputSchema, "outputSchema": cfg.OutputSchema})
+	configJSON, err := json.Marshal(map[string]any{"namespace": cfg.Namespace, "command": cfg.Command, "args": cfg.Args, "workingDirectory": cfg.WorkingDirectory, "url": cfg.URL, "headers": cfg.Headers, "env": cfg.Env, "enabled": cfg.Enabled, "method": cfg.Method, "urlTemplate": cfg.URLTemplate, "credentialTarget": cfg.CredentialTarget, "credentialName": cfg.CredentialName, "inputSchema": cfg.InputSchema, "outputSchema": cfg.OutputSchema})
 	if err != nil {
 		return MCPRecord{}, err
 	}
 	var record MCPRecord
 	err = withTx(ctx, s.pool, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `select pg_advisory_xact_lock(hashtextextended($1, 0))`, fmt.Sprintf("%d:%s", workspaceID, cfg.Namespace)); err != nil {
+			return err
+		}
+		var exists bool
+		if err := tx.QueryRow(ctx, `select exists(select 1 from mcps where workspace_id = $1 and id <> $2 and configuration->>'namespace' = $3)`, workspaceID, mcpID, cfg.Namespace).Scan(&exists); err != nil {
+			return err
+		}
+		if exists {
+			return fmt.Errorf("%w: %s", ErrMCPNamespaceConflict, cfg.Namespace)
+		}
 		var createdAt, updatedAt time.Time
 		if err := tx.QueryRow(ctx, `update mcps set agent_id = nullif($3, '')::bigint, name = $4, transport = $5, endpoint = $6, credential_ref = $7, configuration = $8, status = $9, last_error = null, updated_at = now() where id = $1 and workspace_id = $2 returning created_at, updated_at`, mcpID, workspaceID, cfg.AgentID, cfg.Name, string(cfg.Transport), mcpEndpoint(cfg), cfg.CredentialRef, configJSON, "disconnected").Scan(&createdAt, &updatedAt); err != nil {
 			return err
@@ -614,7 +657,7 @@ func (s *Store) UpdateMCP(ctx context.Context, workspaceID int64, cfg mcp.Config
 		if err := s.replaceMCPSecretsTx(ctx, tx, mcpID, cfg.SecretEnv, cfg.SecretHeaders); err != nil {
 			return err
 		}
-		record = MCPRecord{ID: cfg.ID, WorkspaceID: strconv.FormatInt(workspaceID, 10), AgentID: cfg.AgentID, Name: cfg.Name, Namespace: cfg.Namespace, Transport: string(cfg.Transport), Endpoint: mcpEndpoint(cfg), CredentialRef: cfg.CredentialRef, Command: cfg.Command, Args: cfg.Args, URL: cfg.URL, Headers: cfg.Headers, Env: cfg.Env, Method: cfg.Method, URLTemplate: cfg.URLTemplate, CredentialTarget: cfg.CredentialTarget, CredentialName: cfg.CredentialName, InputSchema: cfg.InputSchema, OutputSchema: cfg.OutputSchema, SecretEnvKeys: sortedKeys(cfg.SecretEnv), SecretHeaderKeys: sortedKeys(cfg.SecretHeaders), Enabled: cfg.Enabled, Status: "disconnected", CreatedAt: createdAt, UpdatedAt: updatedAt}
+		record = MCPRecord{ID: cfg.ID, WorkspaceID: strconv.FormatInt(workspaceID, 10), AgentID: cfg.AgentID, Name: cfg.Name, Namespace: cfg.Namespace, Transport: string(cfg.Transport), Endpoint: mcpEndpoint(cfg), CredentialRef: cfg.CredentialRef, Command: cfg.Command, Args: cfg.Args, WorkingDirectory: cfg.WorkingDirectory, URL: cfg.URL, Headers: cfg.Headers, Env: cfg.Env, Method: cfg.Method, URLTemplate: cfg.URLTemplate, CredentialTarget: cfg.CredentialTarget, CredentialName: cfg.CredentialName, InputSchema: cfg.InputSchema, OutputSchema: cfg.OutputSchema, SecretEnvKeys: sortedKeys(cfg.SecretEnv), SecretHeaderKeys: sortedKeys(cfg.SecretHeaders), Enabled: cfg.Enabled, Status: "disconnected", CreatedAt: createdAt, UpdatedAt: updatedAt}
 		return nil
 	})
 	return record, err

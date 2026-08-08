@@ -107,9 +107,14 @@ Docker Compose is the easiest way to run the current product.
 cp .env.example .env
 ```
 
-Set at least:
+Set at least `MANAGENT_MCP_SECRET_KEY` to a persistent 32-byte secret. Generate a base64-encoded key and append it to `.env` with:
 
-- `MANAGENT_MCP_SECRET_KEY` to a real 32-byte secret
+```bash
+printf 'MANAGENT_MCP_SECRET_KEY=' >> .env
+openssl rand -base64 32 >> .env
+```
+
+Keep this key stable and backed up. Managent uses it to encrypt credentials such as GitHub personal access tokens; changing or losing it makes previously stored MCP secrets unreadable.
 
 Optional:
 
@@ -123,7 +128,7 @@ docker compose up -d --build
 
 ### 3. Open the product
 
-- dashboard: `http://127.0.0.1:3000`
+- dashboard: `http://127.0.0.1:3000` (override with `MANAGENT_DASHBOARD_PORT`)
 - gateway HTTP: `http://127.0.0.1:8081`
 - MCP endpoint: `http://127.0.0.1:8081/mcp`
 - SSE endpoint: `http://127.0.0.1:8081/mcp/sse`

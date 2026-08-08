@@ -12,17 +12,15 @@ import { Modal, ModalBody } from "@/components/ui/modal";
 import { RiskTag, ScopeChip, ScopeChipGroup } from "@/components/ui/scope-chip";
 import type { Resource } from "@/lib/types";
 
-/** What the agent gets on one newly linked resource. */
+/** A newly linked resource and its explicit tool denials. */
 export interface ResourceLink {
   resourceId: string;
   permissions: string[];
 }
 
 /**
- * Links resources to one agent. Permissions are chosen here rather than after
- * the fact because a link with nothing granted is an agent that can't call
- * anything — and because the choice is per (agent, resource), it belongs in a
- * dialog opened from the agent, not from the resource.
+ * Links resources to one agent. Tools are allowed by default; selected
+ * permissions are explicit denials for this agent-resource pair.
  */
 export function AddResourceModal({
   open,
@@ -39,17 +37,17 @@ export function AddResourceModal({
   available: Resource[];
 }) {
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
-  const [granted, setGranted] = useState<Record<string, ReadonlySet<string>>>({});
+  const [denied, setDenied] = useState<Record<string, ReadonlySet<string>>>({});
 
   const selectedResources = available.filter((resource) => selectedIds.has(resource.id));
-  const grantedCount = selectedResources.reduce(
-    (total, resource) => total + (granted[resource.id]?.size ?? 0),
+  const allowedCount = selectedResources.reduce(
+    (total, resource) => total + resource.permissions.length - (denied[resource.id]?.size ?? 0),
     0,
   );
 
   function reset() {
     setSelectedIds(new Set());
-    setGranted({});
+    setDenied({});
   }
 
   function dismiss() {
@@ -67,7 +65,7 @@ export function AddResourceModal({
     // Deselecting a resource drops its pending grants, so re-adding it doesn't
     // silently bring back permissions the user already backed out of.
     if (!checked) {
-      setGranted((current) => {
+      setDenied((current) => {
         const next = { ...current };
         delete next[id];
         return next;
@@ -76,10 +74,10 @@ export function AddResourceModal({
   }
 
   function togglePermission(resourceId: string, permission: string, checked: boolean) {
-    setGranted((current) => {
+    setDenied((current) => {
       const next = new Set(current[resourceId] ?? []);
-      if (checked) next.add(permission);
-      else next.delete(permission);
+      if (checked) next.delete(permission);
+      else next.add(permission);
       return { ...current, [resourceId]: next };
     });
   }
@@ -88,7 +86,7 @@ export function AddResourceModal({
     onAdd(
       selectedResources.map((resource) => ({
         resourceId: resource.id,
-        permissions: [...(granted[resource.id] ?? [])],
+        permissions: [...(denied[resource.id] ?? [])],
       })),
     );
     reset();
@@ -161,9 +159,9 @@ export function AddResourceModal({
                 className="mb-0"
                 label={
                   <>
-                    Permissions{" "}
+                    Allowed tools{" "}
                     <span className="font-normal text-muted-2">
-                      per resource · {grantedCount} selected
+                      per resource · {allowedCount} allowed
                     </span>
                   </>
                 }
@@ -177,7 +175,7 @@ export function AddResourceModal({
                       <ResourceIcon
                         id={resource.id}
                         kind={resource.kind}
-                        className="size-[15px] text-muted"
+                        className="size-3.75 text-muted"
                       />
                       {resource.name}
                     </div>
@@ -186,7 +184,7 @@ export function AddResourceModal({
                         <ScopeChip
                           key={permission.name}
                           name={`${resource.id}:${permission.name}`}
-                          checked={granted[resource.id]?.has(permission.name) ?? false}
+                          checked={!(denied[resource.id]?.has(permission.name) ?? false)}
                           onChange={(checked) =>
                             togglePermission(resource.id, permission.name, checked)
                           }
@@ -199,9 +197,8 @@ export function AddResourceModal({
                   </div>
                 ))}
                 <Hint className="mt-3">
-                  Granting here affects {agentName}{" "}
-                  only. The resource&apos;s own default policies apply on top, and you can add
-                  rules specific to {agentName} afterwards.
+                  All tools start checked and allowed for {agentName}. Uncheck a tool to deny it.
+                  Resource and agent policies can add conditions or approval requirements.
                 </Hint>
               </FieldGroup>
             ) : null}

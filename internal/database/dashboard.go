@@ -83,12 +83,18 @@ func (s *Store) DeleteDashboardEntity(ctx context.Context, workspaceID int64, ki
 }
 
 type dashboardAgentGrant struct {
-	GatewayAgentID string `json:"gatewayAgentId"`
-	Name           string `json:"name"`
-	Scopes         []struct {
+	GatewayAgentID  string   `json:"gatewayAgentId"`
+	Name            string   `json:"name"`
+	PermissionMode  string   `json:"permissionMode"`
+	LinkedResources []string `json:"linkedResources"`
+	Scopes          []struct {
 		ResourceID string `json:"resourceId"`
 		Permission string `json:"permission"`
 	} `json:"scopes"`
+	DeniedPermissions []struct {
+		ResourceID string `json:"resourceId"`
+		Permission string `json:"permission"`
+	} `json:"deniedPermissions"`
 }
 
 // AgentHasToolPermission checks the persisted dashboard grant on every call.
@@ -162,11 +168,33 @@ func (s *Store) AgentHasToolPermission(ctx context.Context, agentID, agentName, 
 		return false, "", err
 	}
 
+	if strings.EqualFold(grant.PermissionMode, "denylist") {
+		linked := false
+		for _, linkedResourceID := range grant.LinkedResources {
+			if strings.EqualFold(linkedResourceID, resourceID) {
+				linked = true
+				break
+			}
+		}
+		if !linked {
+			return false, fmt.Sprintf("resource %s is not linked to this agent", resourceID), nil
+		}
+		for _, denied := range grant.DeniedPermissions {
+			if strings.EqualFold(denied.ResourceID, resourceID) &&
+				(denied.Permission == "*" || strings.EqualFold(denied.Permission, permission)) {
+				return false, fmt.Sprintf("%s is explicitly denied on %s", permission, resourceID), nil
+			}
+		}
+		return true, "resource linked and permission not denied", nil
+	}
+
+	// Legacy records used scopes as per-tool grants. Once a resource appears in
+	// scopes, treat it as linked with all tools allowed. Saving permissions in the
+	// current dashboard converts the record to deny-list mode.
 	for _, scope := range grant.Scopes {
-		if strings.EqualFold(scope.ResourceID, resourceID) &&
-			(scope.Permission == "*" || strings.EqualFold(scope.Permission, permission)) {
-			return true, "permission granted", nil
+		if strings.EqualFold(scope.ResourceID, resourceID) {
+			return true, "legacy resource link; permission allowed by default", nil
 		}
 	}
-	return false, fmt.Sprintf("%s is not granted on %s", permission, resourceID), nil
+	return false, fmt.Sprintf("resource %s is not linked to this agent", resourceID), nil
 }

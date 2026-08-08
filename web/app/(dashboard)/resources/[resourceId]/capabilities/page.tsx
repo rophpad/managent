@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Hint } from "@/components/ui/field";
 import { MutedText, ScopeRow } from "@/components/ui/rows";
 import { RiskTag } from "@/components/ui/scope-chip";
-import { isPermissionGranted, listAgents } from "@/lib/data/server";
+import { getLinkedResourceIds, isPermissionGranted, listAgents } from "@/lib/data/server";
 import { CATALOG_LABEL, CATALOG_NOUN, fetchResource } from "@/lib/data/server";
 import { EditCatalogModal } from "./_components/edit-catalog-modal";
 
@@ -33,7 +33,7 @@ export default async function ResourceCapabilitiesPage({
   const label = CATALOG_LABEL[resource.kind];
   const noun = CATALOG_NOUN[resource.kind];
   const agents = (await listAgents()).filter((agent) =>
-    agent.scopes.some((scope) => scope.resourceId === resource.id),
+    getLinkedResourceIds(agent).includes(resource.id),
   );
   const highRiskCount = resource.permissions.filter((permission) => permission.highRisk).length;
 

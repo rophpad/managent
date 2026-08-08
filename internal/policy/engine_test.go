@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestEvaluatePrefersSpecificAgentAndFallsClosed(t *testing.T) {
+func TestEvaluatePrefersSpecificAgentAndAbstainsWithoutMatch(t *testing.T) {
 	engine := NewEngine(slog.New(slog.NewTextHandler(io.Discard, nil)))
 	engine.ReplaceRules([]Rule{
 		{
@@ -42,15 +42,15 @@ func TestEvaluatePrefersSpecificAgentAndFallsClosed(t *testing.T) {
 		t.Fatalf("expected specific agent rule to win, got %s", decision.Action)
 	}
 
-	fallClosed := engine.Evaluate(Request{
+	noMatch := engine.Evaluate(Request{
 		AgentID:   "99",
 		AgentTags: []string{"other"},
 		Tool:      "stripe.refund",
 		Action:    "call",
 		Arguments: map[string]any{},
 	})
-	if fallClosed.Action != ActionDeny {
-		t.Fatalf("expected default deny, got %s", fallClosed.Action)
+	if noMatch.Matched || noMatch.Action != "" {
+		t.Fatalf("expected policy engine to abstain, got %#v", noMatch)
 	}
 }
 

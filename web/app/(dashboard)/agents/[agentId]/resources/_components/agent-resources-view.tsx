@@ -49,7 +49,7 @@ export function AgentResourcesView({
           name: resource.name,
           kind: resource.kind,
           catalogLabel: CATALOG_LABEL[resource.kind],
-          granted: link.permissions.length,
+          granted: resource.permissions.length - link.permissions.length,
           total: resource.permissions.length,
           // A brand-new link inherits the resource's defaults and has no rules
           // of its own yet, so this is the whole rule count.
@@ -62,17 +62,26 @@ export function AgentResourcesView({
 
     setRows((current) => [...current, ...added]);
     setLinked((current) => new Set([...current, ...added.map((row) => row.resourceId)]));
-    const scopes = [
-      ...agent.scopes,
-      ...links.flatMap((link) =>
-        link.permissions.map((permission) => ({
-          resourceId: link.resourceId,
-          permission,
-          callsToday: 0,
-        })),
-      ),
+    const linkedResources = [
+      ...(agent.permissionMode === "denylist"
+        ? agent.linkedResources ?? []
+        : [...new Set(agent.scopes.map((scope) => scope.resourceId))]),
+      ...links.map((link) => link.resourceId),
     ];
-    await saveDashboardEntity("agents", { ...agent, scopes });
+    const deniedPermissions = [
+      ...(agent.deniedPermissions ?? []),
+      ...links.flatMap((link) => link.permissions.map((permission) => ({
+        resourceId: link.resourceId,
+        permission,
+        callsToday: 0,
+      }))),
+    ];
+    await saveDashboardEntity("agents", {
+      ...agent,
+      permissionMode: "denylist",
+      linkedResources: [...new Set(linkedResources)],
+      deniedPermissions,
+    });
   }
 
   return (
@@ -84,24 +93,24 @@ export function AgentResourcesView({
             : `${rows.length} resource${rows.length === 1 ? "" : "s"} linked`}
         </MutedText>
         <Button size="sm" onClick={() => setAddOpen(true)}>
-          <Plus aria-hidden className="size-[15px]" />
+          <Plus aria-hidden className="size-3.75" />
           Add resource
         </Button>
       </div>
 
       {rows.length === 0 ? (
-        <Card className="px-5 py-[18px]">
+        <Card className="px-5 py-4.5">
           <EmptyState icon={<Plug />}>
             {agentName}{" "}
-            isn&apos;t scoped against any resource yet. Add one to choose exactly what it may call.
+            isn&apos;t linked to any resource yet. Add one to allow its tools, then select any exceptions to deny.
           </EmptyState>
         </Card>
       ) : (
         <>
           <AgentResourcesTable agentId={agentId} rows={rows} />
           <Hint className="mt-3">
-            Permissions and policies here are specific to {agentName}. Another agent on the same
-            resource can hold a different set of permissions and be governed by different rules.
+            Tool denials and policies here are specific to {agentName}. Another agent on the same
+            resource can have different denied tools and policy rules.
           </Hint>
         </>
       )}

@@ -96,13 +96,15 @@ func (c *HTTPClient) call(ctx context.Context, method string, params any) (any, 
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	for key, value := range c.headers {
+		req.Header.Set(key, value)
+	}
 	if c.mode == "sse" {
 		req.Header.Set("Accept", "text/event-stream")
 	} else {
-		req.Header.Set("Accept", "application/json")
-	}
-	for key, value := range c.headers {
-		req.Header.Set(key, value)
+		// Streamable HTTP servers may respond with either JSON or SSE. MCP
+		// requires clients to advertise support for both media types.
+		req.Header.Set("Accept", "application/json, text/event-stream")
 	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

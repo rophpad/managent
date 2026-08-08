@@ -7,6 +7,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"log/slog"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/rophpad/managent/internal/audit"
 	"github.com/rophpad/managent/internal/config"
 	"github.com/rophpad/managent/internal/database"
@@ -27,13 +36,6 @@ import (
 	"github.com/rophpad/managent/internal/registry"
 	"github.com/rophpad/managent/internal/router"
 	"github.com/rophpad/managent/internal/secrets"
-	"io"
-	"log/slog"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type Runtime struct {
@@ -472,25 +474,26 @@ func (r *Runtime) handleAgentActions(w http.ResponseWriter, req *http.Request) {
 }
 
 type mcpPayload struct {
-	AgentID         string            `json:"agentId"`
-	Name            string            `json:"name"`
-	Namespace       string            `json:"namespace"`
-	Transport       string            `json:"transport"`
-	Endpoint        string            `json:"endpoint"`
-	Command         string            `json:"command"`
-	Args            []string          `json:"args"`
-	URL             string            `json:"url"`
-	Headers         map[string]string `json:"headers"`
-	Env             map[string]string `json:"env"`
-	Method          string            `json:"method"`
-	URLTemplate     string            `json:"urlTemplate"`
-	CredentialName  string            `json:"credentialName"`
-	CredentialValue string            `json:"credentialValue"`
-	InputSchema     map[string]any    `json:"inputSchema"`
-	OutputSchema    map[string]any    `json:"outputSchema"`
-	SecretEnv       map[string]string `json:"secretEnv"`
-	SecretHeaders   map[string]string `json:"secretHeaders"`
-	Enabled         bool              `json:"enabled"`
+	AgentID          string            `json:"agentId"`
+	Name             string            `json:"name"`
+	Namespace        string            `json:"namespace"`
+	Transport        string            `json:"transport"`
+	Endpoint         string            `json:"endpoint"`
+	Command          string            `json:"command"`
+	Args             []string          `json:"args"`
+	WorkingDirectory string            `json:"workingDirectory"`
+	URL              string            `json:"url"`
+	Headers          map[string]string `json:"headers"`
+	Env              map[string]string `json:"env"`
+	Method           string            `json:"method"`
+	URLTemplate      string            `json:"urlTemplate"`
+	CredentialName   string            `json:"credentialName"`
+	CredentialValue  string            `json:"credentialValue"`
+	InputSchema      map[string]any    `json:"inputSchema"`
+	OutputSchema     map[string]any    `json:"outputSchema"`
+	SecretEnv        map[string]string `json:"secretEnv"`
+	SecretHeaders    map[string]string `json:"secretHeaders"`
+	Enabled          bool              `json:"enabled"`
 }
 
 func buildMCPConfigFromPayload(payload mcpPayload) (mcp.Config, error) {
@@ -502,6 +505,7 @@ func buildMCPConfigFromPayload(payload mcpPayload) (mcp.Config, error) {
 		Endpoint:         strings.TrimSpace(payload.Endpoint),
 		Command:          strings.TrimSpace(payload.Command),
 		Args:             append([]string{}, payload.Args...),
+		WorkingDirectory: strings.TrimSpace(payload.WorkingDirectory),
 		URL:              strings.TrimSpace(payload.URL),
 		Headers:          payload.Headers,
 		Env:              payload.Env,
@@ -514,6 +518,12 @@ func buildMCPConfigFromPayload(payload mcpPayload) (mcp.Config, error) {
 		SecretEnv:        payload.SecretEnv,
 		SecretHeaders:    payload.SecretHeaders,
 		Enabled:          payload.Enabled,
+	}
+	if cfg.Name == "" {
+		return mcp.Config{}, fmt.Errorf("mcp name is required")
+	}
+	if cfg.Namespace == "" {
+		return mcp.Config{}, fmt.Errorf("mcp namespace is required")
 	}
 	if cfg.Endpoint == "" {
 		cfg.Endpoint = cfg.URL
@@ -530,6 +540,18 @@ func buildMCPConfigFromPayload(payload mcpPayload) (mcp.Config, error) {
 		if cfg.Command == "" {
 			return mcp.Config{}, fmt.Errorf("stdio mcps require a command")
 		}
+		if cfg.WorkingDirectory != "" {
+			if !filepath.IsAbs(cfg.WorkingDirectory) {
+				return mcp.Config{}, fmt.Errorf("stdio working directory must be an absolute path")
+			}
+			info, err := os.Stat(cfg.WorkingDirectory)
+			if err != nil {
+				return mcp.Config{}, fmt.Errorf("access stdio working directory: %w", err)
+			}
+			if !info.IsDir() {
+				return mcp.Config{}, fmt.Errorf("stdio working directory is not a directory")
+			}
+		}
 		cfg.URL = ""
 		cfg.Headers = nil
 		cfg.SecretHeaders = nil
@@ -539,6 +561,7 @@ func buildMCPConfigFromPayload(payload mcpPayload) (mcp.Config, error) {
 		}
 		cfg.Command = ""
 		cfg.Args = nil
+		cfg.WorkingDirectory = ""
 		cfg.Env = nil
 		cfg.SecretEnv = nil
 	case mcp.TransportREST:
@@ -635,7 +658,11 @@ func (r *Runtime) handleMCPs(w http.ResponseWriter, req *http.Request) {
 		}
 		record, err := r.db.CreateMCP(req.Context(), r.workspace.ID, cfg)
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			status := http.StatusInternalServerError
+			if errors.Is(err, database.ErrMCPNamespaceConflict) {
+				status = http.StatusConflict
+			}
+			writeJSON(w, status, map[string]any{"error": err.Error()})
 			return
 		}
 		cfg.ID = record.ID
@@ -732,7 +759,11 @@ func (r *Runtime) handleMCPActions(w http.ResponseWriter, req *http.Request) {
 		}
 		record, err := r.applyMCPConfig(req.Context(), cfg, "registry sync failed after mcp update")
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			status := http.StatusInternalServerError
+			if errors.Is(err, database.ErrMCPNamespaceConflict) {
+				status = http.StatusConflict
+			}
+			writeJSON(w, status, map[string]any{"error": err.Error()})
 			return
 		}
 		writeJSON(w, http.StatusOK, record)
@@ -793,7 +824,11 @@ func (r *Runtime) handleMarketplace(w http.ResponseWriter, req *http.Request) {
 		}
 		record, err := r.db.CreateMCP(req.Context(), r.workspace.ID, cfg)
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			status := http.StatusInternalServerError
+			if errors.Is(err, database.ErrMCPNamespaceConflict) {
+				status = http.StatusConflict
+			}
+			writeJSON(w, status, map[string]any{"error": err.Error()})
 			return
 		}
 		cfg.ID = record.ID

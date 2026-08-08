@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 
@@ -16,10 +17,11 @@ import (
 )
 
 type StdioClient struct {
-	cmd    string
-	args   []string
-	env    map[string]string
-	logger *slog.Logger
+	cmd              string
+	args             []string
+	workingDirectory string
+	env              map[string]string
+	logger           *slog.Logger
 
 	mu      sync.Mutex
 	proc    *exec.Cmd
@@ -31,13 +33,14 @@ type StdioClient struct {
 	pendMu  sync.Mutex
 }
 
-func NewStdio(cmd string, args []string, env map[string]string, logger *slog.Logger) *StdioClient {
+func NewStdio(cmd string, args []string, workingDirectory string, env map[string]string, logger *slog.Logger) *StdioClient {
 	return &StdioClient{
-		cmd:     cmd,
-		args:    args,
-		env:     env,
-		logger:  logger,
-		pending: make(map[int64]chan *protocol.Response),
+		cmd:              cmd,
+		args:             args,
+		workingDirectory: workingDirectory,
+		env:              env,
+		logger:           logger,
+		pending:          make(map[int64]chan *protocol.Response),
 	}
 }
 
@@ -48,7 +51,24 @@ func (c *StdioClient) Initialize(ctx context.Context) error {
 		return nil
 	}
 
+	if c.workingDirectory != "" {
+		if !filepath.IsAbs(c.workingDirectory) {
+			c.mu.Unlock()
+			return fmt.Errorf("working directory must be an absolute path")
+		}
+		info, err := os.Stat(c.workingDirectory)
+		if err != nil {
+			c.mu.Unlock()
+			return fmt.Errorf("access working directory: %w", err)
+		}
+		if !info.IsDir() {
+			c.mu.Unlock()
+			return fmt.Errorf("working directory is not a directory")
+		}
+	}
+
 	proc := exec.CommandContext(ctx, c.cmd, c.args...)
+	proc.Dir = c.workingDirectory
 	proc.Env = os.Environ()
 	for key, value := range c.env {
 		proc.Env = append(proc.Env, key+"="+value)

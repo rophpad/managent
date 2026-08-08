@@ -147,8 +147,7 @@ func (e *Engine) Evaluate(req Request) Decision {
 		return decision
 	}
 	return Decision{
-		Action:  ActionDeny,
-		Reason:  "no matching rule; default deny",
+		Reason:  "no matching policy; permission grant applies",
 		Matched: false,
 	}
 }

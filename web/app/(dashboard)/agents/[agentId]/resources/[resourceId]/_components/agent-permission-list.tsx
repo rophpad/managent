@@ -35,70 +35,82 @@ export function AgentPermissionList({
   catalogNoun: string;
   rows: GrantRow[];
 }) {
-  const initial = rows.filter((row) => row.granted).map((row) => row.name);
-  const [granted, setGranted] = useState<ReadonlySet<string>>(() => new Set(initial));
+  const initial = rows.filter((row) => !row.granted).map((row) => row.name);
+  const [denied, setDenied] = useState<ReadonlySet<string>>(() => new Set(initial));
   const [saved, setSaved] = useState<ReadonlySet<string>>(() => new Set(initial));
 
-  const dirty =
-    granted.size !== saved.size || [...granted].some((name) => !saved.has(name));
+  const dirty = denied.size !== saved.size || [...denied].some((name) => !saved.has(name));
+  const allAllowed = denied.size === 0;
+
+  function toggleAll() {
+    setDenied(allAllowed ? new Set(rows.map((row) => row.name)) : new Set());
+  }
 
   function toggle(name: string, checked: boolean) {
-    setGranted((current) => {
+    setDenied((current) => {
       const next = new Set(current);
-      if (checked) next.add(name);
-      else next.delete(name);
+      if (checked) next.delete(name);
+      else next.add(name);
       return next;
     });
   }
 
   async function savePermissions() {
-    const retained = agent.scopes.filter((scope) => scope.resourceId !== resourceId);
-    const existing = new Map(
-      agent.scopes.filter((scope) => scope.resourceId === resourceId).map((scope) => [scope.permission, scope]),
-    );
-    const scopes = [
+    const linkedResources = agent.permissionMode === "denylist"
+      ? [...new Set([...(agent.linkedResources ?? []), resourceId])]
+      : [...new Set([...agent.scopes.map((scope) => scope.resourceId), resourceId])];
+    const retained = (agent.deniedPermissions ?? []).filter((entry) => entry.resourceId !== resourceId);
+    const deniedPermissions = [
       ...retained,
-      ...[...granted].map((permission) =>
-        existing.get(permission) ?? { resourceId, permission, callsToday: 0 },
-      ),
+      ...[...denied].map((permission) => ({ resourceId, permission, callsToday: 0 })),
     ];
-    await saveDashboardEntity("agents", { ...agent, scopes });
-    setSaved(new Set(granted));
+    await saveDashboardEntity("agents", {
+      ...agent,
+      permissionMode: "denylist",
+      linkedResources,
+      deniedPermissions,
+    });
+    setSaved(new Set(denied));
   }
 
   return (
     <>
       <div className="mb-3 flex items-center justify-between gap-4">
         <MutedText>
-          {granted.size} of {rows.length} granted
+          {rows.length - denied.size} of {rows.length} allowed
         </MutedText>
-        {dirty ? (
-          <div className="flex gap-2">
-            <Button size="sm" onClick={() => setGranted(new Set(saved))}>
-              Reset
-            </Button>
-            <Button variant="primary" size="sm" onClick={savePermissions}>
-              Save permissions
-            </Button>
-          </div>
-        ) : null}
+        <div className="flex gap-2">
+          <Button size="sm" onClick={toggleAll}>
+            {allAllowed ? "Remove all permission to all" : "Add permission to all"}
+          </Button>
+          {dirty ? (
+            <>
+              <Button size="sm" onClick={() => setDenied(new Set(saved))}>
+                Reset
+              </Button>
+              <Button variant="primary" size="sm" onClick={savePermissions}>
+                Save permissions
+              </Button>
+            </>
+          ) : null}
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-line-soft">
         {rows.map((row) => {
-          const isGranted = granted.has(row.name);
+          const isDenied = denied.has(row.name);
           return (
             <label
               key={row.name}
               className={cn(
                 "flex cursor-pointer items-start gap-3 border-b border-line-soft px-3.5 py-3 transition-colors last:border-b-0 hover:bg-surface",
-                !isGranted && "opacity-60",
+                isDenied && "opacity-60",
               )}
             >
               <input
                 type="checkbox"
                 name={row.name}
-                checked={isGranted}
+                checked={!isDenied}
                 onChange={(event) => toggle(row.name, event.target.checked)}
                 className="mt-0.5 size-4 accent-brand"
               />
@@ -112,9 +124,7 @@ export function AgentPermissionList({
                 ) : null}
               </span>
               <span className="shrink-0 text-right text-[11px] text-muted-2">
-                {isGranted ? (
-                  <span className="block">used {row.callsToday}x today</span>
-                ) : null}
+                {!isDenied ? <span className="block">allowed</span> : <span className="block">denied</span>}
                 {row.paramCount > 0 ? (
                   <span className="block">{row.paramCount} inputs</span>
                 ) : null}
@@ -125,9 +135,8 @@ export function AgentPermissionList({
       </div>
 
       <Hint className="mt-3">
-        Unchecked {catalogNoun}s exist on the resource but {agentName}{" "}
-        can&apos;t call them. This selection applies to {agentName}{" "}
-        only — it doesn&apos;t change the resource or any other agent&apos;s access.
+        Checked {catalogNoun}s are allowed. Uncheck only the tools that {agentName}{" "}
+        must not call. Policies can add conditions or approval requirements to allowed tools.
       </Hint>
     </>
   );

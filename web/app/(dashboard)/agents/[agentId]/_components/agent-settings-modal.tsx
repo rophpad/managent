@@ -60,10 +60,14 @@ export function AgentSettingsModal({
   const [mode, setMode] = useState<EnforcementMode>(initialMode);
   const [failOpen, setFailOpen] = useState(initialFailOpen);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
-  const [granted, setGranted] = useState<ReadonlySet<string>>(
-    () => new Set(initialScopes.map((scope) => `${scope.resourceId}:${scope.permission}`)),
-  );
-  const [permissionDraft, setPermissionDraft] = useState<ReadonlySet<string>>(granted);
+  const initialDenied = agent.permissionMode === "denylist"
+    ? new Set((agent.deniedPermissions ?? []).map((entry) => `${entry.resourceId}:${entry.permission}`))
+    : new Set(resources.flatMap((resource) => resource.permissions
+        .filter((permission) => !initialScopes.some((scope) =>
+          scope.resourceId === resource.id && scope.permission === permission.name))
+        .map((permission) => `${resource.id}:${permission.name}`)));
+  const [denied, setDenied] = useState<ReadonlySet<string>>(initialDenied);
+  const [permissionDraft, setPermissionDraft] = useState<ReadonlySet<string>>(initialDenied);
 
   async function saveSettings() {
     await saveDashboardEntity("agents", { ...agent, enforcementMode: mode, failOpen });
@@ -71,15 +75,24 @@ export function AgentSettingsModal({
   }
 
   async function savePermissions() {
-    const existing = new Map(agent.scopes.map((scope) => [`${scope.resourceId}:${scope.permission}`, scope]));
-    const nextScopes = [...permissionDraft].map((key) => {
+    const deniedPermissions = [...permissionDraft].map((key) => {
       const separator = key.indexOf(":");
-      const resourceId = key.slice(0, separator);
-      const permission = key.slice(separator + 1);
-      return existing.get(key) ?? { resourceId, permission, callsToday: 0 };
+      return {
+        resourceId: key.slice(0, separator),
+        permission: key.slice(separator + 1),
+        callsToday: 0,
+      };
     });
-    await saveDashboardEntity("agents", { ...agent, scopes: nextScopes });
-    setGranted(new Set(permissionDraft));
+    const linkedResources = agent.permissionMode === "denylist"
+      ? agent.linkedResources ?? []
+      : [...new Set(initialScopes.map((scope) => scope.resourceId))];
+    await saveDashboardEntity("agents", {
+      ...agent,
+      permissionMode: "denylist",
+      linkedResources,
+      deniedPermissions,
+    });
+    setDenied(new Set(permissionDraft));
     setPermissionsOpen(false);
   }
 
@@ -87,8 +100,8 @@ export function AgentSettingsModal({
     const key = `${resourceId}:${permission}`;
     setPermissionDraft((current) => {
       const next = new Set(current);
-      if (checked) next.add(key);
-      else next.delete(key);
+      if (checked) next.delete(key);
+      else next.add(key);
       return next;
     });
   }
@@ -161,11 +174,11 @@ export function AgentSettingsModal({
               size="sm"
               className="mt-3.5"
               onClick={() => {
-                setPermissionDraft(new Set(granted));
+                setPermissionDraft(new Set(denied));
                 setPermissionsOpen(true);
               }}
             >
-              <Pencil aria-hidden className="size-[15px]" />
+              <Pencil aria-hidden className="size-3.75" />
               Edit permissions
             </Button>
           </>
@@ -197,21 +210,21 @@ export function AgentSettingsModal({
       <ModalBody>
         <div className="mb-4 flex items-start justify-between gap-4 rounded-lg border border-line-soft bg-panel-2 px-3.5 py-3">
           <div>
-            <span className="block text-[13px] font-medium">Agent access</span>
-            <Hint className="mt-0.5">Choose the exact MCP tools this agent may call. This applies to this agent only; policies are set per resource, on each one&apos;s page.</Hint>
+            <span className="block text-[13px] font-medium">Allowed tools</span>
+            <Hint className="mt-0.5">All tools on linked resources start checked and allowed. Uncheck only tools this agent must not call; policies add conditions and approvals.</Hint>
           </div>
-          <span className="shrink-0 rounded-full bg-brand/10 px-2.5 py-1 text-xs text-brand">{permissionDraft.size} selected</span>
+          <span className="shrink-0 rounded-full bg-brand/10 px-2.5 py-1 text-xs text-brand">{resources.reduce((total, resource) => total + resource.permissions.length, 0) - permissionDraft.size} allowed</span>
         </div>
         {resources.map((resource, index) => (
           <fieldset key={resource.id} className={cn("overflow-hidden rounded-lg border border-line-soft p-0", index > 0 ? "mt-3" : undefined)}>
             <legend className="sr-only">{resource.name}</legend>
             <div className="flex items-center justify-between gap-3 border-b border-line-soft bg-panel-2 px-3.5 py-2.5">
               <span className="flex items-center gap-2 text-[13px] font-medium">
-                <ResourceIcon id={resource.id} kind={resource.kind} className="size-[15px] text-muted" />
+                <ResourceIcon id={resource.id} kind={resource.kind} className="size-3.75 text-muted" />
                 {resource.name}
                 <span className="font-normal text-muted-2">{CATALOG_LABEL[resource.kind]}</span>
               </span>
-              <span className="text-[11.5px] text-muted-2">{resource.permissions.filter((permission) => permissionDraft.has(`${resource.id}:${permission.name}`)).length}/{resource.permissions.length}</span>
+              <span className="text-[11.5px] text-muted-2">{resource.permissions.filter((permission) => !permissionDraft.has(`${resource.id}:${permission.name}`)).length}/{resource.permissions.length}</span>
             </div>
             <div>
               {resource.permissions.map((permission) => (
@@ -222,7 +235,7 @@ export function AgentSettingsModal({
                   <input
                     type="checkbox"
                     name={`${resource.id}:${permission.name}`}
-                    checked={permissionDraft.has(`${resource.id}:${permission.name}`)}
+                    checked={!permissionDraft.has(`${resource.id}:${permission.name}`)}
                     onChange={(event) => togglePermission(resource.id, permission.name, event.target.checked)}
                     className="mt-0.5 size-4 accent-brand"
                   />

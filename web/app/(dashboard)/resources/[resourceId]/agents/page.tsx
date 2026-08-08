@@ -8,6 +8,7 @@ import {
   AGENT_STATUS_LABEL,
   getAgentResourceCalls,
   getGrantSummary,
+  getLinkedResourceIds,
   listAgents,
 } from "@/lib/data/server";
 import { listAuditEntries } from "@/lib/data/server";
@@ -30,7 +31,7 @@ export default async function ResourceAgentsPage({
   ]);
 
   const rows: ResourceAgentRow[] = agents.filter((agent) =>
-    agent.scopes.some((scope) => scope.resourceId === resource.id),
+    getLinkedResourceIds(agent).includes(resource.id),
   ).map((agent) => {
     const { granted, total } = getGrantSummary(agent, resource);
     return {
@@ -53,7 +54,7 @@ export default async function ResourceAgentsPage({
 
   if (rows.length === 0) {
     return (
-      <Card className="px-5 py-[18px]">
+      <Card className="px-5 py-4.5">
         <EmptyState icon={<Bot />}>
           No agents are scoped against this resource yet. Link it from an agent&apos;s settings, or{" "}
           <Link href="/agents/new" className="text-brand hover:underline">

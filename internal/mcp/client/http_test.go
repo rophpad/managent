@@ -45,6 +45,61 @@ func TestHTTPClientListToolsOverHTTP(t *testing.T) {
 	}
 }
 
+func TestHTTPClientCallToolIncludesEmptyArguments(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		var req struct {
+			ID     any             `json:"id"`
+			Method string          `json:"method"`
+			Params json.RawMessage `json:"params"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		switch req.Method {
+		case protocol.MethodInitialize:
+			_ = json.NewEncoder(w).Encode(protocol.Response{JSONRPC: "2.0", ID: req.ID, Result: protocol.InitializeResult{ProtocolVersion: "2024-11-05"}})
+		case protocol.MethodToolsCall:
+			if !strings.Contains(string(req.Params), `"arguments":{}`) {
+				t.Errorf("params = %s, want empty arguments object", req.Params)
+			}
+			_ = json.NewEncoder(w).Encode(protocol.Response{JSONRPC: "2.0", ID: req.ID, Result: protocol.ToolCallResult{Content: []protocol.ContentItem{{Type: "text", Text: "done"}}}})
+		default:
+			t.Fatalf("unexpected method %q", req.Method)
+		}
+	}))
+	defer server.Close()
+
+	client := NewHTTP(server.URL, nil, slog.Default())
+	if err := client.Initialize(context.Background()); err != nil {
+		t.Fatalf("Initialize() error = %v", err)
+	}
+	if _, err := client.CallTool(context.Background(), protocol.ToolCallParams{Name: "get_me", Arguments: map[string]any{}}); err != nil {
+		t.Fatalf("CallTool() error = %v", err)
+	}
+}
+
+func TestHTTPClientAdvertisesJSONAndSSEForStreamableHTTP(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		accept := r.Header.Get("Accept")
+		if !strings.Contains(accept, "application/json") || !strings.Contains(accept, "text/event-stream") {
+			t.Errorf("Accept = %q, want JSON and SSE media types", accept)
+		}
+		defer r.Body.Close()
+		var req protocol.Request
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		_ = json.NewEncoder(w).Encode(protocol.Response{JSONRPC: "2.0", ID: req.ID, Result: protocol.InitializeResult{ProtocolVersion: "2024-11-05"}})
+	}))
+	defer server.Close()
+
+	client := NewHTTP(server.URL, map[string]string{"Accept": "application/json"}, slog.Default())
+	if err := client.Initialize(context.Background()); err != nil {
+		t.Fatalf("Initialize() error = %v", err)
+	}
+}
+
 func TestHTTPClientCallToolOverSSE(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {

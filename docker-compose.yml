@@ -29,9 +29,11 @@ services:
       MANAGENT_DATABASE_URL: ${MANAGENT_DATABASE_URL:-postgres://postgres:postgres@postgres:5432/managent?sslmode=disable}
       MANAGENT_PORT: ${MANAGENT_PORT:-8080}
       MANAGENT_ADMIN_TOKEN: ${MANAGENT_ADMIN_TOKEN:-}
-      MANAGENT_MCP_SECRET_KEY: ${MANAGENT_MCP_SECRET_KEY:-}
+      MANAGENT_MCP_SECRET_KEY: ${MANAGENT_MCP_SECRET_KEY:?Set MANAGENT_MCP_SECRET_KEY in .env to a persistent 32-byte raw or base64-encoded key}
     ports:
       - "8081:8080"
+    volumes:
+      - managent-mcp-workspace:/workspace
 
   dashboard:
     build:
@@ -47,7 +49,7 @@ services:
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
     ports:
-      - "3000:3000"
+      - "${MANAGENT_DASHBOARD_PORT:-3000}:3000"
     volumes:
       - ./web:/app
       # - managent-dashboard-node-modules:/app/node_modules
@@ -56,5 +58,6 @@ services:
 
 volumes:
   managent-postgres-data:
+  managent-mcp-workspace:
   # managent-dashboard-node-modules:
   managent-dashboard-next:

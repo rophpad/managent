@@ -26,7 +26,7 @@ export function ResourceSettings({ resource }: { resource: Resource }) {
             that policy allows.
           </Hint>
           <Button size="sm" className="mt-3.5">
-            <KeyRound aria-hidden className="size-[15px]" />
+            <KeyRound aria-hidden className="size-3.75" />
             Rotate credential
           </Button>
         </PanelBlock>
@@ -58,7 +58,7 @@ export function ResourceSettings({ resource }: { resource: Resource }) {
               setTimeout(() => setRediscovering(false), 700);
             }}
           >
-            <Sparkles aria-hidden className="size-[15px]" />
+            <Sparkles aria-hidden className="size-3.75" />
             {rediscovering ? "Discovering…" : "Re-run discovery now"}
           </Button>
         </PanelBlock>
@@ -97,7 +97,7 @@ export function ResourceSettings({ resource }: { resource: Resource }) {
             router.refresh();
           }}
         >
-          <Trash2 aria-hidden className="size-[15px]" />
+          <Trash2 aria-hidden className="size-3.75" />
           Remove {resource.name}
         </Button>
       </PanelBlock>

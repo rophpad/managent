@@ -42,13 +42,13 @@ export default async function AgentResourceLayout({
             <ResourceIcon
               id={resource.id}
               kind={resource.kind}
-              className="size-[18px] shrink-0 text-muted"
+              className="size-4.5 shrink-0 text-muted"
             />
             <div>
               <h2 className="font-mono text-[15px] font-semibold">{resource.name}</h2>
               <p className="mt-0.5 text-[12.5px] text-muted">
                 {RESOURCE_KIND_LABEL[resource.kind]} · {granted} of {total}{" "}
-                {CATALOG_LABEL[resource.kind].toLowerCase()} granted to {agent.name}
+                {CATALOG_LABEL[resource.kind].toLowerCase()} allowed for {agent.name}
               </p>
             </div>
           </div>

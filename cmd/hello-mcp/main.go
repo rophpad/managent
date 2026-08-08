@@ -53,6 +53,9 @@ func main() {
 		}
 		write(writer, *resp)
 	}
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "read stdin: %v\n", err)
+	}
 }
 
 func handle(_ context.Context, req *protocol.Request) (*protocol.Response, bool) {

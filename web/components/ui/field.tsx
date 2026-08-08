@@ -22,7 +22,7 @@ export function Field({
 }) {
   return (
     <div className={cn("mb-4.5", className)}>
-      <label htmlFor={htmlFor} className="mb-[7px] block text-[13px] font-medium">
+      <label htmlFor={htmlFor} className="mb-1.75 block text-[13px] font-medium">
         {label}
       </label>
       {children}
@@ -47,7 +47,7 @@ export function FieldGroup({
 }) {
   return (
     <fieldset className={cn("mb-4.5 border-none p-0", className)}>
-      <legend className="mb-[7px] block text-[13px] font-medium">{label}</legend>
+      <legend className="mb-1.75 block text-[13px] font-medium">{label}</legend>
       {children}
       {error ? <FieldError>{error}</FieldError> : hint ? <Hint>{hint}</Hint> : null}
     </fieldset>
@@ -55,11 +55,11 @@ export function FieldGroup({
 }
 
 export function Hint({ children, className }: { children: ReactNode; className?: string }) {
-  return <p className={cn("mt-[5px] text-xs text-muted-2", className)}>{children}</p>;
+  return <p className={cn("mt-1.25 text-xs text-muted-2", className)}>{children}</p>;
 }
 
 export function FieldError({ children, className }: { children: ReactNode; className?: string }) {
-  return <p role="alert" className={cn("mt-[5px] text-xs text-deny", className)}>{children}</p>;
+  return <p role="alert" className={cn("mt-1.25 text-xs text-deny", className)}>{children}</p>;
 }
 
 export function Input({ className, ...props }: ComponentProps<"input">) {
@@ -86,7 +86,7 @@ export function FormActions({ children, className }: { children: ReactNode; clas
 export function FormCard({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={cn("max-w-[640px] rounded-xl border border-line bg-panel px-7 py-[26px]", className)}
+      className={cn("max-w-160 rounded-xl border border-line bg-panel px-7 py-6.5", className)}
     >
       {children}
     </div>

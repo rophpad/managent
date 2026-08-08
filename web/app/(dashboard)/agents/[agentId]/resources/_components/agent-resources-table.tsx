@@ -39,7 +39,7 @@ export function AgentResourcesTable({
         <thead>
           <tr>
             <Th>Resource</Th>
-            <Th>Permissions granted</Th>
+            <Th>Tools allowed</Th>
             <Th>Policy rules</Th>
             <Th>Calls 24h</Th>
             <Th>Denied 24h</Th>
@@ -64,7 +64,7 @@ export function AgentResourcesTable({
                     <ResourceIcon
                       id={row.resourceId}
                       kind={row.kind}
-                      className="size-[15px] shrink-0 text-muted"
+                      className="size-3.75 shrink-0 text-muted"
                     />
                     <ResourceName>{row.name}</ResourceName>
                   </Link>

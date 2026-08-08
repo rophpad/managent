@@ -2,7 +2,7 @@
 
 import { Check, Layers, PlugZap, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { ResourceIcon } from "@/components/dashboard/resource-icon";
 import { Button } from "@/components/ui/button";
 import { ButtonLink } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   Hint,
   Input,
   Select,
+  Textarea,
 } from "@/components/ui/field";
 import { FilterPills } from "@/components/ui/filter-pills";
 import { ScopeChip, ScopeChipGroup } from "@/components/ui/scope-chip";
@@ -22,15 +23,42 @@ import { ScopeRow } from "@/components/ui/rows";
 import { SuccessNote } from "@/components/ui/token-reveal";
 import { cn } from "@/lib/cn";
 import { saveDashboardEntity } from "@/lib/client-api";
-import { CONNECTOR_TEMPLATES } from "@/lib/data/resources";
-import type { Permission, Resource } from "@/lib/types";
+import type {
+  MarketplaceTemplate,
+  MarketplaceTransportOption,
+  Permission,
+  Resource,
+} from "@/lib/types";
 
 /** `template` is a form mode that produces a configured MCP resource. */
 type FormType = "mcp" | "template";
+type MCPTransport = "stdio" | "http" | "sse";
+
+function normalizeTransport(value?: string): MCPTransport {
+  if (value === "http" || value === "sse" || value === "stdio") return value;
+  if (value?.toLowerCase().includes("sse")) return "sse";
+  if (value?.toLowerCase().includes("http")) return "http";
+  return "stdio";
+}
+
+function namespaceFromName(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function parseLines(value: string): string[] {
+  return value.split("\n").map((line) => line.trim()).filter(Boolean);
+}
+
+function parseEnvironment(value: string): Record<string, string> {
+  return Object.fromEntries(parseLines(value).map((line) => {
+    const separator = line.indexOf("=");
+    return [line.slice(0, separator).trim(), line.slice(separator + 1)];
+  }));
+}
 
 const TYPE_OPTIONS = [
-  { value: "mcp", label: "MCP server", icon: <PlugZap aria-hidden className="size-[13px]" /> },
-  { value: "template", label: "MCP templates", icon: <Layers aria-hidden className="size-[13px]" /> },
+  { value: "mcp", label: "MCP server", icon: <PlugZap aria-hidden className="size-3.25" /> },
+  { value: "template", label: "MCP templates", icon: <Layers aria-hidden className="size-3.25" /> },
 ] as const;
 
 type MCPTool = {
@@ -63,10 +91,17 @@ function permissionFromTool(tool: MCPTool): Permission {
   };
 }
 
+function mcpErrorMessage(message: string) {
+  if (message.includes("mcp secret key is required")) {
+    return "MCP secret encryption is not configured. Set MANAGENT_MCP_SECRET_KEY to a persistent 32-byte raw or base64-encoded key, then restart the gateway.";
+  }
+  return message;
+}
+
 async function responseJSON<T>(response: Response): Promise<T> {
   const payload = await response.json() as T & { error?: string; message?: string };
-  if (!response.ok) throw new Error(payload.error ?? "The MCP request failed");
-  if (payload.error) throw new Error(payload.error);
+  if (!response.ok) throw new Error(mcpErrorMessage(payload.error ?? "The MCP request failed"));
+  if (payload.error) throw new Error(mcpErrorMessage(payload.error));
   return payload;
 }
 
@@ -83,10 +118,23 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
   const [showErrors, setShowErrors] = useState(false);
 
   // MCP
-  const [transport, setTransport] = useState(
-    editing?.kind === "mcp" ? editing.transport : "stdio (local subprocess)",
+  const [transport, setTransport] = useState<MCPTransport>(
+    editing?.kind === "mcp" ? normalizeTransport(editing.transport) : "http",
   );
-  const [command, setCommand] = useState(editing?.kind === "mcp" ? editing.command : "");
+  const [command, setCommand] = useState(
+    editing?.kind === "mcp" ? editing.url ?? editing.command : "",
+  );
+  const [argsText, setArgsText] = useState(
+    editing?.kind === "mcp" ? (editing.args ?? []).join("\n") : "",
+  );
+  const [workingDirectory, setWorkingDirectory] = useState(
+    editing?.kind === "mcp" ? editing.workingDirectory ?? "" : "",
+  );
+  const [environmentText, setEnvironmentText] = useState(
+    editing?.kind === "mcp"
+      ? Object.entries(editing.env ?? {}).map(([key, value]) => `${key}=${value}`).join("\n")
+      : "",
+  );
   const [credentialName, setCredentialName] = useState("");
   const [credentialValue, setCredentialValue] = useState("");
   const [discovering, setDiscovering] = useState(false);
@@ -97,29 +145,89 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
     new Set(editing?.kind === "mcp" ? editing.permissions.map((p) => p.name) : []),
   );
 
-  // Template
+  // Marketplace template
+  const [templates, setTemplates] = useState<MarketplaceTemplate[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
+  const [existingNamespaces, setExistingNamespaces] = useState<ReadonlySet<string>>(new Set());
   const [templateId, setTemplateId] = useState<string | null>(null);
-  const template = CONNECTOR_TEMPLATES.find((entry) => entry.id === templateId) ?? null;
+  const [transportOptionId, setTransportOptionId] = useState("");
+  const [templateValues, setTemplateValues] = useState<Record<string, string>>({});
+  const template = templates.find((entry) => entry.slug === templateId) ?? null;
+  const templateOption = template?.transportOptions.find((entry) => entry.id === transportOptionId) ?? null;
+  const remote = transport !== "stdio";
+  const generatedNamespace = type === "template" ? template?.defaultNamespace ?? "" : namespaceFromName(name);
   const hasCredentialName = credentialName.trim().length > 0;
   const hasCredentialValue = credentialValue.length > 0;
   const credentialIsValid = hasCredentialName === hasCredentialValue;
   const fieldErrors = {
-    name: name.trim().length < 2 ? "Use at least 2 characters for the resource name." : null,
+    name: name.trim().length < 2
+      ? "Use at least 2 characters for the resource name."
+      : !generatedNamespace
+        ? "Use at least one letter or number so a namespace can be generated."
+        : type === "mcp" && !isEditing && existingNamespaces.has(generatedNamespace)
+          ? `The namespace ${generatedNamespace} is already in use.`
+          : null,
     command: type === "mcp" && !command.trim()
-      ? transport.startsWith("HTTP")
+      ? remote
         ? "Enter the MCP server URL."
-        : "Enter the command used to start the MCP server."
+        : "Enter the executable used to start the MCP server."
+      : null,
+    workingDirectory: type === "mcp" && !remote && workingDirectory.trim() && !workingDirectory.trim().startsWith("/")
+      ? "Use an absolute path inside the gateway runtime, such as /workspace."
+      : null,
+    environment: type === "mcp" && !remote && parseLines(environmentText).some((line) => {
+      const separator = line.indexOf("=");
+      return separator < 1 || !line.slice(0, separator).trim();
+    })
+      ? "Use one KEY=value environment variable per line."
       : null,
     credential: !credentialIsValid
       ? "Enter both the credential name and value, or leave both empty."
       : null,
-    template: type === "template" && !template ? "Choose an MCP template." : null,
-    tools: tools.length === 0
-      ? "Discover the MCP tools before saving."
-      : enabledTools.size === 0
-        ? "Enable at least one discovered tool."
-        : null,
+    template: type === "template" && (!template || !templateOption)
+      ? "Choose an MCP template and transport."
+      : null,
+    templateValues: type === "template"
+      ? templateOption?.fields.find((field) => field.required && !templateValues[field.name]?.trim())?.label ?? null
+      : null,
+    tools: type === "mcp"
+      ? tools.length === 0
+        ? "Discover the MCP tools before saving."
+        : enabledTools.size === 0
+          ? "Enable at least one discovered tool."
+          : null
+      : null,
   };
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/mcps")
+      .then((response) => responseJSON<{ items: Array<{ namespace: string }> }>(response))
+      .then((result) => {
+        if (active) setExistingNamespaces(new Set(result.items.map((item) => item.namespace)));
+      })
+      .catch((cause) => {
+        if (active) setError(cause instanceof Error ? cause.message : "Unable to validate the MCP namespace");
+      });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (isEditing || type !== "template" || templates.length > 0) return;
+    let active = true;
+    fetch("/api/marketplace")
+      .then((response) => responseJSON<{ items: MarketplaceTemplate[] }>(response))
+      .then((result) => {
+        if (active) setTemplates(result.items);
+      })
+      .catch((cause) => {
+        if (active) setError(cause instanceof Error ? cause.message : "Unable to load MCP templates");
+      })
+      .finally(() => {
+        if (active) setTemplatesLoading(false);
+      });
+    return () => { active = false; };
+  }, [isEditing, templates.length, type]);
 
   async function handleDiscoverTools() {
     setShowErrors(true);
@@ -131,14 +239,13 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
       setError("Command or server URL is required before discovery");
       return;
     }
-    if (fieldErrors.credential) {
-      setError("Correct the highlighted fields before saving the resource.");
+    if (fieldErrors.credential || fieldErrors.workingDirectory || fieldErrors.environment) {
+      setError("Correct the highlighted fields before discovering tools.");
       return;
     }
     setDiscovering(true);
     setError(null);
     try {
-      const remote = transport.startsWith("HTTP");
       const result = await responseJSON<{
         status: string;
         message?: string;
@@ -149,8 +256,11 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
         body: JSON.stringify({
           name: name.trim() || "mcp-preview",
           namespace: "preview",
-          transport: remote ? "sse" : "stdio",
+          transport,
           command: remote ? undefined : command.trim(),
+          args: remote ? undefined : parseLines(argsText),
+          workingDirectory: remote ? undefined : workingDirectory.trim() || undefined,
+          env: remote ? undefined : parseEnvironment(environmentText),
           url: remote ? command.trim() : undefined,
           secretEnv: !remote && hasCredentialValue
             ? { [credentialName.trim()]: credentialValue }
@@ -175,35 +285,28 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
     }
   }
 
-  async function selectTemplate(id: string) {
-    const selected = CONNECTOR_TEMPLATES.find((entry) => entry.id === id);
+  function selectTemplate(id: string) {
+    const selected = templates.find((entry) => entry.slug === id);
     if (!selected) return;
+    const option = selected.transportOptions.find((entry) => entry.recommended)
+      ?? selected.transportOptions[0];
     setTemplateId(id);
-    setName(id + "-mcp");
-    setDiscovering(true);
+    setTransportOptionId(option?.id ?? "");
+    setTemplateValues({});
+    setName(selected.defaultMCPName);
+    setTools([]);
+    setEnabledTools(new Set());
+    setShowErrors(false);
     setError(null);
-    try {
-      const result = await responseJSON<{ items: Array<{
-        name: string;
-        namespace: string;
-        status: string;
-        lastError?: string;
-        tools?: MCPTool[];
-      }> }>(await fetch("/api/mcps"));
-      const server = result.items.find((item) => item.namespace === id || item.name === id);
-      if (!server) throw new Error(`${selected.name} is not installed in the gateway`);
-      if (server.status !== "connected") throw new Error(server.lastError || `${selected.name} is not connected`);
-      const discovered = (server.tools ?? []).map(permissionFromTool);
-      if (discovered.length === 0) throw new Error(`${selected.name} returned no tools`);
-      setTools(discovered);
-      setEnabledTools(new Set(discovered.map((tool) => tool.name)));
-    } catch (cause) {
-      setTools([]);
-      setEnabledTools(new Set());
-      setError(cause instanceof Error ? cause.message : "Unable to load the MCP template");
-    } finally {
-      setDiscovering(false);
-    }
+  }
+
+  function selectTransportOption(option: MarketplaceTransportOption) {
+    setTransportOptionId(option.id);
+    setTemplateValues({});
+    setTools([]);
+    setEnabledTools(new Set());
+    setShowErrors(false);
+    setError(null);
   }
 
   async function saveResource() {
@@ -213,8 +316,12 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
       setError("Correct the highlighted fields before saving the resource.");
       return;
     }
-    if (fieldErrors.command || fieldErrors.template) {
+    if (fieldErrors.command || fieldErrors.workingDirectory || fieldErrors.environment || fieldErrors.template) {
       setError("Correct the highlighted fields before saving the resource.");
+      return;
+    }
+    if (fieldErrors.templateValues) {
+      setError(`Enter a value for ${fieldErrors.templateValues}.`);
       return;
     }
     if (fieldErrors.credential) {
@@ -227,15 +334,98 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
     }
     setSaving(true);
     try {
-      const id = editing?.id ?? name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      let resourceTools = tools;
+      let resourceTransport: string = transport;
+      let resourceCommand = command;
+      let resourceURL = remote ? command.trim() : undefined;
+      let resourceArgs = remote ? undefined : parseLines(argsText);
+      let resourceWorkingDirectory = remote ? undefined : workingDirectory.trim() || undefined;
+      let resourceEnv = remote ? undefined : parseEnvironment(environmentText);
+      let mcpId = editing?.kind === "mcp" ? editing.mcpId : undefined;
+      if (type === "template" && template && templateOption) {
+        type InstalledMCP = {
+          name: string;
+          namespace: string;
+          status: string;
+          lastError?: string;
+          tools?: MCPTool[];
+        };
+        const registered = await responseJSON<{ items: InstalledMCP[] }>(await fetch("/api/mcps"));
+        let installed = registered.items.find((item) => item.namespace === template.defaultNamespace);
+        if (!installed) {
+          installed = await responseJSON<InstalledMCP>(await fetch("/api/marketplace", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              slug: template.slug,
+              transportOption: templateOption.id,
+              name: name.trim(),
+              namespace: template.defaultNamespace,
+              values: templateValues,
+            }),
+          }));
+        }
+        if (installed.status !== "connected") {
+          throw new Error(installed.lastError || `${template.name} is installed but could not connect`);
+        }
+        resourceTools = (installed.tools ?? []).map(permissionFromTool);
+        if (resourceTools.length === 0) throw new Error(`${template.name} returned no tools`);
+        setTools(resourceTools);
+        setEnabledTools(new Set(resourceTools.map((tool) => tool.name)));
+        resourceTransport = templateOption.transport;
+        resourceCommand = templateOption.command ?? templateOption.url ?? "";
+        resourceURL = templateOption.transport === "stdio" ? undefined : templateOption.url;
+        resourceArgs = undefined;
+        resourceWorkingDirectory = undefined;
+        resourceEnv = undefined;
+      }
+      if (type === "mcp" && !isEditing) {
+        const registered = await responseJSON<{
+          id: string;
+          status: string;
+          lastError?: string;
+        }>(await fetch("/api/mcps", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name.trim(),
+            namespace: generatedNamespace,
+            transport,
+            command: remote ? undefined : command.trim(),
+            args: remote ? undefined : parseLines(argsText),
+            workingDirectory: remote ? undefined : workingDirectory.trim() || undefined,
+            env: remote ? undefined : parseEnvironment(environmentText),
+            url: remote ? command.trim() : undefined,
+            secretEnv: !remote && hasCredentialValue
+              ? { [credentialName.trim()]: credentialValue }
+              : undefined,
+            secretHeaders: remote && hasCredentialValue
+              ? { [credentialName.trim()]: credentialValue }
+              : undefined,
+            enabled: true,
+          }),
+        }));
+        if (registered.status !== "connected") {
+          throw new Error(registered.lastError || "The MCP server was registered but could not connect");
+        }
+        mcpId = registered.id;
+      }
+      const id = editing?.id ?? generatedNamespace;
       const resource: Resource = {
         id,
         name: name.trim(),
         kind: "mcp",
         discoveredVia: type === "template" ? "manifest" : "auto",
-        transport: template?.transport ?? transport,
-        command: template?.command ?? command,
-        permissions: tools.filter((tool) => enabledTools.has(tool.name)),
+        transport: resourceTransport,
+        command: resourceCommand,
+        url: resourceURL,
+        args: resourceArgs,
+        workingDirectory: resourceWorkingDirectory,
+        env: resourceEnv,
+        mcpId,
+        permissions: type === "template"
+          ? resourceTools
+          : resourceTools.filter((tool) => enabledTools.has(tool.name)),
       };
       await saveDashboardEntity("resources", resource, !isEditing);
       setSaved(true);
@@ -247,7 +437,7 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
   }
 
   return (
-    <FormCard className="max-w-[680px]">
+    <FormCard className="max-w-170">
       <FieldGroup label="Resource type">
         <FilterPills
           label="Resource type"
@@ -273,7 +463,11 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
           required
         />
       </Field>
-
+      {type === "mcp" && generatedNamespace ? (
+        <Hint className="-mt-3 mb-4.5">
+          Tool namespace: <span className="font-mono">{generatedNamespace}</span>
+        </Hint>
+      ) : null}
 
       {type === "mcp" ? (
         <>
@@ -282,16 +476,29 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
               id={`${fieldId}-transport`}
               value={transport}
               onChange={(event) => {
-                setTransport(event.target.value);
+                setTransport(event.target.value as MCPTransport);
                 setTools([]);
                 setError(null);
               }}
             >
-              <option>stdio (local subprocess)</option>
-              <option>HTTP + SSE (remote server)</option>
+              <option value="http">Streamable HTTP (remote, recommended)</option>
+              <option value="sse">SSE (remote, legacy)</option>
+              <option value="stdio">stdio (local subprocess)</option>
             </Select>
+            {transport === "sse" ? (
+              <Hint>SSE is a legacy MCP transport. Prefer Streamable HTTP for new servers.</Hint>
+            ) : null}
           </Field>
-          <Field label="Command" htmlFor={`${fieldId}-cmd`} error={showErrors ? fieldErrors.command : null}>
+          <Field
+            label={remote ? "Server URL" : "Executable"}
+            htmlFor={`${fieldId}-cmd`}
+            error={showErrors ? fieldErrors.command : null}
+            hint={remote
+              ? transport === "http"
+                ? "The Streamable HTTP MCP endpoint, for example https://example.com/mcp."
+                : "The legacy SSE endpoint exposed by the MCP server."
+              : "Enter only the executable here. Put flags and package names in Arguments below."}
+          >
             <Input
               id={`${fieldId}-cmd`}
               value={command}
@@ -301,18 +508,89 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
                 setTools([]);
                 setError(null);
               }}
-              placeholder="npx -y @stripe/mcp-server"
+              placeholder={remote ? "https://example.com/mcp" : "npx"}
               required
             />
           </Field>
+
+          {!remote ? (
+            <>
+              <Field
+                label="Arguments (optional)"
+                htmlFor={`${fieldId}-args`}
+                hint="Enter one argument per line. Example: -y, package name, then package options."
+              >
+                <Textarea
+                  id={`${fieldId}-args`}
+                  value={argsText}
+                  rows={4}
+                  onChange={(event) => {
+                    setArgsText(event.target.value);
+                    setTools([]);
+                    setError(null);
+                  }}
+                  placeholder={"-y\n@modelcontextprotocol/server-filesystem\n/workspace"}
+                  spellCheck={false}
+                />
+              </Field>
+              <details
+                className="mb-4.5 rounded-lg border border-line-soft bg-panel-2 px-4 py-3"
+                open={Boolean(workingDirectory || environmentText || (showErrors && (fieldErrors.workingDirectory || fieldErrors.environment)))}
+              >
+                <summary className="cursor-pointer text-[13px] font-medium">
+                  Advanced stdio settings
+                </summary>
+                <div className="mt-4">
+                  <Field
+                    label="Process working directory (optional)"
+                    htmlFor={`${fieldId}-working-directory`}
+                    error={showErrors ? fieldErrors.workingDirectory : null}
+                    hint="Absolute directory inside the gateway runtime where the process starts. It does not grant filesystem access; mount directories separately."
+                  >
+                    <Input
+                      id={`${fieldId}-working-directory`}
+                      value={workingDirectory}
+                      aria-invalid={showErrors && Boolean(fieldErrors.workingDirectory)}
+                      onChange={(event) => {
+                        setWorkingDirectory(event.target.value);
+                        setTools([]);
+                      }}
+                      placeholder="/workspace"
+                      spellCheck={false}
+                    />
+                  </Field>
+                  <Field
+                    label="Environment variables (optional)"
+                    htmlFor={`${fieldId}-environment`}
+                    error={showErrors ? fieldErrors.environment : null}
+                    hint="Enter one non-secret KEY=value pair per line. Use the credential fields below for secrets."
+                    className="mb-0"
+                  >
+                    <Textarea
+                      id={`${fieldId}-environment`}
+                      value={environmentText}
+                      rows={3}
+                      aria-invalid={showErrors && Boolean(fieldErrors.environment)}
+                      onChange={(event) => {
+                        setEnvironmentText(event.target.value);
+                        setTools([]);
+                      }}
+                      placeholder={"LOG_LEVEL=info\nFEATURE_FLAG=true"}
+                      spellCheck={false}
+                    />
+                  </Field>
+                </div>
+              </details>
+            </>
+          ) : null}
 
           <Field
             label="Credential name (optional)"
             htmlFor={`${fieldId}-credential-name`}
             error={showErrors ? fieldErrors.credential : null}
-            hint={transport.startsWith("HTTP")
-              ? "Header name, for example Authorization."
-              : "Environment variable name, for example API_TOKEN."}
+            hint={remote
+              ? "Secret HTTP header name, for example Authorization."
+              : "Secret environment variable name, for example API_TOKEN."}
           >
             <Input
               id={`${fieldId}-credential-name`}
@@ -322,7 +600,7 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
                 setCredentialName(event.target.value);
                 setTools([]);
               }}
-              placeholder={transport.startsWith("HTTP") ? "Authorization" : "API_TOKEN"}
+              placeholder={remote ? "Authorization" : "API_TOKEN"}
               autoComplete="off"
             />
           </Field>
@@ -351,12 +629,12 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
             <Button size="sm" onClick={handleDiscoverTools} disabled={discovering}>
               {tools.length > 0 && !discovering ? (
                 <>
-                  <Check aria-hidden className="size-[15px]" />
+                  <Check aria-hidden className="size-3.75" />
                   {tools.length} tools found
                 </>
               ) : (
                 <>
-                  <Sparkles aria-hidden className="size-[15px]" />
+                  <Sparkles aria-hidden className="size-3.75" />
                   {discovering ? "Discovering…" : "Discover tools"}
                 </>
               )}
@@ -414,15 +692,16 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
               </>
             }
           >
-            <div className="mt-2 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-              {CONNECTOR_TEMPLATES.map((entry) => {
-                const selected = entry.id === templateId;
+            {templatesLoading ? <Hint>Loading templates…</Hint> : null}
+            <div className="mt-2 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+              {templates.map((entry) => {
+                const selected = entry.slug === templateId;
                 return (
                   <button
-                    key={entry.id}
+                    key={entry.slug}
                     type="button"
                     aria-pressed={selected}
-                    onClick={() => selectTemplate(entry.id)}
+                    onClick={() => selectTemplate(entry.slug)}
                     className={cn(
                       "flex flex-col items-center gap-1.5 rounded-lg border px-2.5 py-4 text-center transition-colors",
                       selected
@@ -431,13 +710,11 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
                     )}
                   >
                     <ResourceIcon
-                      id={entry.id}
-                      className={cn("size-[22px]", selected ? "text-brand" : "text-muted")}
+                      id={entry.slug.replace(/-mcp$/, "")}
+                      className={cn("size-5.5", selected ? "text-brand" : "text-muted")}
                     />
                     <span className="text-[12.5px] font-medium">{entry.name}</span>
-                    <span className="text-[11px] text-muted">
-                      {entry.tools.length} tools
-                    </span>
+                    <span className="text-[11px] text-muted">{entry.provider}</span>
                   </button>
                 );
               })}
@@ -446,38 +723,78 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
 
           {template ? (
             <>
-              {template.credentialName ? <Field
-                label={
-                  <>
-                    Credential · <span className="font-mono">{template.credentialName}</span>
-                  </>
-                }
-                htmlFor={`${fieldId}-template-cred`}
-                hint="Permissions are pre-mapped from the template — you're only providing the credential."
-              >
-                <Input
-                  id={`${fieldId}-template-cred`}
-                  type="password"
-                  placeholder={template.credentialPlaceholder}
-                  autoComplete="off"
-                />
-              </Field> : null}
+              <PanelBlock className="mb-4 px-4 py-3.5">
+                <p className="text-[12.5px] text-muted-2">{template.description}</p>
+              </PanelBlock>
 
-              <Field label="Transport" htmlFor={fieldId + "-template-transport"}>
-                <Input id={fieldId + "-template-transport"} value={template.transport} readOnly />
-              </Field>
-              <Field label="Command" htmlFor={fieldId + "-template-command"}>
-                <Input id={fieldId + "-template-command"} value={template.command} readOnly />
-              </Field>
-              <FieldGroup label="Known tools">
-                <PanelBlock className="mb-0 px-4 py-3.5">
-                  {discovering ? <Hint className="mt-0">Connecting and calling tools/list…</Hint> : null}
-                  {tools.map((tool) => (
-                    <ScopeRow key={tool.name} name={tool.name} tag="verified by tools/list" />
+              <Field label="Transport" htmlFor={`${fieldId}-template-transport`}>
+                <Select
+                  id={`${fieldId}-template-transport`}
+                  value={transportOptionId}
+                  onChange={(event) => {
+                    const option = template.transportOptions.find((entry) => entry.id === event.target.value);
+                    if (option) selectTransportOption(option);
+                  }}
+                >
+                  {template.transportOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}{option.recommended ? " (recommended)" : ""}
+                    </option>
                   ))}
-                </PanelBlock>
-                <Hint>The final tool list is discovered from the server before access is granted.</Hint>
-              </FieldGroup>
+                </Select>
+                {templateOption?.description ? <Hint>{templateOption.description}</Hint> : null}
+              </Field>
+
+              {templateOption?.fields.map((field) => (
+                <Field
+                  key={field.name}
+                  label={field.label}
+                  htmlFor={`${fieldId}-template-${field.name}`}
+                  error={showErrors && field.required && !templateValues[field.name]?.trim()
+                    ? `${field.label} is required.`
+                    : null}
+                  hint={field.description || (field.secret
+                    ? "Stored encrypted by Managent and never returned to the browser."
+                    : undefined)}
+                >
+                  <Input
+                    id={`${fieldId}-template-${field.name}`}
+                    type={field.secret ? "password" : "text"}
+                    value={templateValues[field.name] ?? ""}
+                    onChange={(event) => {
+                      setTemplateValues((current) => ({ ...current, [field.name]: event.target.value }));
+                      setError(null);
+                    }}
+                    placeholder={field.placeholder}
+                    autoComplete={field.secret ? "new-password" : "off"}
+                    required={field.required}
+                  />
+                </Field>
+              ))}
+
+              {templateOption ? (
+                <Field label={templateOption.command ? "Command" : "Endpoint"} htmlFor={`${fieldId}-template-target`}>
+                  <Input
+                    id={`${fieldId}-template-target`}
+                    value={templateOption.command ?? templateOption.url ?? ""}
+                    readOnly
+                  />
+                </Field>
+              ) : null}
+
+              <Hint>
+                Saving installs the server, connects it, and discovers its tools with
+                <span className="font-mono"> tools/list</span>.
+              </Hint>
+              {tools.length > 0 ? (
+                <FieldGroup label="Discovered tools">
+                  <PanelBlock className="mb-0 px-4 py-3.5">
+                    {tools.map((tool) => (
+                      <ScopeRow key={tool.name} name={tool.name} tag="verified by tools/list" />
+                    ))}
+                  </PanelBlock>
+                </FieldGroup>
+              ) : null}
             </>
           ) : null}
         </>
@@ -485,7 +802,7 @@ export function ResourceForm({ editing }: { editing?: Resource }) {
 
       <FormActions>
         <Button variant="primary" onClick={saveResource} disabled={saving || discovering}>
-          <Check aria-hidden className="size-[15px]" />
+          <Check aria-hidden className="size-3.75" />
           {saving ? "Saving…" : isEditing ? "Save changes" : "Save resource"}
         </Button>
         <ButtonLink href="/resources">Cancel</ButtonLink>

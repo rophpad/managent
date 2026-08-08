@@ -36,7 +36,7 @@ export function RegisterWizard({ resources }: { resources: Resource[] }) {
   const [ownerEmail, setOwnerEmail] = useState("");
   const [description, setDescription] = useState("");
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
-  const [granted, setGranted] = useState<Record<string, ReadonlySet<string>>>({});
+  const [denied, setDenied] = useState<Record<string, ReadonlySet<string>>>({});
   const [token, setToken] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,10 +70,10 @@ export function RegisterWizard({ resources }: { resources: Resource[] }) {
   }
 
   function togglePermission(resourceId: string, permission: string, checked: boolean) {
-    setGranted((current) => {
+    setDenied((current) => {
       const next = new Set(current[resourceId] ?? []);
-      if (checked) next.add(permission);
-      else next.delete(permission);
+      if (checked) next.delete(permission);
+      else next.add(permission);
       return { ...current, [resourceId]: next };
     });
   }
@@ -107,9 +107,9 @@ export function RegisterWizard({ resources }: { resources: Resource[] }) {
     }
     const rawToken = created.rawToken;
     const selected = withoutResources ? new Set<string>() : selectedIds;
-    const scopes = resources.flatMap((resource) =>
+    const deniedPermissions = resources.flatMap((resource) =>
       selected.has(resource.id)
-        ? [...(granted[resource.id] ?? [])].map((permission) => ({
+        ? [...(denied[resource.id] ?? [])].map((permission) => ({
             resourceId: resource.id,
             permission,
             callsToday: 0,
@@ -133,12 +133,15 @@ export function RegisterWizard({ resources }: { resources: Resource[] }) {
       tokenPreview: `${rawToken.slice(0, 8)}...${rawToken.slice(-6)}`,
       enforcementMode: "monitor",
       failOpen: true,
-      scopes,
+      permissionMode: "denylist",
+      linkedResources: [...selected],
+      deniedPermissions,
+      scopes: [],
     };
     await saveDashboardEntity("agents", agent, true);
     if (withoutResources) {
       setSelectedIds(new Set());
-      setGranted({});
+      setDenied({});
     }
     setToken(rawToken);
     } catch (cause) {
@@ -247,7 +250,7 @@ export function RegisterWizard({ resources }: { resources: Resource[] }) {
           className="mb-0"
           label={
             <>
-              Set permissions <span className="font-normal text-muted-2">per selected resource</span>
+              Set permissions <span className="font-normal text-muted-2">all tools are checked and allowed by default</span>
             </>
           }
         >
@@ -269,7 +272,7 @@ export function RegisterWizard({ resources }: { resources: Resource[] }) {
                   <ResourceIcon
                     id={resource.id}
                     kind={resource.kind}
-                    className="size-[15px] text-muted"
+                    className="size-3.75 text-muted"
                   />
                   {resource.name}
                 </div>
@@ -278,7 +281,7 @@ export function RegisterWizard({ resources }: { resources: Resource[] }) {
                     <ScopeChip
                       key={permission.name}
                       name={`${resource.id}:${permission.name}`}
-                      checked={granted[resource.id]?.has(permission.name) ?? false}
+                      checked={!(denied[resource.id]?.has(permission.name) ?? false)}
                       onChange={(checked) =>
                         togglePermission(resource.id, permission.name, checked)
                       }
@@ -298,7 +301,7 @@ export function RegisterWizard({ resources }: { resources: Resource[] }) {
         <FormActions>
           <Button variant="primary" onClick={() => { setShowBasicErrors(true); if (basicInfoValid) setStep(2); }} disabled={saving}>
             Continue
-            <ArrowRight aria-hidden className="size-[15px]" />
+            <ArrowRight aria-hidden className="size-3.75" />
           </Button>
           <Button onClick={() => createAgent({ withoutResources: true })} disabled={saving}>
             Skip resources &amp; create agent
@@ -312,15 +315,15 @@ export function RegisterWizard({ resources }: { resources: Resource[] }) {
       {step === 2 ? (
         <FormActions>
           <Button onClick={() => setStep(1)}>
-            <ArrowLeft aria-hidden className="size-[15px]" />
+            <ArrowLeft aria-hidden className="size-3.75" />
             Back
           </Button>
           <Button variant="primary" onClick={() => setStep(3)}>
             Continue
-            <ArrowRight aria-hidden className="size-[15px]" />
+            <ArrowRight aria-hidden className="size-3.75" />
           </Button>
           <Button onClick={() => createAgent()} disabled={saving}>
-            {saving ? "Creating…" : "Skip permissions & create agent"}
+            {saving ? "Creating…" : "Allow all tools & create agent"}
           </Button>
         </FormActions>
       ) : null}
@@ -328,11 +331,11 @@ export function RegisterWizard({ resources }: { resources: Resource[] }) {
       {step === 3 ? (
         <FormActions>
           <Button onClick={() => setStep(2)}>
-            <ArrowLeft aria-hidden className="size-[15px]" />
+            <ArrowLeft aria-hidden className="size-3.75" />
             Back
           </Button>
           <Button variant="primary" onClick={() => createAgent()} disabled={saving}>
-            <Check aria-hidden className="size-[15px]" />
+            <Check aria-hidden className="size-3.75" />
             {saving ? "Creating…" : "Create agent"}
           </Button>
         </FormActions>
