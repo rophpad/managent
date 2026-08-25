@@ -1,9 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Menu, X } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode, type SVGProps } from "react";
+import { Menu, X, Shield, Check, AlertCircle, Star, Zap, Lock, Cloud } from "lucide-react";
 import { Modal, ModalBody } from "@/components/ui/modal";
+
+function Github({
+  className,
+  size = 24,
+  ...props
+}: SVGProps<SVGSVGElement> & { size?: number | string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...props}
+    >
+      <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.41 1.17-.75 1.7v4" />
+    </svg>
+  );
+}
 
 // Geometry for illustration-managent.svg is untouched: every `d` and `mask`
 // attribute below is identical to the original file. Two deliberate changes:
@@ -59,96 +83,100 @@ const AGENT_ILLUSTRATION_SVG = `<svg width="1196" height="651" viewBox="0 0 1196
 
 const navigationItems = [
   { label: "Product", href: "#products" },
-  { label: "How it works", href: "#vision" },
+  { label: "Security & Policy", href: "#vision" },
   { label: "Platform", href: "#ecosystem" },
+  { label: "Pricing", href: "#pricing" },
   { label: "Blog", href: "/blog" },
 ];
 
 const auditRows = [
-  ["-03s", "support-bot", "stripe:charge", "allow"],
-  ["-06s", "billing-bot", "linear:create_issue", "allow"],
-  ["-09s", "deploy-agent", "github:delete_repo", "deny"],
-  ["-13s", "research-bot", "stripe:refund $840", "review"],
-  ["-16s", "sales-agent", "slack:post_message", "allow"],
-  ["-20s", "ops-bot", "postgres:drop_table", "deny"],
+  ["-03s", "support-agent", "mcp:stripe/charge", "allow"],
+  ["-06s", "billing-agent", "mcp:linear/create_issue", "allow"],
+  ["-09s", "deploy-pipeline", "mcp:github/delete_repo", "deny"],
+  ["-13s", "research-bot", "mcp:stripe/refund $840", "review"],
+  ["-16s", "sales-agent", "mcp:slack/post_message", "allow"],
+  ["-20s", "ops-bot", "mcp:postgres/drop_table", "deny"],
 ] as const;
 
 const decisionStates = [
   {
     type: "allow",
     label: "ALLOW",
-    body: "The call matches an approved scope and runs immediately, with the real credential injected at the last moment.",
-    rule: "agent:support-bot → linear:read_issue",
+    body: "The tool call matches your approved scopes and resolves instantly. Credentials are safely injected at the gateway edge.",
+    rule: "agent:support-bot → mcp-linear:read_issue",
   },
   {
     type: "review",
     label: "REQUIRE APPROVAL",
-    body: "The call is held and routed to Slack or Discord. It only runs once a human resolves it — and every resolution is logged.",
-    rule: "agent:billing-bot → stripe:refund > $500",
+    body: "Held and routed to Slack, Discord, or your custom webhook. Tool execution pauses until resolved by a human operator.",
+    rule: "agent:billing-bot → mcp-stripe:refund > $500",
   },
   {
     type: "deny",
     label: "DENY",
-    body: "The call is blocked before it reaches the real tool. The agent sees a normal error — no silent failures.",
-    rule: "agent:*-bot → github:delete_repo",
+    body: "Blocked immediately at the proxy. Your model client receives standard error context with zero silent context failures.",
+    rule: "agent:*-bot → mcp-github:delete_repo",
   },
 ] as const;
 
 const platformFeatures = [
   [
     "◈",
-    "Agent registry",
-    "Every agent, its owner, and its live coverage — populated automatically as calls come in.",
+    "Unified Registry",
+    "Instantly discover every connected MCP server, tool definition, and client connection in one live map.",
   ],
   [
     "▤",
-    "Ordered policy",
-    "Allow, deny, or require approval, with rate limits and conditions, evaluated top to bottom.",
+    "Declarative Policies",
+    "Evaluate granular tool-level rules—allow, deny, or human-in-the-loop triggers—top to bottom.",
   ],
   [
     "◷",
-    "Audit log",
-    "Every decision — agent, tool, outcome, timestamp — searchable and exportable.",
+    "Structured Auditing",
+    "Record every request payload, parameter arguments, timestamp, and server response automatically.",
   ],
   [
     "⊘",
-    "One-click revoke",
-    "Cut off an agent's access instantly, across every tool it touches, without a redeploy.",
+    "Instant Revocation",
+    "Unlink or pause any downstream tool or external service immediately without modifying your client configs.",
   ],
 ] as const;
 
 const footerColumns = [
   {
+    title: "Product",
+    links: [
+      { label: "Features", href: "#ecosystem" },
+      { label: "Pricing", href: "#pricing" },
+      { label: "Documentation", href: "/docs" },
+      { label: "Self-Hosting Guide", href: "/docs/self-hosting" },
+    ],
+  },
+  {
+    title: "Managed Cloud",
+    links: [
+      { label: "Sign Up Free", href: "/register" },
+      { label: "Cloud Status", href: "https://status.managent.dev" },
+      { label: "Security", href: "/security" },
+      { label: "SLA", href: "/sla" },
+    ],
+  },
+  {
+    title: "Support",
+    links: [
+      { label: "GitHub", href: "https://github.com/managent/managent" },
+      { label: "Discord Community", href: "#discord" },
+      { label: "Support Packages", href: "/support" },
+      { label: "Enterprise", href: "/enterprise" },
+    ],
+  },
+  {
     title: "Company",
     links: [
-      { label: "Docs", href: "/docs" },
       { label: "Blog", href: "/blog" },
-      { label: "Pricing", href: "#labs" },
-      { label: "Changelog", href: "#products" },
-    ],
-  },
-  {
-    title: "Explore",
-    links: [
-      { label: "Gateway", href: "#products" },
-      { label: "SDK", href: "#products" },
-      { label: "Platform", href: "#ecosystem" },
-    ],
-  },
-  {
-    title: "Community",
-    links: [
-      { label: "Security", href: "#vision" },
-      { label: "GitHub", href: "#open-source" },
-      { label: "Discord", href: "#labs" },
-    ],
-  },
-  {
-    title: "Social",
-    links: [
-      { label: "LinkedIn", href: "#linkedIn" },
-      { label: "X", href: "#x" },
-      { label: "YouTube", href: "#youtube" },
+      { label: "Changelog", href: "/changelog" },
+      { label: "Careers", href: "/careers" },
+      { label: "Contact", href: "#contact" },
     ],
   },
 ];
@@ -163,6 +191,8 @@ const DECISION_COLOR = {
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [pricingView, setPricingView] = useState<"cloud" | "self-hosted">("cloud");
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
 
   return (
     <main className="min-h-screen bg-ink text-fg relative">
@@ -214,9 +244,6 @@ export default function Home() {
           animation: floaty 6s ease-in-out infinite;
         }
 
-        /* Illustration sizing only — the actual node/chip/line animations are
-           defined inline inside the SVG markup itself (see AGENT_ILLUSTRATION_SVG),
-           so they render correctly regardless of how this page injects the string. */
         .agent-illustration svg {
           display: block;
           width: 100%;
@@ -251,48 +278,22 @@ export default function Home() {
         .mobile-menu > div {
           overflow: hidden;
         }
-
-        // @media (prefers-reduced-motion: reduce) {
-        //   .audit-track,
-        //   .live-pulse,
-        //   .hero-anim,
-        //   .float-anim,
-        //   .agent-illustration svg * {
-        //     animation: none !important;
-        //   }
-        //   .hero-anim {
-        //     opacity: 1;
-        //   }
-        //   .reveal {
-        //     transition: none;
-        //   }
-        // }
       `}</style>
 
       {/* ================= HEADER ================= */}
       <header className="absolute w-full top-0 z-50 bg-none backdrop-blur-md">
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:h-auto sm:px-6 sm:py-3 lg:px-8 lg:py-4">
-          {/* <a
+          <Link
             href="#top"
-            aria-label="Managent home"
-            className="flex shrink-0 items-center gap-1 font-semibold leading-none"
+            className="flex items-center gap-2 px-2.5 pb-5.5 pt-1"
           >
-            <Image
-              src="/logo1.svg"
-              alt=""
-              width={100}
-              height={100}
-              className="h-auto w-21.5 brightness-0 invert sm:w-25"
-              priority
-            />
-          </a> */}
-
-          <Link href="#top" className="flex items-center gap-2 px-2.5 pb-5.5 pt-1">
             <span
               aria-hidden
               className="size-4.5 shrink-0 rounded-[5px] bg-linear-to-br from-brand to-allow"
             />
-            <span className="font-display text-base font-semibold">Managent</span>
+            <span className="font-display text-base font-semibold">
+              Managent
+            </span>
           </Link>
 
           <nav className="hidden items-center gap-7 text-sm font-medium text-muted lg:flex">
@@ -309,27 +310,16 @@ export default function Home() {
 
           <div className="flex items-center gap-2">
             <a
-              href="#open-source"
+              href="https://github.com/managent/managent"
               aria-label="GitHub"
-              title="GitHub"
+              title="View on GitHub"
               className="hidden text-muted transition-colors hover:text-fg lg:inline-flex"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                aria-hidden
-              >
-                <path
-                  fill="currentColor"
-                  d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2"
-                />
-              </svg>
+              <Github className="size-5" />
             </a>
             <div className="hidden lg:block">
               <Button href="/register" size="sm" className="w-max">
-                Get started
+                Try Free
               </Button>
             </div>
 
@@ -366,19 +356,12 @@ export default function Home() {
                 </a>
               ))}
               <a
-                href="#open-source"
+                href="https://github.com/managent/managent"
                 onClick={() => setMenuOpen(false)}
                 className="rounded-lg px-3 py-2.5 transition-colors hover:bg-panel hover:text-fg"
               >
                 GitHub
               </a>
-              {/*<Button
-                href="/register"
-                size="sm"
-                className="mt-2 w-full justify-center"
-              >
-                Get started
-              </Button>*/}
             </nav>
           </div>
         </div>
@@ -400,20 +383,14 @@ export default function Home() {
           className="mt-16 hero-anim relative mx-auto flex w-full max-w-6xl justify-center px-4 pb-10 pt-8 sm:px-6 sm:pb-8 sm:pt-10 lg:max-w-272 lg:pb-10 lg:pt-14"
           style={{ animationDelay: "360ms" }}
         >
-          {/* Shared positioning context for the text + image + pills, sized to the
-              SVG's own aspect ratio so everything lines up against its real coordinates. */}
           <div className="relative flow-root w-full max-w-4xl lg:max-w-5xl">
-            {/* Hero copy: stacked normally on mobile (not enough image height to
-                overlay legibly there), becomes an absolute overlay on top of the
-                illustration from `sm` up. z-10 always wins the stacking once it's
-                positioned, regardless of DOM order. */}
             <div className="relative z-10 mb-5 flex flex-col items-center text-center sm:absolute sm:inset-x-0 sm:top-0 sm:mb-0 sm:px-6 sm:pt-4 lg:pt-6">
               <span
                 className="hero-anim inline-flex items-center gap-2 rounded-full border border-line bg-panel px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-brand sm:px-3.5 sm:text-xs"
                 style={{ animationDelay: "0ms" }}
               >
                 <span className="size-1.5 rounded-full bg-brand" />
-                Control plane for AI agents
+                Open Source MCP Gateway
               </span>
 
               <h1
@@ -429,29 +406,33 @@ export default function Home() {
                 className="hero-anim mt-4 max-w-sm text-[13.5px] leading-6 text-muted sm:max-w-sm sm:text-lg sm:leading-7 lg:max-w-md"
                 style={{ animationDelay: "180ms" }}
               >
-                Managent scopes what your agents can touch, checks every call
-                against policy, and logs what happened.
+                A lightweight MCP gateway you can deploy anywhere. Run it yourself for free, or let us manage it for you.
               </p>
 
               <div
                 className="hero-anim mt-5 flex w-full max-w-xs flex-col items-stretch justify-center gap-3 sm:mt-6 sm:w-auto sm:max-w-none sm:flex-row"
                 style={{ animationDelay: "270ms" }}
               >
-                <Button href="/register" size="md" className="mx-auto w-max sm:w-auto">
-                  Get started free
+                <Button
+                  href="https://github.com/managent/managent"
+                  size="md"
+                  variant="outline"
+                  className="mx-auto w-max sm:w-auto"
+                >
+                  <Star className="size-4" />
+                  Star on GitHub
+                </Button>
+                <Button
+                  href="/register"
+                  size="md"
+                  className="mx-auto w-max sm:w-auto"
+                >
+                  Try Managed Free
                 </Button>
               </div>
             </div>
 
-            {/* Illustration group, nudged down a bit and kept independent of the
-                text overlay above: this margin lives on its own block, and the
-                outer wrapper's `flow-root` stops it from collapsing upward into
-                the text overlay's anchor point. */}
             <div className="relative mt-7 sm:mt-10 lg:mt-64">
-              {/* Soft scrim so the overlaid copy stays legible against the diagram
-                  beneath it. The top of the illustration is empty space by design
-                  (the corner nodes sit far to the sides), so this mostly just adds
-                  a gentle fade rather than hiding any part of the artwork. */}
               <div
                 aria-hidden
                 className="pointer-events-none absolute left-1/2 -top-10 z-5 hidden h-[40%] w-screen max-w-none -translate-x-1/2 bg-linear-to-b from-ink via-ink/75 to-transparent sm:block"
@@ -459,7 +440,7 @@ export default function Home() {
 
               <div
                 role="img"
-                aria-label="Illustration of connected AI agent nodes"
+                aria-label="Illustration of connected AI agent nodes via MCP"
                 className="hidden lg:block agent-illustration float-anim relative left-1/2 w-[138%] -translate-x-1/2 text-muted-2 sm:left-auto sm:w-full sm:translate-x-0"
                 dangerouslySetInnerHTML={{ __html: AGENT_ILLUSTRATION_SVG }}
               />
@@ -474,56 +455,86 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ================= TRUST BAR ================= */}
+      <section className="border-y border-line-soft bg-panel-2 py-6">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-x-8 gap-y-4 px-4 text-center sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2 text-sm text-muted">
+            <Star className="size-4 fill-brand text-brand" />
+            <span className="font-semibold text-fg">2.3k+</span> GitHub Stars
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted">
+            <Zap className="size-4 text-allow" />
+            <span className="font-semibold text-fg">10k+</span> Self-Hosted Deployments
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted">
+            <Lock className="size-4 text-brand" />
+            <span className="font-semibold text-fg">MIT</span> Licensed
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted">
+            <Cloud className="size-4 text-allow" />
+            <span className="font-semibold text-fg">99.9%</span> Managed Uptime
+          </div>
+        </div>
+      </section>
+
       <ProductSection
         id="products"
-        eyebrow="Two ways in"
-        title="Same control plane, however your agents run."
-        description="Pick per agent. Both report into the same registry, policy engine, and audit log — so coverage never fragments."
+        eyebrow="Architecture"
+        title="Zero SDK integration. One lightweight proxy."
+        description="Connect any standard MCP-compatible client—from Claude Desktop to Cursor—to our managed proxy. Zero changes to your application codebase required."
       >
         <div className="grid gap-5 lg:grid-cols-2">
           <ModeCard
-            badge="Gateway"
+            badge="Client Config"
             tone="gateway"
-            title="Point your agent at one endpoint."
-            body="Managent fans out to every tool and MCP server behind it. No code changes in the agent itself — just repoint the connection."
+            title="Point your client to the bridge."
+            body="Instead of direct local configurations, configure your agent or IDE client once to route its transport commands securely through our edge."
           >
-            <span className="text-muted-2"># configure once</span>
-            <br />
-            <span className="text-muted">agent</span>.endpoint ={" "}
-            <span className="text-allow">
-              &quot;mcp.managent.dev/gw/acme&quot;
-            </span>
-            <br />
-            <span className="text-muted">agent</span>.token ={" "}
-            <span className="text-brand">env.MANAGENT_KEY</span>
-            <br />
             <span className="text-muted-2">
-              # every downstream tool is now scoped
+              `// claude_desktop_config.json`
             </span>
-          </ModeCard>
-          <ModeCard
-            badge="SDK"
-            tone="sdk"
-            title="Wrap the calls your agent already makes."
-            body="One line per tool or MCP session. Denied calls raise a normal exception — handle it the same way you handle any other error."
-          >
-            <span className="text-muted-2">from</span> managent{" "}
-            <span className="text-muted-2">import</span> Managent
             <br />
-            mg = <span className="text-deny">Managent</span>(token=
-            <span className="text-brand">env.MANAGENT_KEY</span>)<br />
-            stripe.charge = mg.<span className="text-muted">wrap</span>
-            (stripe.charge, scope=
-            <span className="text-allow">&quot;stripe:charge&quot;</span>)
+            <span className="text-muted">&quot;mcpServers&quot;</span>: &#123;
+            <br />
+            &nbsp;&nbsp;
+            <span className="text-muted">&quot;managent-gateway&quot;</span>:
+            &#123;
+            <br />
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <span className="text-muted">&quot;command&quot;</span>:{" "}
+            <span className="text-allow">&quot;npx&quot;</span>,
+            <br />
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <span className="text-muted">&quot;args&quot;</span>: [
+            <span className="text-allow">
+              &quot;-y&quot;, &quot;@managent/mcp-bridge&quot;
+            </span>
+            ],
+            <br />
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <span className="text-muted">&quot;env&quot;</span>: &#123;{" "}
+            <span className="text-muted">&quot;GATEWAY_URL&quot;</span>:{" "}
+            <span className="text-brand">&quot;env.MANAGENT_URL&quot;</span>{" "}
+            &#125;
+            <br />
+            &nbsp;&nbsp;&#125;
+            <br />
+            &#125;
           </ModeCard>
+          <PolicyUICard
+            badge="Policy Dashboard"
+            tone="sdk"
+            title="Manage security through the UI."
+            body="Define global authorization scopes and enforce safety constraints through a visual interface. No configuration files needed."
+          />
         </div>
       </ProductSection>
 
       <ProductSection
         id="vision"
-        eyebrow="How a call gets decided"
-        title="Three outcomes. Nothing runs by default."
-        description="Policy is ordered and explicit — write the rule once, it applies wherever the call comes from."
+        eyebrow="Gateway Policy Engine"
+        title="Granular tool control. Zero untrusted executions."
+        description="Write safety rules globally. Managent intercepts tool executions instantly based on user parameters, schema arguments, and developer configurations."
         tone="tint"
       >
         <div className="grid gap-5 lg:grid-cols-3">
@@ -535,9 +546,9 @@ export default function Home() {
 
       <ProductSection
         id="ecosystem"
-        eyebrow="Underneath both modes"
-        title="One registry. One policy. One log."
-        description="Whichever mode an agent uses, it shows up here the same way — including a coverage indicator so you know exactly what's governed."
+        eyebrow="Platform Map"
+        title="One control plane. Absolute visibility."
+        description="Every active MCP server, local client connector, and live tool session reports into a single screen—enforcing enterprise governance over LLM capabilities."
       >
         <div className="grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
           {platformFeatures.map(([icon, title, body]) => (
@@ -554,7 +565,339 @@ export default function Home() {
         </div>
       </ProductSection>
 
-      {/* ================= LABS / FEEDBACK ================= */}
+      {/* ================= PRICING SECTION ================= */}
+      <section id="pricing" className="scroll-mt-16 py-12 sm:py-20 lg:py-24 bg-ink">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+          <Reveal className="mb-8 text-center sm:mb-12">
+            <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-brand sm:text-xs">
+              Flexible Deployment
+            </p>
+            <h2 className="mt-3 text-[1.65rem] font-semibold leading-tight tracking-tight text-fg sm:mt-4 sm:text-4xl">
+              Self-host for free, or let us run it
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-[15px] leading-6 text-muted sm:mt-4 sm:text-base sm:leading-7">
+              Managent is 100% open source. Deploy it yourself or use our managed cloud.
+            </p>
+          </Reveal>
+
+          {/* Pricing View Toggle */}
+          <Reveal delay={100}>
+            <div className="mb-8 flex justify-center">
+              <div className="inline-flex rounded-lg border border-line bg-panel p-1">
+                <button
+                  type="button"
+                  onClick={() => setPricingView("cloud")}
+                  className={`rounded-md px-4 py-2 text-sm font-medium transition-all ${
+                    pricingView === "cloud"
+                      ? "bg-brand text-ink"
+                      : "text-muted hover:text-fg"
+                  }`}
+                >
+                  Managed Cloud
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPricingView("self-hosted")}
+                  className={`rounded-md px-4 py-2 text-sm font-medium transition-all ${
+                    pricingView === "self-hosted"
+                      ? "bg-brand text-ink"
+                      : "text-muted hover:text-fg"
+                  }`}
+                >
+                  Self-Hosted
+                </button>
+              </div>
+            </div>
+          </Reveal>
+
+          {pricingView === "self-hosted" ? (
+            /* Self-Hosted View */
+            <Reveal delay={200}>
+              <div className="mx-auto max-w-2xl">
+                <div className="overflow-hidden rounded-xl border border-line bg-panel">
+                  <div className="border-b border-line bg-panel-2 px-6 py-5 sm:px-8 sm:py-6">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-xl font-semibold text-fg sm:text-2xl">
+                          Deploy Anywhere
+                        </h3>
+                        <p className="mt-2 text-sm text-muted">
+                          Run Managent on your own infrastructure
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-3xl font-bold text-fg sm:text-4xl">
+                          $0
+                        </div>
+                        <div className="text-sm text-muted">forever</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 sm:p-8">
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-3">
+                        <Check className="mt-0.5 size-5 shrink-0 text-allow" />
+                        <span className="text-sm text-fg">
+                          Full source code access (MIT License)
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <Check className="mt-0.5 size-5 shrink-0 text-allow" />
+                        <span className="text-sm text-fg">
+                          Unlimited agents & gateway calls
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <Check className="mt-0.5 size-5 shrink-0 text-allow" />
+                        <span className="text-sm text-fg">
+                          All features included
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <Check className="mt-0.5 size-5 shrink-0 text-allow" />
+                        <span className="text-sm text-fg">
+                          Deploy on Docker, Kubernetes, or bare metal
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <Check className="mt-0.5 size-5 shrink-0 text-allow" />
+                        <span className="text-sm text-fg">
+                          Community support (GitHub & Discord)
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <Check className="mt-0.5 size-5 shrink-0 text-allow" />
+                        <span className="text-sm text-fg">
+                          No vendor lock-in
+                        </span>
+                      </li>
+                    </ul>
+
+                    <div className="mt-6 space-y-3">
+                      <Button
+                        href="https://github.com/managent/managent"
+                        className="w-full justify-center"
+                        size="lg"
+                      >
+                        <Github className="size-4" />
+                        View on GitHub
+                      </Button>
+                      <Button
+                        href="/docs/self-hosting"
+                        variant="outline"
+                        className="w-full justify-center"
+                        size="lg"
+                      >
+                        Read Deployment Guide
+                      </Button>
+                    </div>
+
+                    <div className="mt-6 rounded-lg border border-line-soft bg-surface p-4">
+                      <p className="text-xs text-muted">
+                        <strong className="text-fg">Need help?</strong> Professional support packages available from{" "}
+                        <Link href="/support" className="text-brand hover:underline">
+                          $499/month
+                        </Link>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          ) : (
+            /* Managed Cloud View */
+            <>
+              {/* Billing Cycle Toggle */}
+              <Reveal delay={100}>
+                <div className="mb-8 flex justify-center">
+                  <div className="inline-flex items-center gap-3 rounded-lg border border-line bg-panel px-4 py-2">
+                    <button
+                      type="button"
+                      onClick={() => setBillingCycle("monthly")}
+                      className={`text-sm font-medium transition-colors ${
+                        billingCycle === "monthly"
+                          ? "text-fg"
+                          : "text-muted hover:text-fg"
+                      }`}
+                    >
+                      Monthly
+                    </button>
+                    <div className="h-4 w-px bg-line" />
+                    <button
+                      type="button"
+                      onClick={() => setBillingCycle("annual")}
+                      className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                        billingCycle === "annual"
+                          ? "text-fg"
+                          : "text-muted hover:text-fg"
+                      }`}
+                    >
+                      Annual
+                      <span className="rounded bg-allow/10 px-1.5 py-0.5 text-[10px] font-semibold text-allow">
+                        Save 20%
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </Reveal>
+
+              {/* Pricing Cards */}
+              <div className="grid gap-6 lg:grid-cols-3">
+                <Reveal delay={200}>
+                  <PricingCard
+                    name="Free"
+                    price="$0"
+                    period="forever"
+                    description="Perfect for trying out Managent"
+                    features={[
+                      "Up to 3 agents",
+                      "10,000 gateway calls/month",
+                      "30-day audit retention",
+                      "Community support",
+                      "Basic policies (allow/deny)",
+                    ]}
+                    cta="Start Free"
+                    ctaHref="/register"
+                  />
+                </Reveal>
+
+                <Reveal delay={300}>
+                  <PricingCard
+                    name="Starter"
+                    price={billingCycle === "annual" ? "$23" : "$29"}
+                    period="per month"
+                    originalPrice={billingCycle === "annual" ? "$29" : undefined}
+                    description="For small teams getting started"
+                    features={[
+                      "Up to 10 agents",
+                      "100,000 gateway calls/month",
+                      "90-day audit retention",
+                      "Email support",
+                      "All policy types",
+                      "Slack/Discord integrations",
+                      "SSO (Google, GitHub)",
+                    ]}
+                    cta="Start Trial"
+                    ctaHref="/register?plan=starter"
+                    popular
+                  />
+                </Reveal>
+
+                <Reveal delay={400}>
+                  <PricingCard
+                    name="Professional"
+                    price={billingCycle === "annual" ? "$119" : "$149"}
+                    period="per month"
+                    originalPrice={billingCycle === "annual" ? "$149" : undefined}
+                    description="For growing teams at scale"
+                    features={[
+                      "Up to 50 agents",
+                      "1M gateway calls/month",
+                      "1-year audit retention",
+                      "Priority support + Slack",
+                      "Advanced conditions",
+                      "Custom workflows",
+                      "RBAC",
+                      "SOC 2 infrastructure",
+                    ]}
+                    cta="Start Trial"
+                    ctaHref="/register?plan=pro"
+                  />
+                </Reveal>
+              </div>
+
+              {/* Enterprise Card */}
+              <Reveal delay={500}>
+                <div className="mt-6 overflow-hidden rounded-xl border border-line bg-panel">
+                  <div className="flex flex-col items-center gap-6 p-6 text-center sm:flex-row sm:text-left sm:p-8">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-semibold text-fg">
+                        Enterprise
+                      </h3>
+                      <p className="mt-2 text-sm text-muted">
+                        Custom deployment, dedicated support, and SLA guarantees
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-3 text-xs text-muted sm:justify-start justify-center">
+                        <span className="flex items-center gap-1">
+                          <Check className="size-3 text-allow" />
+                          Unlimited agents
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Check className="size-3 text-allow" />
+                          On-premise option
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Check className="size-3 text-allow" />
+                          Custom SLA
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Check className="size-3 text-allow" />
+                          Dedicated support
+                        </span>
+                      </div>
+                    </div>
+                    <div className="shrink-0">
+                      <Button
+                        onClick={() => setContactOpen(true)}
+                        variant="outline"
+                        size="lg"
+                      >
+                        Contact Sales
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+
+              {/* FAQ */}
+              <Reveal delay={600}>
+                <div className="mt-12 space-y-6">
+                  <h3 className="text-center text-xl font-semibold text-fg">
+                    Frequently Asked Questions
+                  </h3>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-lg border border-line bg-panel p-5">
+                      <h4 className="font-semibold text-fg">
+                        What counts as a gateway call?
+                      </h4>
+                      <p className="mt-2 text-sm text-muted">
+                        Each tool invocation that passes through Managent, regardless of outcome (allow/deny/review).
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-line bg-panel p-5">
+                      <h4 className="font-semibold text-fg">
+                        Can I upgrade or downgrade anytime?
+                      </h4>
+                      <p className="mt-2 text-sm text-muted">
+                        Yes, changes take effect immediately with prorated billing. No lock-in contracts.
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-line bg-panel p-5">
+                      <h4 className="font-semibold text-fg">
+                        How is self-hosted different from managed?
+                      </h4>
+                      <p className="mt-2 text-sm text-muted">
+                        Same features, same code. Managed cloud handles infrastructure, updates, and scaling for you.
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-line bg-panel p-5">
+                      <h4 className="font-semibold text-fg">
+                        Is my data secure?
+                      </h4>
+                      <p className="mt-2 text-sm text-muted">
+                        All data encrypted in transit and at rest. SOC 2 Type II certified. Self-host for complete control.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* ================= CTA SECTION ================= */}
       <Section id="labs">
         <Reveal className="w-full">
           <div className="relative w-full overflow-hidden rounded-xl border border-line bg-panel px-5 py-10 text-center sm:rounded-2xl sm:px-10 sm:py-16">
@@ -563,27 +906,23 @@ export default function Home() {
               className="pointer-events-none absolute left-1/2 -top-60 size-150 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(108,123,255,.16),transparent_68%)]"
             />
             <h2 className="relative text-[1.65rem] font-semibold leading-tight tracking-tight text-fg sm:text-4xl">
-              Put a control plane in front of your agents.
+              Bring compliance and safety to MCP.
             </h2>
             <p className="relative mx-auto mt-3 max-w-lg text-sm leading-6 text-muted sm:mt-4 sm:text-base sm:leading-7">
-              Start free with up to 3 agents. No infrastructure required to try
-              it.
+              Start securing tool execution in minutes. Deploy yourself or use our managed cloud.
             </p>
             <div className="w-full mx-auto relative mt-6 flex flex-col items-center justify-center gap-3 sm:mt-8 sm:flex-row">
               <Button
-                href="/register"
+                href="https://github.com/managent/managent"
                 size="md"
-                className="w-max sm:w-auto"
-              >
-                Get started free
-              </Button>
-              <Button
-                onClick={() => setContactOpen(true)}
                 variant="outline"
-                size="md"
                 className="w-max sm:w-auto"
               >
-                Talk with us
+                <Github className="size-4" />
+                View on GitHub
+              </Button>
+              <Button href="/register" size="md" className="w-max sm:w-auto">
+                Start Free Trial
               </Button>
             </div>
           </div>
@@ -597,8 +936,8 @@ export default function Home() {
         >
           <ModalBody className="p-5 text-left sm:p-6 no-scrollbar">
             <p className="mb-5 text-[13.5px] leading-6 text-muted">
-              Tell us what you are building and where your agents need stronger
-              controls. We&apos;ll get back to you shortly.
+              Tell us about your agent platform, what MCP servers you&apos;re
+              connecting, and how you want to manage developer security.
             </p>
             <form id="contact-form">
               <div className="grid gap-5">
@@ -614,51 +953,55 @@ export default function Home() {
                   />
                 </Field>
 
-                <Field label="Framework">
+                <Field label="Primary MCP Clients">
                   <select
-                    aria-label="Framework"
-                    name="framework"
+                    aria-label="MCP Client"
+                    name="client"
                     defaultValue=""
                     className={inputClass}
                     required
                   >
                     <option value="" disabled>
-                      Select a framework
+                      Select client environment
                     </option>
-                    <option>OpenAI Agents SDK</option>
-                    <option>LangChain</option>
-                    <option>CrewAI</option>
-                    <option>AutoGen</option>
-                    <option>Custom stack</option>
+                    <option>Claude Desktop</option>
+                    <option>Cursor / Windsurf</option>
+                    <option>LangChain / LangGraph</option>
+                    <option>LlamaIndex / Custom Agent Platform</option>
+                    <option>Other / Multi-IDE</option>
                   </select>
                 </Field>
 
-                <Field label="What are you building?">
+                <Field label="What tools are your agents executing?">
                   <textarea
                     aria-label="What are you building?"
                     minLength={10}
                     name="building"
                     rows={3}
-                    placeholder="Agent workflows, internal copilots, customer support, automation pipelines..."
+                    placeholder="Github modifications, Stripe payments, Slack automation, internal DB writing..."
                     className={inputClass}
                     required
                   />
                 </Field>
 
-                <Field label="What's your biggest challenge?">
+                <Field label="What is your biggest governance requirement?">
                   <textarea
                     aria-label="What is your biggest challenge?"
                     minLength={10}
                     name="challenge"
                     rows={3}
-                    placeholder="Reliability, evaluation, orchestration, security, cost control..."
+                    placeholder="Human-in-the-loop approvals, credential storage, live audit logging..."
                     className={inputClass}
                     required
                   />
                 </Field>
 
-                <Button type="submit" size="md" className="w-full justify-center">
-                  Send request
+                <Button
+                  type="submit"
+                  size="md"
+                  className="w-full justify-center"
+                >
+                  Request access
                 </Button>
               </div>
             </form>
@@ -672,7 +1015,8 @@ export default function Home() {
           <div className="mb-10 max-w-md">
             <p className="text-base font-semibold text-fg">Managent</p>
             <p className="mt-2 text-sm leading-6 text-muted">
-              Every agent call, allowed, denied, or reviewed — on purpose.
+              Every MCP tool call, allowed, denied, or reviewed — at the
+              gateway.
             </p>
           </div>
 
@@ -701,9 +1045,6 @@ export default function Home() {
             © {new Date().getFullYear()} Managent. All rights reserved.
           </div>
 
-          {/* Oversized watermark. On the light theme this was near-black on white;
-              at this size the dark-theme equivalent is kept low-contrast so it
-              reads as texture rather than shouting. */}
           <p
             aria-hidden="true"
             className="select-none whitespace-nowrap text-center text-[clamp(3.7rem,17vw,13.5rem)] font-semibold leading-[0.72] tracking-[-0.075em] text-surface"
@@ -907,6 +1248,160 @@ function ModeCard({
   );
 }
 
+function PolicyUICard({
+  badge,
+  tone,
+  title,
+  body,
+}: {
+  badge: string;
+  tone: "gateway" | "sdk";
+  title: string;
+  body: string;
+}) {
+  return (
+    <article className="overflow-hidden rounded-xl border border-line bg-panel px-4 pt-5 text-left sm:px-7 sm:pt-7">
+      <span
+        className={`inline-block rounded px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wide ${tone === "gateway" ? "bg-brand/9 text-brand" : "bg-deny/8 text-deny"}`}
+      >
+        {badge}
+      </span>
+      <h3 className="mt-4 text-lg font-semibold text-fg sm:text-xl">{title}</h3>
+      <p className="mb-5 mt-2 text-sm leading-6 text-muted sm:mb-6 sm:text-[14.5px]">
+        {body}
+      </p>
+      <div className="-mx-px rounded-t-lg border border-b-0 border-line bg-panel-2 p-4 sm:p-5">
+        {/* Policy Rules List */}
+        <div className="space-y-3">
+          {/* Rule 1 - Allow */}
+          <div className="flex items-start gap-3 rounded-lg border border-line-soft bg-panel p-3">
+            <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-allow/10">
+              <Check className="size-3 text-allow" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold text-fg">mcp-github:read_*</span>
+                <span className="rounded bg-allow/10 px-1.5 py-0.5 text-[9px] font-semibold text-allow">ALLOW</span>
+              </div>
+              <p className="mt-1 text-[10px] text-muted">All agents</p>
+            </div>
+          </div>
+
+          {/* Rule 2 - Review */}
+          <div className="flex items-start gap-3 rounded-lg border border-line-soft bg-panel p-3">
+            <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-deny/10">
+              <AlertCircle className="size-3 text-deny" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold text-fg">mcp-stripe:charge</span>
+                <span className="rounded bg-deny/10 px-1.5 py-0.5 text-[9px] font-semibold text-deny">REVIEW</span>
+              </div>
+              <p className="mt-1 text-[10px] text-muted">If amount &gt; $100</p>
+            </div>
+          </div>
+
+          {/* Rule 3 - Deny */}
+          <div className="flex items-start gap-3 rounded-lg border border-line-soft bg-panel p-3">
+            <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-danger/10">
+              <Shield className="size-3 text-danger" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold text-fg">mcp-*:delete_*</span>
+                <span className="rounded bg-danger/10 px-1.5 py-0.5 text-[9px] font-semibold text-danger">DENY</span>
+              </div>
+              <p className="mt-1 text-[10px] text-muted">Production agents</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Add Rule Button */}
+        <button 
+          type="button"
+          className="mt-3 w-full rounded-lg border border-dashed border-line-soft bg-surface px-3 py-2 text-[10px] font-medium text-muted transition-colors hover:border-line hover:bg-panel hover:text-fg"
+        >
+          + Add new rule
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function PricingCard({
+  name,
+  price,
+  period,
+  originalPrice,
+  description,
+  features,
+  cta,
+  ctaHref,
+  popular = false,
+}: {
+  name: string;
+  price: string;
+  period: string;
+  originalPrice?: string;
+  description: string;
+  features: string[];
+  cta: string;
+  ctaHref: string;
+  popular?: boolean;
+}) {
+  return (
+    <div
+      className={`relative overflow-hidden rounded-xl border ${
+        popular ? "border-brand shadow-lg shadow-brand/20" : "border-line"
+      } bg-panel`}
+    >
+      {popular && (
+        <div className="absolute right-4 top-4">
+          <span className="rounded-full bg-brand px-3 py-1 text-xs font-semibold text-ink">
+            Popular
+          </span>
+        </div>
+      )}
+
+      <div className="p-6 sm:p-8">
+        <h3 className="text-xl font-semibold text-fg">{name}</h3>
+        <p className="mt-2 text-sm text-muted">{description}</p>
+
+        <div className="mt-6">
+          <div className="flex items-baseline gap-2">
+            <span className="text-4xl font-bold text-fg">{price}</span>
+            <span className="text-sm text-muted">{period}</span>
+          </div>
+          {originalPrice && (
+            <div className="mt-1">
+              <span className="text-sm text-muted line-through">
+                {originalPrice}/month
+              </span>
+            </div>
+          )}
+        </div>
+
+        <Button
+          href={ctaHref}
+          className="mt-6 w-full justify-center"
+          variant={popular ? "primary" : "outline"}
+        >
+          {cta}
+        </Button>
+
+        <ul className="mt-8 space-y-3">
+          {features.map((feature) => (
+            <li key={feature} className="flex items-start gap-3 text-sm">
+              <Check className="mt-0.5 size-4 shrink-0 text-allow" />
+              <span className="text-fg">{feature}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 function DecisionCard({
   type,
   label,
@@ -956,7 +1451,7 @@ function AuditStream() {
             <i className="size-1.5 rounded-full bg-line" />
           </span>
           <span className="font-mono text-[8px] text-muted sm:text-[9px]">
-            audit-log — all agents
+            gateway-log — all mcp connections
           </span>
         </div>
         <span className="flex items-center gap-1 font-mono text-[8px] text-allow sm:text-[9px]">
