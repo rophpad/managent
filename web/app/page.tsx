@@ -1,8 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode, type SVGProps } from "react";
-import { Menu, X, Shield, Check, AlertCircle, Star, Zap, Lock, Cloud } from "lucide-react";
+import Image from "next/image";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type SVGProps,
+} from "react";
+import {
+  Menu,
+  X,
+  Shield,
+  Check,
+  AlertCircle,
+  Star,
+  Zap,
+  Lock,
+  Cloud,
+} from "lucide-react";
 import { Modal, ModalBody } from "@/components/ui/modal";
 
 function Github({
@@ -191,8 +208,12 @@ const DECISION_COLOR = {
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
-  const [pricingView, setPricingView] = useState<"cloud" | "self-hosted">("cloud");
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
+  const [pricingView, setPricingView] = useState<"cloud" | "self-hosted">(
+    "cloud",
+  );
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">(
+    "monthly",
+  );
 
   return (
     <main className="min-h-screen bg-ink text-fg relative">
@@ -283,17 +304,15 @@ export default function Home() {
       {/* ================= HEADER ================= */}
       <header className="absolute w-full top-0 z-50 bg-none backdrop-blur-md">
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:h-auto sm:px-6 sm:py-3 lg:px-8 lg:py-4">
-          <Link
-            href="#top"
-            className="flex items-center gap-2 px-2.5 pb-5.5 pt-1"
-          >
-            <span
-              aria-hidden
-              className="size-4.5 shrink-0 rounded-[5px] bg-linear-to-br from-brand to-allow"
+          <Link href="#top" aria-label="Managent home">
+            <Image
+              src="/logo1.svg"
+              alt="Managent"
+              width={100}
+              height={100}
+              className="h-auto w-24 brightness-0 invert"
+              priority
             />
-            <span className="font-display text-base font-semibold">
-              Managent
-            </span>
           </Link>
 
           <nav className="hidden items-center gap-7 text-sm font-medium text-muted lg:flex">
@@ -406,7 +425,8 @@ export default function Home() {
                 className="hero-anim mt-4 max-w-sm text-[13.5px] leading-6 text-muted sm:max-w-sm sm:text-lg sm:leading-7 lg:max-w-md"
                 style={{ animationDelay: "180ms" }}
               >
-                A lightweight MCP gateway you can deploy anywhere. Run it yourself for free, or let us manage it for you.
+                A lightweight MCP gateway you can deploy anywhere. Run it
+                yourself for free, or let us manage it for you.
               </p>
 
               <div
@@ -464,7 +484,8 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2 text-sm text-muted">
             <Zap className="size-4 text-allow" />
-            <span className="font-semibold text-fg">10k+</span> Self-Hosted Deployments
+            <span className="font-semibold text-fg">10k+</span> Self-Hosted
+            Deployments
           </div>
           <div className="flex items-center gap-2 text-sm text-muted">
             <Lock className="size-4 text-brand" />
@@ -566,7 +587,10 @@ export default function Home() {
       </ProductSection>
 
       {/* ================= PRICING SECTION ================= */}
-      <section id="pricing" className="scroll-mt-16 py-12 sm:py-20 lg:py-24 bg-ink">
+      <section
+        id="pricing"
+        className="scroll-mt-16 py-12 sm:py-20 lg:py-24 bg-ink"
+      >
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
           <Reveal className="mb-8 text-center sm:mb-12">
             <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-brand sm:text-xs">
@@ -576,7 +600,8 @@ export default function Home() {
               Self-host for free, or let us run it
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-[15px] leading-6 text-muted sm:mt-4 sm:text-base sm:leading-7">
-              Managent is 100% open source. Deploy it yourself or use our managed cloud.
+              Managent is 100% open source. Deploy it yourself or use our
+              managed cloud.
             </p>
           </Reveal>
 
@@ -695,8 +720,12 @@ export default function Home() {
 
                     <div className="mt-6 rounded-lg border border-line-soft bg-surface p-4">
                       <p className="text-xs text-muted">
-                        <strong className="text-fg">Need help?</strong> Professional support packages available from{" "}
-                        <Link href="/support" className="text-brand hover:underline">
+                        <strong className="text-fg">Need help?</strong>{" "}
+                        Professional support packages available from{" "}
+                        <Link
+                          href="/support"
+                          className="text-brand hover:underline"
+                        >
                           $499/month
                         </Link>
                       </p>
@@ -767,7 +796,9 @@ export default function Home() {
                     name="Starter"
                     price={billingCycle === "annual" ? "$23" : "$29"}
                     period="per month"
-                    originalPrice={billingCycle === "annual" ? "$29" : undefined}
+                    originalPrice={
+                      billingCycle === "annual" ? "$29" : undefined
+                    }
                     description="For small teams getting started"
                     features={[
                       "Up to 10 agents",
@@ -789,7 +820,9 @@ export default function Home() {
                     name="Professional"
                     price={billingCycle === "annual" ? "$119" : "$149"}
                     period="per month"
-                    originalPrice={billingCycle === "annual" ? "$149" : undefined}
+                    originalPrice={
+                      billingCycle === "annual" ? "$149" : undefined
+                    }
                     description="For growing teams at scale"
                     features={[
                       "Up to 50 agents",
@@ -862,7 +895,8 @@ export default function Home() {
                         What counts as a gateway call?
                       </h4>
                       <p className="mt-2 text-sm text-muted">
-                        Each tool invocation that passes through Managent, regardless of outcome (allow/deny/review).
+                        Each tool invocation that passes through Managent,
+                        regardless of outcome (allow/deny/review).
                       </p>
                     </div>
                     <div className="rounded-lg border border-line bg-panel p-5">
@@ -870,7 +904,8 @@ export default function Home() {
                         Can I upgrade or downgrade anytime?
                       </h4>
                       <p className="mt-2 text-sm text-muted">
-                        Yes, changes take effect immediately with prorated billing. No lock-in contracts.
+                        Yes, changes take effect immediately with prorated
+                        billing. No lock-in contracts.
                       </p>
                     </div>
                     <div className="rounded-lg border border-line bg-panel p-5">
@@ -878,7 +913,8 @@ export default function Home() {
                         How is self-hosted different from managed?
                       </h4>
                       <p className="mt-2 text-sm text-muted">
-                        Same features, same code. Managed cloud handles infrastructure, updates, and scaling for you.
+                        Same features, same code. Managed cloud handles
+                        infrastructure, updates, and scaling for you.
                       </p>
                     </div>
                     <div className="rounded-lg border border-line bg-panel p-5">
@@ -886,7 +922,8 @@ export default function Home() {
                         Is my data secure?
                       </h4>
                       <p className="mt-2 text-sm text-muted">
-                        All data encrypted in transit and at rest. SOC 2 Type II certified. Self-host for complete control.
+                        All data encrypted in transit and at rest. SOC 2 Type II
+                        certified. Self-host for complete control.
                       </p>
                     </div>
                   </div>
@@ -909,7 +946,8 @@ export default function Home() {
               Bring compliance and safety to MCP.
             </h2>
             <p className="relative mx-auto mt-3 max-w-lg text-sm leading-6 text-muted sm:mt-4 sm:text-base sm:leading-7">
-              Start securing tool execution in minutes. Deploy yourself or use our managed cloud.
+              Start securing tool execution in minutes. Deploy yourself or use
+              our managed cloud.
             </p>
             <div className="w-full mx-auto relative mt-6 flex flex-col items-center justify-center gap-3 sm:mt-8 sm:flex-row">
               <Button
@@ -1280,8 +1318,12 @@ function PolicyUICard({
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold text-fg">mcp-github:read_*</span>
-                <span className="rounded bg-allow/10 px-1.5 py-0.5 text-[9px] font-semibold text-allow">ALLOW</span>
+                <span className="text-[11px] font-semibold text-fg">
+                  mcp-github:read_*
+                </span>
+                <span className="rounded bg-allow/10 px-1.5 py-0.5 text-[9px] font-semibold text-allow">
+                  ALLOW
+                </span>
               </div>
               <p className="mt-1 text-[10px] text-muted">All agents</p>
             </div>
@@ -1294,8 +1336,12 @@ function PolicyUICard({
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold text-fg">mcp-stripe:charge</span>
-                <span className="rounded bg-deny/10 px-1.5 py-0.5 text-[9px] font-semibold text-deny">REVIEW</span>
+                <span className="text-[11px] font-semibold text-fg">
+                  mcp-stripe:charge
+                </span>
+                <span className="rounded bg-deny/10 px-1.5 py-0.5 text-[9px] font-semibold text-deny">
+                  REVIEW
+                </span>
               </div>
               <p className="mt-1 text-[10px] text-muted">If amount &gt; $100</p>
             </div>
@@ -1308,8 +1354,12 @@ function PolicyUICard({
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold text-fg">mcp-*:delete_*</span>
-                <span className="rounded bg-danger/10 px-1.5 py-0.5 text-[9px] font-semibold text-danger">DENY</span>
+                <span className="text-[11px] font-semibold text-fg">
+                  mcp-*:delete_*
+                </span>
+                <span className="rounded bg-danger/10 px-1.5 py-0.5 text-[9px] font-semibold text-danger">
+                  DENY
+                </span>
               </div>
               <p className="mt-1 text-[10px] text-muted">Production agents</p>
             </div>
@@ -1317,7 +1367,7 @@ function PolicyUICard({
         </div>
 
         {/* Add Rule Button */}
-        <button 
+        <button
           type="button"
           className="mt-3 w-full rounded-lg border border-dashed border-line-soft bg-surface px-3 py-2 text-[10px] font-medium text-muted transition-colors hover:border-line hover:bg-panel hover:text-fg"
         >
