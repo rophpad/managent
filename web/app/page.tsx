@@ -480,11 +480,11 @@ export default function Home() {
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-x-8 gap-y-4 px-4 text-center sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 text-sm text-muted">
             <Star className="size-4 fill-brand text-brand" />
-            <span className="font-semibold text-fg">2.3k+</span> GitHub Stars
+            <span className="font-semibold text-fg">1+</span> GitHub Stars
           </div>
           <div className="flex items-center gap-2 text-sm text-muted">
             <Zap className="size-4 text-allow" />
-            <span className="font-semibold text-fg">10k+</span> Self-Hosted
+            <span className="font-semibold text-fg">1+</span> Self-Hosted
             Deployments
           </div>
           <div className="flex items-center gap-2 text-sm text-muted">
