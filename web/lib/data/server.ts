@@ -67,20 +67,20 @@ export async function listAuditEntries(): Promise<AuditEntry[]> {
     listResources(),
   ]);
 
-  const agentNameById = new Map(gatewayAgents.items.map((agent) => [agent.id, agent.name]));
+  const agentNameById = new Map((gatewayAgents.items ?? []).map((agent) => [agent.id, agent.name]));
   const dashboardAgentId = new Map<string, string>();
-  for (const agent of dashboardAgents) {
+  for (const agent of dashboardAgents ?? []) {
     if (agent.gatewayAgentId) dashboardAgentId.set(agent.gatewayAgentId, agent.id);
     dashboardAgentId.set(agent.name.trim().toLowerCase(), agent.id);
   }
   const resourceId = new Map(
-    resources.flatMap((resource) => [
+    (resources ?? []).flatMap((resource) => [
       [resource.id.toLowerCase(), resource.id] as const,
       [resource.name.trim().toLowerCase(), resource.id] as const,
     ]),
   );
 
-  return logs.items.map((log) => {
+  return (logs.items ?? []).map((log) => {
     const gatewayAgentName = log.agentId ? agentNameById.get(log.agentId) : undefined;
     const agentId =
       (log.agentId && dashboardAgentId.get(log.agentId)) ||

@@ -24,7 +24,7 @@ func (s *Store) ListAgents(ctx context.Context, workspaceID int64) ([]AgentRecor
 		return nil, err
 	}
 	defer rows.Close()
-	var out []AgentRecord
+	out := make([]AgentRecord, 0)
 	for rows.Next() {
 		var (
 			id, wsID      int64
@@ -169,7 +169,7 @@ func (s *Store) ListAgentKeys(ctx context.Context, workspaceID int64, agentID st
 		return nil, err
 	}
 	defer rows.Close()
-	var out []AgentKeyRecord
+	out := make([]AgentKeyRecord, 0)
 	for rows.Next() {
 		var (
 			id, agentRef  int64

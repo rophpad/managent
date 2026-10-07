@@ -428,7 +428,7 @@ func (s *Store) ListAPIKeys(ctx context.Context, workspaceID int64) ([]APIKeyRec
 		return nil, err
 	}
 	defer rows.Close()
-	var out []APIKeyRecord
+	out := make([]APIKeyRecord, 0)
 	for rows.Next() {
 		var id int64
 		var wsID int64
@@ -456,7 +456,7 @@ func (s *Store) ListMCPConfigs(ctx context.Context, workspaceID int64) ([]mcp.Co
 		return nil, err
 	}
 	defer rows.Close()
-	var out []mcp.Config
+	out := make([]mcp.Config, 0)
 	for rows.Next() {
 		var id int64
 		var agentID, name, transport, endpoint, credentialRef string
@@ -501,7 +501,7 @@ func (s *Store) ListMCPs(ctx context.Context, workspaceID int64) ([]MCPRecord, e
 		return nil, err
 	}
 	defer rows.Close()
-	var out []MCPRecord
+	out := make([]MCPRecord, 0)
 	for rows.Next() {
 		var id, wsID int64
 		var agentID, name, transport, endpoint, credentialRef, status, lastError string
@@ -696,7 +696,7 @@ func (s *Store) listToolsByMCP(ctx context.Context, mcpID int64) ([]ToolRecord, 
 		return nil, err
 	}
 	defer rows.Close()
-	var out []ToolRecord
+	out := make([]ToolRecord, 0)
 	for rows.Next() {
 		var name string
 		var raw []byte
@@ -728,7 +728,7 @@ func (s *Store) ListPolicies(ctx context.Context, workspaceID int64) ([]PolicyRe
 		return nil, err
 	}
 	defer rows.Close()
-	var out []PolicyRecord
+	out := make([]PolicyRecord, 0)
 	for rows.Next() {
 		var id, wsID int64
 		var name, subjectType, subjectValue, actionName, effect string
@@ -1043,7 +1043,7 @@ func (s *Store) ListAuditLogs(ctx context.Context, workspaceID int64, limit int)
 		return nil, err
 	}
 	defer rows.Close()
-	var out []AuditLogRecord
+	out := make([]AuditLogRecord, 0)
 	for rows.Next() {
 		var id, wsID int64
 		var agentID sql.NullInt64
@@ -1155,8 +1155,8 @@ func (s *Store) listMCPSecretKeys(ctx context.Context, mcpID int64) ([]string, [
 		return nil, nil, err
 	}
 	defer rows.Close()
-	var envKeys []string
-	var headerKeys []string
+	envKeys := make([]string, 0)
+	headerKeys := make([]string, 0)
 	for rows.Next() {
 		var scope, name string
 		if err := rows.Scan(&scope, &name); err != nil {

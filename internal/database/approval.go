@@ -21,7 +21,7 @@ func (s *Store) ListApprovalIntegrations(ctx context.Context, workspaceID int64)
 		return nil, err
 	}
 	defer rows.Close()
-	var out []ApprovalIntegrationRecord
+	out := make([]ApprovalIntegrationRecord, 0)
 	for rows.Next() {
 		var (
 			id, wsID int64
