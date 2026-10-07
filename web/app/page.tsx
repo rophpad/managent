@@ -181,7 +181,7 @@ const footerColumns = [
   {
     title: "Support",
     links: [
-      { label: "GitHub", href: "https://github.com/managent/managent" },
+      { label: "GitHub", href: "https://github.com/rophpad/managent" },
       { label: "Discord Community", href: "#discord" },
       { label: "Support Packages", href: "/support" },
       { label: "Enterprise", href: "/enterprise" },
@@ -322,7 +322,7 @@ export default function Home() {
 
           <div className="flex items-center gap-2">
             <a
-              href="https://github.com/managent/managent"
+              href="https://github.com/rophpad/managent"
               aria-label="GitHub"
               title="View on GitHub"
               className="hidden text-muted transition-colors hover:text-fg lg:inline-flex"
@@ -368,7 +368,7 @@ export default function Home() {
                 </a>
               ))}
               <a
-                href="https://github.com/managent/managent"
+                href="https://github.com/rophpad/managent"
                 onClick={() => setMenuOpen(false)}
                 className="rounded-lg px-3 py-2.5 transition-colors hover:bg-panel hover:text-fg"
               >
@@ -427,7 +427,7 @@ export default function Home() {
                 style={{ animationDelay: "270ms" }}
               >
                 <Button
-                  href="https://github.com/managent/managent"
+                  href="https://github.com/rophpad/managent"
                   size="md"
                   variant="outline"
                   className="mx-auto w-max sm:w-auto"
@@ -694,7 +694,7 @@ export default function Home() {
 
                     <div className="mt-6 space-y-3">
                       <Button
-                        href="https://github.com/managent/managent"
+                        href="https://github.com/rophpad/managent"
                         className="w-full justify-center"
                         size="lg"
                       >
@@ -944,7 +944,7 @@ export default function Home() {
             </p>
             <div className="w-full mx-auto relative mt-6 flex flex-col items-center justify-center gap-3 sm:mt-8 sm:flex-row">
               <Button
-                href="https://github.com/managent/managent"
+                href="https://github.com/rophpad/managent"
                 size="md"
                 variant="outline"
                 className="w-max sm:w-auto"
