@@ -1,20 +1,13 @@
-import Image from "next/image";
 import Link from "next/link";
+import { Brand } from "@/components/brand";
 
 export default function PublicBlogLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-ink text-fg">
       <header className="sticky top-0 z-50 border-b border-line-soft bg-ink/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-7">
-          <Link href="/" aria-label="Managent home">
-            <Image
-              src="/logo1.svg"
-              alt="Managent"
-              width={100}
-              height={100}
-              className="h-auto w-24 brightness-0 invert"
-              priority
-            />
+          <Link href="/" aria-label="Managent mcpool home">
+            <Brand markSize={28} />
           </Link>
           <nav aria-label="Public navigation" className="flex items-center gap-5 text-[13px] text-muted">
             <Link href="/" className="transition-colors hover:text-fg">Home</Link>

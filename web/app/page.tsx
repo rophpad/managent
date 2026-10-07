@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import { Brand } from "@/components/brand";
 import {
   useEffect,
   useRef,
@@ -304,15 +304,8 @@ export default function Home() {
       {/* ================= HEADER ================= */}
       <header className="absolute w-full top-0 z-50 bg-none backdrop-blur-md">
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:h-auto sm:px-6 sm:py-3 lg:px-8 lg:py-4">
-          <Link href="#top" aria-label="Managent home">
-            <Image
-              src="/logo1.svg"
-              alt="Managent"
-              width={100}
-              height={100}
-              className="h-auto w-24 brightness-0 invert"
-              priority
-            />
+          <Link href="#top" aria-label="Managent mcpool home">
+            <Brand />
           </Link>
 
           <nav className="hidden items-center gap-7 text-sm font-medium text-muted lg:flex">

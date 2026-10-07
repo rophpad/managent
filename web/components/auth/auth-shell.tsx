@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import Image from "next/image";
+import { Brand } from "@/components/brand";
 
 export function AuthShell({
   title,
@@ -16,15 +16,8 @@ export function AuthShell({
   return (
     <main className="w-full grid min-h-dvh bg-ink text-fg ">
       <section className="w-full flex min-h-dvh flex-col px-5 py-6 sm:px-8 lg:px-12">
-        <Link href="/" aria-label="Managent home">
-          <Image
-            src="/logo1.svg"
-            alt="Managent"
-            width={100}
-            height={100}
-            className="h-auto w-24 brightness-0 invert"
-            priority
-          />
+        <Link href="/" aria-label="Managent mcpool home">
+          <Brand />
         </Link>
 
         <div className="w-full flex items-center justify-center">

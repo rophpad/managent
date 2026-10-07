@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { Brand } from "@/components/brand";
 import {
   NAV_ITEMS,
   isNavItemActive,
@@ -31,17 +31,8 @@ export function MobileNav({ user }: { user: { name: string; email: string } }) {
           <span className="font-display text-base font-semibold">Managent</span>
         </Link>*/}
 
-        <Link href="/agents" className="flex items-center gap-2">
-          {/* The wordmark is solid black artwork; brightness-0 + invert renders
-              it white on the dark surface without needing a second asset. */}
-          <Image
-            src="/logo1.svg"
-            alt=""
-            width={100}
-            height={100}
-            className="h-auto w-21.5 brightness-0 invert sm:w-25"
-            priority
-          />
+        <Link href="/agents" aria-label="Managent mcpool home" className="flex items-center gap-2">
+          <Brand markSize={28} />
         </Link>
         <span className="flex items-center gap-2 text-[12.5px] text-muted">
           <span

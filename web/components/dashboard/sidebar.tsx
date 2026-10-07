@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Brand } from "@/components/brand";
 import {
   NAV_ITEMS,
   isNavItemActive,
@@ -23,16 +23,10 @@ export function Sidebar({ user }: { user: { name: string; email: string } }) {
 
       <Link
         href="/agents"
+        aria-label="Managent mcpool home"
         className="flex items-center gap-2 px-2.5 pb-5.5 pt-1"
       >
-        <Image
-          src="/logo1.svg"
-          alt=""
-          width={100}
-          height={100}
-          className="h-auto w-21.5 brightness-0 invert sm:w-25"
-          priority
-        />
+        <Brand />
       </Link>
 
       {NAV_ITEMS.map((item) => {
